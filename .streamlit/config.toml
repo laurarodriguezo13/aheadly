@@ -1,0 +1,43 @@
+# Aheadly brand theme (from aheadly-build-kit/brand/tokens.css), expressed with Streamlit's own theme options
+# so that fonts, radii and colours apply to every widget without CSS hacks.
+[theme]
+base = "light"
+primaryColor = "#7B4DFF"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2EDFF"
+textColor = "#13134A"
+linkColor = "#7B4DFF"
+borderColor = "#E6E0FA"
+dataframeBorderColor = "#E6E0FA"
+dataframeHeaderBackgroundColor = "#F2EDFF"
+font = "Inter, system-ui, sans-serif"
+headingFont = "Inter, system-ui, sans-serif"
+headingFontWeights = [800, 700, 700]
+baseRadius = "1rem"
+buttonRadius = "full"
+showWidgetBorder = true
+showSidebarBorder = true
+redColor = "#EF4F5F"
+greenColor = "#2CC4B8"
+blueColor = "#1E9BFF"
+violetColor = "#7B4DFF"
+chartCategoricalColors = ["#7B4DFF", "#1E9BFF", "#2CC4B8", "#EF4F5F", "#13134A"]
+
+[[theme.fontFaces]]
+family = "Inter"
+url = "https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7W0Q5nw.woff2"
+weight = "400 800"
+style = "normal"
+
+[theme.sidebar]
+backgroundColor = "#FBFAFF"
+secondaryBackgroundColor = "#F2EDFF"
+
+[client]
+toolbarMode = "minimal"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

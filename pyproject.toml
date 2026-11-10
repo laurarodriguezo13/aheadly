@@ -1,0 +1,27 @@
+[project]
+name = "aheadly"
+version = "0.2.0"
+description = "Aheadly: an AI financial co-pilot for small business owners (AI-Driven App Development, Babson)"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "anthropic>=2.7.0",
+    "numpy>=2.4.6",
+    "openai>=3.48.0",
+    "openpyxl>=3.1.5",
+    "pandas>=3.1.1",
+    "plotly>=7.1.0",
+    "prophet>=1.5.0",
+    "python-dotenv>=1.2.4",
+    "streamlit>=1.67.0",
+]
+
+[dependency-groups]
+dev = ["black>=26.10.1", "pytest>=9.2.0"]
+
+[tool.black]
+line-length = 110
+extend-exclude = "aheadly-build-kit"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::FutureWarning", "ignore::DeprecationWarning"]

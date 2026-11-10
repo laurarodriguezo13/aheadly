@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 2000 1222" width="1140" height="697" xmlns="http://www.w3.org/2000/svg"><style>text{font-family:Inter,'Helvetica Neue',Arial,sans-serif}</style>
+<defs>
+ <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+  <path d="M0,0 L10,5 L0,10 z" fill="#5a5e8c"/></marker>
+ <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b4dff"/><stop offset="1" stop-color="#1e9bff"/></linearGradient>
+ <filter id="sh" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#5a3fd0" flood-opacity=".13"/></filter>
+</defs>
+<rect x="444" y="66" width="1111" height="1111" rx="40" fill="#faf8ff" stroke="#cdbfff" stroke-width="3" stroke-dasharray="12 10"/>
+<text x="1000" y="150" text-anchor="middle" font-size="46" font-weight="800" fill="#7b4dff" letter-spacing="-1">Aheadly</text>
+<line x1="249" y1="660" x2="622" y2="310" stroke="#5a5e8c" stroke-width="3"/><line x1="249" y1="660" x2="622" y2="543" stroke="#5a5e8c" stroke-width="3"/><line x1="249" y1="660" x2="622" y2="777" stroke="#5a5e8c" stroke-width="3"/><line x1="249" y1="660" x2="622" y2="1010" stroke="#5a5e8c" stroke-width="3"/>
+<line x1="1378" y1="310" x2="1749" y2="311" stroke="#5a5e8c" stroke-width="3"/>
+<line x1="1378" y1="543" x2="1749" y2="799" stroke="#5a5e8c" stroke-width="3"/><line x1="1378" y1="777" x2="1749" y2="799" stroke="#5a5e8c" stroke-width="3"/><line x1="1378" y1="1010" x2="1749" y2="799" stroke="#5a5e8c" stroke-width="3"/>
+<ellipse cx="1000" cy="310" rx="378" ry="80" fill="#f2edff" stroke="#cbb9ff" stroke-width="2.5" filter="url(#sh)"/><text x="1000" y="323" text-anchor="middle" font-size="38" font-weight="600" fill="#13134a">Connect financial accounts</text>
+<ellipse cx="1000" cy="543" rx="378" ry="80" fill="#e9f4ff" stroke="#a9d3ff" stroke-width="2.5" filter="url(#sh)"/><text x="1000" y="556" text-anchor="middle" font-size="38" font-weight="600" fill="#13134a">Receive early-warning alert</text>
+<ellipse cx="1000" cy="777" rx="378" ry="80" fill="#e5f7f4" stroke="#9be0d7" stroke-width="2.5" filter="url(#sh)"/><text x="1000" y="790" text-anchor="middle" font-size="38" font-weight="600" fill="#13134a">Ask about my numbers</text>
+<ellipse cx="1000" cy="1010" rx="378" ry="80" fill="#f2edff" stroke="#cbb9ff" stroke-width="2.5" filter="url(#sh)"/><text x="1000" y="1023" text-anchor="middle" font-size="38" font-weight="600" fill="#13134a">Test a what-if scenario</text>
+<g stroke="#13134a" stroke-width="6" stroke-linecap="round" fill="none"><line x1="177" y1="609" x2="177" y2="750"/><line x1="105" y1="660" x2="249" y2="660"/><line x1="177" y1="750" x2="119" y2="850"/><line x1="177" y1="750" x2="235" y2="850"/></g><circle cx="177" cy="571" r="38" fill="url(#g)"/><text x="177" y="905" text-anchor="middle" font-size="34" font-weight="700" fill="#13134a">Business Owner</text>
+<g stroke="#13134a" stroke-width="6" stroke-linecap="round" fill="none"><line x1="1821" y1="259" x2="1821" y2="401"/><line x1="1749" y1="311" x2="1893" y2="311"/><line x1="1821" y1="401" x2="1763" y2="501"/><line x1="1821" y1="401" x2="1879" y2="501"/></g><circle cx="1821" cy="221" r="38" fill="url(#g)"/><text x="1821" y="555" text-anchor="middle" font-size="34" font-weight="700" fill="#13134a">Bank /</text><text x="1821" y="599" text-anchor="middle" font-size="34" font-weight="700" fill="#13134a">QuickBooks</text>
+<g stroke="#13134a" stroke-width="6" stroke-linecap="round" fill="none"><line x1="1821" y1="748" x2="1821" y2="889"/><line x1="1749" y1="799" x2="1893" y2="799"/><line x1="1821" y1="889" x2="1763" y2="989"/><line x1="1821" y1="889" x2="1879" y2="989"/></g><circle cx="1821" cy="710" r="38" fill="url(#g)"/><text x="1821" y="1045" text-anchor="middle" font-size="34" font-weight="700" fill="#13134a">AI service</text>
+</svg>

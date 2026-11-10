@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 540 224" width="100%" height="224" xmlns="http://www.w3.org/2000/svg"><style>text{font-family:Inter,'Helvetica Neue',Arial,sans-serif}</style><defs>
+<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b4dff"/><stop offset="1" stop-color="#1e9bff"/></linearGradient>
+<filter id="sh" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#5a3fd0" flood-opacity=".14"/></filter>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5a5e8c"/></marker>
+</defs><rect width="540" height="224" fill="#e9f4ff"/>
+<text x="506" y="24" text-anchor="end" font-size="14" font-weight="600" fill="#3b3f6b">Maria</text>
+<path d="M200 32 h290 a16 16 0 0 1 16 16 v42 a16 16 0 0 1 -16 16 h-290 a16 16 0 0 1 -16 -16 v-42 a16 16 0 0 1 16 -16z" fill="url(#g)" filter="url(#sh)"/>
+<text font-size="17.5" font-weight="500" fill="#fff"><tspan x="204" y="64">What if I buy the new oven</tspan><tspan x="204" y="88">next month instead?</tspan></text>
+<circle cx="46" cy="160" r="20" fill="url(#g)"/><path d="M38 170 L46 148 L54 170" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text x="76" y="122" font-size="14" font-weight="600" fill="#3b3f6b">Aheadly</text>
+<rect x="74" y="130" width="330" height="86" rx="16" fill="#fff" filter="url(#sh)"/>
+<text font-size="16.5" fill="#13134a"><tspan x="92" y="158">Then your cash stays above <tspan font-weight="700" fill="#2cc4b8">$3,000</tspan></tspan><tspan x="92" y="182">the whole time.</tspan><tspan x="92" y="206" font-weight="700">That looks safe.</tspan></text>
+</svg>

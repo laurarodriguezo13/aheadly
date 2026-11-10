@@ -1,0 +1,8 @@
+# Copy to .streamlit/config.toml in the app repo
+[theme]
+base = "light"
+primaryColor = "#7B4DFF"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F2EDFF"
+textColor = "#13134A"
+font = "sans serif"

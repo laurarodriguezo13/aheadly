@@ -1,0 +1,625 @@
+Date,Description,Counterparty,Category,Debit,Credit,Balance
+2026-11-09,Flour and dairy,Molinos del Sur,suppliers,3301.32,,8200.0
+2026-11-09,Walk-in sales,Customers,sales,,572.43,11501.32
+2026-11-08,Walk-in sales,Customers,sales,,780.62,10928.89
+2026-11-07,Walk-in sales,Customers,sales,,1052.25,10148.27
+2026-11-06,Payroll (6 staff),Team,payroll,3600.0,,9096.02
+2026-11-06,Packaging,Empaques Bogotá,utilities,78.78,,12696.02
+2026-11-06,Owner's draw,Maria,owner_draw,1300.0,,12774.8
+2026-11-06,Walk-in sales,Customers,sales,,963.97,14074.8
+2026-11-05,"Electricity, gas and water",Enel / Vanti,utilities,305.85,,13110.83
+2026-11-05,Walk-in sales,Customers,sales,,839.84,13416.68
+2026-11-04,Invoice paid,Café Azul / Café Norte,cafe_payment,,1433.62,12576.84
+2026-11-04,Walk-in sales,Customers,sales,,771.18,11143.22
+2026-11-03,Walk-in sales,Customers,sales,,591.11,10372.04
+2026-11-02,Flour and dairy,Molinos del Sur,suppliers,3499.22,,9780.93
+2026-11-02,Walk-in sales,Customers,sales,,540.55,13280.15
+2026-11-01,Walk-in sales,Customers,sales,,777.55,12739.6
+2026-10-31,Walk-in sales,Customers,sales,,1315.02,11962.05
+2026-10-30,Packaging,Empaques Bogotá,utilities,70.77,,10647.03
+2026-10-30,Owner's draw,Maria,owner_draw,1300.0,,10717.8
+2026-10-30,Walk-in sales,Customers,sales,,857.76,12017.8
+2026-10-29,Walk-in sales,Customers,sales,,772.34,11160.04
+2026-10-28,Invoice paid,Café Azul / Café Norte,cafe_payment,,1551.7,10387.7
+2026-10-28,Walk-in sales,Customers,sales,,722.63,8836.0
+2026-10-27,Walk-in sales,Customers,sales,,598.75,8113.37
+2026-10-26,Flour and dairy,Molinos del Sur,suppliers,3222.28,,7514.62
+2026-10-26,Walk-in sales,Customers,sales,,583.41,10736.9
+2026-10-25,Walk-in sales,Customers,sales,,715.16,10153.49
+2026-10-24,Walk-in sales,Customers,sales,,1161.39,9438.33
+2026-10-23,Payroll (6 staff),Team,payroll,3600.0,,8276.94
+2026-10-23,Packaging,Empaques Bogotá,utilities,53.29,,11876.94
+2026-10-23,Owner's draw,Maria,owner_draw,1300.0,,11930.23
+2026-10-23,Walk-in sales,Customers,sales,,983.79,13230.23
+2026-10-22,Walk-in sales,Customers,sales,,922.67,12246.44
+2026-10-21,Invoice paid,Café Azul / Café Norte,cafe_payment,,1418.48,11323.77
+2026-10-21,Walk-in sales,Customers,sales,,425.21,9905.29
+2026-10-20,Walk-in sales,Customers,sales,,495.92,9480.08
+2026-10-19,Flour and dairy,Molinos del Sur,suppliers,3038.84,,8984.16
+2026-10-19,Walk-in sales,Customers,sales,,669.99,12023.0
+2026-10-18,Walk-in sales,Customers,sales,,1024.02,11353.01
+2026-10-17,Walk-in sales,Customers,sales,,902.65,10328.99
+2026-10-16,Packaging,Empaques Bogotá,utilities,36.11,,9426.34
+2026-10-16,Owner's draw,Maria,owner_draw,1300.0,,9462.45
+2026-10-16,Walk-in sales,Customers,sales,,897.34,10762.45
+2026-10-15,Rent,Landlord,rent,900.0,,9865.11
+2026-10-15,Walk-in sales,Customers,sales,,557.87,10765.11
+2026-10-14,Invoice paid,Café Azul / Café Norte,cafe_payment,,1640.33,10207.24
+2026-10-14,Walk-in sales,Customers,sales,,635.55,8566.91
+2026-10-13,Walk-in sales,Customers,sales,,637.96,7931.36
+2026-10-12,Oven maintenance,Técnico,maintenance,137.12,,7293.4
+2026-10-12,Flour and dairy,Molinos del Sur,suppliers,3282.1,,7430.52
+2026-10-12,Walk-in sales,Customers,sales,,683.79,10712.62
+2026-10-11,Walk-in sales,Customers,sales,,950.29,10028.83
+2026-10-10,Walk-in sales,Customers,sales,,987.6,9078.54
+2026-10-09,Payroll (6 staff),Team,payroll,3600.0,,8090.94
+2026-10-09,Packaging,Empaques Bogotá,utilities,65.16,,11690.94
+2026-10-09,Owner's draw,Maria,owner_draw,1300.0,,11756.1
+2026-10-09,Walk-in sales,Customers,sales,,847.54,13056.1
+2026-10-08,Walk-in sales,Customers,sales,,700.38,12208.56
+2026-10-07,Invoice paid,Café Azul / Café Norte,cafe_payment,,1491.48,11508.18
+2026-10-07,Walk-in sales,Customers,sales,,706.0,10016.7
+2026-10-06,Walk-in sales,Customers,sales,,611.64,9310.7
+2026-10-05,"Electricity, gas and water",Enel / Vanti,utilities,329.41,,8699.06
+2026-10-05,Flour and dairy,Molinos del Sur,suppliers,3249.97,,9028.47
+2026-10-05,Walk-in sales,Customers,sales,,793.59,12278.44
+2026-10-04,Walk-in sales,Customers,sales,,880.67,11484.85
+2026-10-03,Walk-in sales,Customers,sales,,949.26,10604.18
+2026-10-02,Packaging,Empaques Bogotá,utilities,72.77,,9654.92
+2026-10-02,Owner's draw,Maria,owner_draw,1300.0,,9727.69
+2026-10-02,Walk-in sales,Customers,sales,,896.94,11027.69
+2026-10-01,Walk-in sales,Customers,sales,,768.12,10130.75
+2026-09-30,Invoice paid,Café Azul / Café Norte,cafe_payment,,1527.8,9362.63
+2026-09-30,Walk-in sales,Customers,sales,,637.48,7834.83
+2026-09-29,Walk-in sales,Customers,sales,,575.45,7197.35
+2026-09-28,Flour and dairy,Molinos del Sur,suppliers,3277.89,,6621.9
+2026-09-28,Walk-in sales,Customers,sales,,535.15,9899.79
+2026-09-27,Walk-in sales,Customers,sales,,996.79,9364.64
+2026-09-26,Walk-in sales,Customers,sales,,1355.71,8367.85
+2026-09-25,Payroll (6 staff),Team,payroll,3600.0,,7012.14
+2026-09-25,Packaging,Empaques Bogotá,utilities,56.48,,10612.14
+2026-09-25,Owner's draw,Maria,owner_draw,1300.0,,10668.62
+2026-09-25,Walk-in sales,Customers,sales,,883.54,11968.62
+2026-09-24,Walk-in sales,Customers,sales,,619.13,11085.08
+2026-09-23,Invoice paid,Café Azul / Café Norte,cafe_payment,,1189.05,10465.95
+2026-09-23,Walk-in sales,Customers,sales,,534.11,9276.9
+2026-09-22,Walk-in sales,Customers,sales,,544.5,8742.79
+2026-09-21,Flour and dairy,Molinos del Sur,suppliers,3270.32,,8198.29
+2026-09-21,Walk-in sales,Customers,sales,,603.12,11468.61
+2026-09-20,Walk-in sales,Customers,sales,,915.17,10865.49
+2026-09-19,Walk-in sales,Customers,sales,,988.37,9950.32
+2026-09-18,Packaging,Empaques Bogotá,utilities,72.91,,8961.95
+2026-09-18,Owner's draw,Maria,owner_draw,1300.0,,9034.86
+2026-09-18,Walk-in sales,Customers,sales,,952.97,10334.86
+2026-09-17,Walk-in sales,Customers,sales,,720.95,9381.89
+2026-09-16,Invoice paid,Café Azul / Café Norte,cafe_payment,,1811.55,8660.94
+2026-09-16,Walk-in sales,Customers,sales,,814.52,6849.39
+2026-09-15,Rent,Landlord,rent,900.0,,6034.87
+2026-09-15,Walk-in sales,Customers,sales,,630.32,6934.87
+2026-09-14,Flour and dairy,Molinos del Sur,suppliers,3170.63,,6304.55
+2026-09-14,Walk-in sales,Customers,sales,,632.83,9475.18
+2026-09-13,Walk-in sales,Customers,sales,,997.7,8842.35
+2026-09-12,Walk-in sales,Customers,sales,,1056.24,7844.65
+2026-09-11,Payroll (6 staff),Team,payroll,3600.0,,6788.41
+2026-09-11,Packaging,Empaques Bogotá,utilities,72.81,,10388.41
+2026-09-11,Owner's draw,Maria,owner_draw,1300.0,,10461.22
+2026-09-11,Walk-in sales,Customers,sales,,769.3,11761.22
+2026-09-10,Walk-in sales,Customers,sales,,685.59,10991.92
+2026-09-09,Invoice paid,Café Azul / Café Norte,cafe_payment,,1698.1,10306.33
+2026-09-09,Walk-in sales,Customers,sales,,688.66,8608.23
+2026-09-08,Walk-in sales,Customers,sales,,628.86,7919.57
+2026-09-07,Flour and dairy,Molinos del Sur,suppliers,3157.61,,7290.71
+2026-09-07,Walk-in sales,Customers,sales,,636.06,10448.32
+2026-09-06,Walk-in sales,Customers,sales,,810.91,9812.26
+2026-09-05,"Electricity, gas and water",Enel / Vanti,utilities,263.92,,9001.35
+2026-09-05,Walk-in sales,Customers,sales,,1029.53,9265.27
+2026-09-04,Packaging,Empaques Bogotá,utilities,52.74,,8235.74
+2026-09-04,Owner's draw,Maria,owner_draw,1300.0,,8288.48
+2026-09-04,Walk-in sales,Customers,sales,,1039.15,9588.48
+2026-09-03,Walk-in sales,Customers,sales,,557.91,8549.33
+2026-09-02,Invoice paid,Café Azul / Café Norte,cafe_payment,,1480.34,7991.42
+2026-09-02,Walk-in sales,Customers,sales,,697.6,6511.08
+2026-09-01,Walk-in sales,Customers,sales,,529.46,5813.48
+2026-08-31,Flour and dairy,Molinos del Sur,suppliers,3287.99,,5284.02
+2026-08-31,Walk-in sales,Customers,sales,,504.65,8572.01
+2026-08-30,Walk-in sales,Customers,sales,,1061.71,8067.36
+2026-08-29,Walk-in sales,Customers,sales,,1206.07,7005.65
+2026-08-28,Oven maintenance,Técnico,maintenance,133.89,,5799.58
+2026-08-28,Payroll (6 staff),Team,payroll,3600.0,,5933.47
+2026-08-28,Packaging,Empaques Bogotá,utilities,49.34,,9533.47
+2026-08-28,Owner's draw,Maria,owner_draw,1300.0,,9582.81
+2026-08-28,Walk-in sales,Customers,sales,,768.88,10882.81
+2026-08-27,Walk-in sales,Customers,sales,,664.0,10113.93
+2026-08-26,Invoice paid,Café Azul / Café Norte,cafe_payment,,1374.39,9449.93
+2026-08-26,Walk-in sales,Customers,sales,,667.3,8075.54
+2026-08-25,Walk-in sales,Customers,sales,,703.27,7408.24
+2026-08-24,Flour and dairy,Molinos del Sur,suppliers,3184.51,,6704.97
+2026-08-24,Walk-in sales,Customers,sales,,701.39,9889.48
+2026-08-23,Walk-in sales,Customers,sales,,995.02,9188.09
+2026-08-22,Walk-in sales,Customers,sales,,1126.11,8193.07
+2026-08-21,Packaging,Empaques Bogotá,utilities,56.58,,7066.96
+2026-08-21,Owner's draw,Maria,owner_draw,1300.0,,7123.54
+2026-08-21,Walk-in sales,Customers,sales,,1019.09,8423.54
+2026-08-20,Walk-in sales,Customers,sales,,656.8,7404.45
+2026-08-19,Invoice paid,Café Azul / Café Norte,cafe_payment,,1149.96,6747.65
+2026-08-19,Walk-in sales,Customers,sales,,542.61,5597.69
+2026-08-18,Walk-in sales,Customers,sales,,510.88,5055.08
+2026-08-17,Flour and dairy,Molinos del Sur,suppliers,2753.55,,4544.2
+2026-08-17,Walk-in sales,Customers,sales,,665.22,7297.75
+2026-08-16,Walk-in sales,Customers,sales,,867.59,6632.53
+2026-08-15,Rent,Landlord,rent,900.0,,5764.94
+2026-08-15,Walk-in sales,Customers,sales,,1064.91,6664.94
+2026-08-14,Payroll (6 staff),Team,payroll,3600.0,,5600.03
+2026-08-14,Packaging,Empaques Bogotá,utilities,66.25,,9200.03
+2026-08-14,Owner's draw,Maria,owner_draw,1300.0,,9266.28
+2026-08-14,Walk-in sales,Customers,sales,,890.82,10566.28
+2026-08-13,Walk-in sales,Customers,sales,,785.4,9675.46
+2026-08-12,Invoice paid,Café Azul / Café Norte,cafe_payment,,1529.52,8890.06
+2026-08-12,Walk-in sales,Customers,sales,,645.77,7360.54
+2026-08-11,Walk-in sales,Customers,sales,,553.84,6714.77
+2026-08-10,Flour and dairy,Molinos del Sur,suppliers,3318.73,,6160.93
+2026-08-10,Walk-in sales,Customers,sales,,621.64,9479.66
+2026-08-09,Walk-in sales,Customers,sales,,960.27,8858.02
+2026-08-08,Walk-in sales,Customers,sales,,1118.25,7897.75
+2026-08-07,Packaging,Empaques Bogotá,utilities,68.42,,6779.5
+2026-08-07,Owner's draw,Maria,owner_draw,1300.0,,6847.92
+2026-08-06,Walk-in sales,Customers,sales,,754.42,8147.92
+2026-08-05,"Electricity, gas and water",Enel / Vanti,utilities,270.86,,7393.5
+2026-08-05,Invoice paid,Café Azul / Café Norte,cafe_payment,,1508.15,7664.36
+2026-08-05,Walk-in sales,Customers,sales,,477.04,6156.21
+2026-08-04,Walk-in sales,Customers,sales,,502.43,5679.17
+2026-08-03,Flour and dairy,Molinos del Sur,suppliers,3261.89,,5176.74
+2026-08-03,Walk-in sales,Customers,sales,,643.06,8438.63
+2026-08-02,Walk-in sales,Customers,sales,,926.43,7795.57
+2026-08-01,Walk-in sales,Customers,sales,,995.17,6869.14
+2026-07-31,Payroll (6 staff),Team,payroll,3600.0,,5873.97
+2026-07-31,Packaging,Empaques Bogotá,utilities,40.78,,9473.97
+2026-07-31,Owner's draw,Maria,owner_draw,1300.0,,9514.75
+2026-07-31,Walk-in sales,Customers,sales,,794.57,10814.75
+2026-07-30,Walk-in sales,Customers,sales,,577.53,10020.18
+2026-07-29,Invoice paid,Café Azul / Café Norte,cafe_payment,,1696.43,9442.65
+2026-07-29,Walk-in sales,Customers,sales,,668.54,7746.22
+2026-07-28,Walk-in sales,Customers,sales,,571.77,7077.68
+2026-07-27,Flour and dairy,Molinos del Sur,suppliers,3559.35,,6505.91
+2026-07-27,Walk-in sales,Customers,sales,,459.54,10065.26
+2026-07-26,Walk-in sales,Customers,sales,,858.33,9605.72
+2026-07-25,Walk-in sales,Customers,sales,,1407.25,8747.39
+2026-07-24,Packaging,Empaques Bogotá,utilities,66.65,,7340.14
+2026-07-24,Owner's draw,Maria,owner_draw,1300.0,,7406.79
+2026-07-24,Walk-in sales,Customers,sales,,1029.45,8706.79
+2026-07-23,Walk-in sales,Customers,sales,,788.51,7677.34
+2026-07-22,Invoice paid,Café Azul / Café Norte,cafe_payment,,1699.34,6888.83
+2026-07-22,Walk-in sales,Customers,sales,,660.9,5189.49
+2026-07-21,Walk-in sales,Customers,sales,,666.3,4528.59
+2026-07-20,Flour and dairy,Molinos del Sur,suppliers,3245.32,,3862.29
+2026-07-19,Walk-in sales,Customers,sales,,793.17,7107.61
+2026-07-18,Walk-in sales,Customers,sales,,1001.85,6314.44
+2026-07-17,Payroll (6 staff),Team,payroll,3600.0,,5312.59
+2026-07-17,Packaging,Empaques Bogotá,utilities,77.78,,8912.59
+2026-07-17,Owner's draw,Maria,owner_draw,1300.0,,8990.37
+2026-07-17,Walk-in sales,Customers,sales,,920.97,10290.37
+2026-07-16,Walk-in sales,Customers,sales,,624.18,9369.4
+2026-07-15,Rent,Landlord,rent,900.0,,8745.22
+2026-07-15,Invoice paid,Café Azul / Café Norte,cafe_payment,,1649.97,9645.22
+2026-07-15,Walk-in sales,Customers,sales,,690.36,7995.25
+2026-07-14,Oven maintenance,Técnico,maintenance,143.14,,7304.89
+2026-07-14,Walk-in sales,Customers,sales,,594.29,7448.03
+2026-07-13,Flour and dairy,Molinos del Sur,suppliers,3006.61,,6853.74
+2026-07-13,Walk-in sales,Customers,sales,,624.63,9860.35
+2026-07-12,Walk-in sales,Customers,sales,,904.75,9235.72
+2026-07-11,Walk-in sales,Customers,sales,,1130.74,8330.97
+2026-07-10,Packaging,Empaques Bogotá,utilities,72.82,,7200.23
+2026-07-10,Owner's draw,Maria,owner_draw,1300.0,,7273.05
+2026-07-10,Walk-in sales,Customers,sales,,1026.3,8573.05
+2026-07-09,Walk-in sales,Customers,sales,,666.01,7546.75
+2026-07-08,Invoice paid,Café Azul / Café Norte,cafe_payment,,1626.99,6880.74
+2026-07-08,Walk-in sales,Customers,sales,,689.17,5253.75
+2026-07-07,Walk-in sales,Customers,sales,,712.15,4564.58
+2026-07-06,Flour and dairy,Molinos del Sur,suppliers,2845.72,,3852.43
+2026-07-06,Walk-in sales,Customers,sales,,647.9,6698.15
+2026-07-05,"Electricity, gas and water",Enel / Vanti,utilities,261.37,,6050.25
+2026-07-05,Walk-in sales,Customers,sales,,662.12,6311.62
+2026-07-04,Walk-in sales,Customers,sales,,1313.34,5649.5
+2026-07-03,Payroll (6 staff),Team,payroll,3600.0,,4336.16
+2026-07-03,Packaging,Empaques Bogotá,utilities,64.97,,7936.16
+2026-07-03,Owner's draw,Maria,owner_draw,1300.0,,8001.13
+2026-07-03,Walk-in sales,Customers,sales,,943.08,9301.13
+2026-07-02,Walk-in sales,Customers,sales,,741.11,8358.05
+2026-07-01,Invoice paid,Café Azul / Café Norte,cafe_payment,,1156.31,7616.94
+2026-07-01,Walk-in sales,Customers,sales,,708.21,6460.63
+2026-06-30,Walk-in sales,Customers,sales,,688.88,5752.42
+2026-06-29,Flour and dairy,Molinos del Sur,suppliers,3269.89,,5063.54
+2026-06-29,Walk-in sales,Customers,sales,,556.28,8333.43
+2026-06-28,Walk-in sales,Customers,sales,,751.53,7777.15
+2026-06-27,Walk-in sales,Customers,sales,,1104.33,7025.62
+2026-06-26,Packaging,Empaques Bogotá,utilities,47.84,,5921.29
+2026-06-26,Owner's draw,Maria,owner_draw,1300.0,,5969.13
+2026-06-26,Walk-in sales,Customers,sales,,856.58,7269.13
+2026-06-25,Walk-in sales,Customers,sales,,769.7,6412.55
+2026-06-24,Invoice paid,Café Azul / Café Norte,cafe_payment,,1726.68,5642.85
+2026-06-24,Walk-in sales,Customers,sales,,618.95,3916.17
+2026-06-23,Walk-in sales,Customers,sales,,519.91,3297.22
+2026-06-22,Flour and dairy,Molinos del Sur,suppliers,3185.0,,2777.31
+2026-06-22,Walk-in sales,Customers,sales,,490.87,5962.31
+2026-06-21,Walk-in sales,Customers,sales,,957.17,5471.44
+2026-06-20,Walk-in sales,Customers,sales,,1340.33,4514.27
+2026-06-19,Payroll (6 staff),Team,payroll,3600.0,,3173.94
+2026-06-19,Packaging,Empaques Bogotá,utilities,69.01,,6773.94
+2026-06-19,Owner's draw,Maria,owner_draw,1300.0,,6842.95
+2026-06-19,Walk-in sales,Customers,sales,,1066.41,8142.95
+2026-06-18,Walk-in sales,Customers,sales,,698.64,7076.54
+2026-06-17,Invoice paid,Café Azul / Café Norte,cafe_payment,,1617.35,6377.9
+2026-06-17,Walk-in sales,Customers,sales,,566.68,4760.55
+2026-06-16,Walk-in sales,Customers,sales,,676.84,4193.87
+2026-06-15,Rent,Landlord,rent,900.0,,3517.03
+2026-06-15,Flour and dairy,Molinos del Sur,suppliers,3043.78,,4417.03
+2026-06-15,Walk-in sales,Customers,sales,,609.83,7460.81
+2026-06-14,Walk-in sales,Customers,sales,,848.68,6850.98
+2026-06-13,Walk-in sales,Customers,sales,,1209.29,6002.3
+2026-06-12,Packaging,Empaques Bogotá,utilities,65.27,,4793.01
+2026-06-12,Owner's draw,Maria,owner_draw,1300.0,,4858.28
+2026-06-12,Walk-in sales,Customers,sales,,1130.67,6158.28
+2026-06-11,Walk-in sales,Customers,sales,,752.67,5027.61
+2026-06-10,Invoice paid,Café Azul / Café Norte,cafe_payment,,1676.61,4274.94
+2026-06-10,Walk-in sales,Customers,sales,,797.2,2598.33
+2026-06-09,Walk-in sales,Customers,sales,,647.3,1801.13
+2026-06-08,Flour and dairy,Molinos del Sur,suppliers,3491.21,,1153.83
+2026-06-08,Walk-in sales,Customers,sales,,580.72,4645.04
+2026-06-07,Walk-in sales,Customers,sales,,768.81,4064.32
+2026-06-06,Walk-in sales,Customers,sales,,1091.91,3295.51
+2026-06-05,"Electricity, gas and water",Enel / Vanti,utilities,260.41,,2203.6
+2026-06-05,Payroll (6 staff),Team,payroll,3600.0,,2464.01
+2026-06-05,Packaging,Empaques Bogotá,utilities,70.37,,6064.01
+2026-06-05,Owner's draw,Maria,owner_draw,1300.0,,6134.38
+2026-06-05,Walk-in sales,Customers,sales,,762.9,7434.38
+2026-06-04,Walk-in sales,Customers,sales,,863.21,6671.48
+2026-06-03,Invoice paid,Café Azul / Café Norte,cafe_payment,,1549.2,5808.27
+2026-06-03,Walk-in sales,Customers,sales,,520.87,4259.07
+2026-06-02,Walk-in sales,Customers,sales,,578.0,3738.2
+2026-06-01,Flour and dairy,Molinos del Sur,suppliers,3266.3,,3160.2
+2026-06-01,Walk-in sales,Customers,sales,,617.81,6426.5
+2026-05-31,Walk-in sales,Customers,sales,,854.99,5808.69
+2026-05-30,Oven maintenance,Técnico,maintenance,34.5,,4953.7
+2026-05-30,Walk-in sales,Customers,sales,,1294.24,4988.2
+2026-05-29,Packaging,Empaques Bogotá,utilities,61.83,,3693.96
+2026-05-29,Owner's draw,Maria,owner_draw,1300.0,,3755.79
+2026-05-29,Walk-in sales,Customers,sales,,906.73,5055.79
+2026-05-28,Walk-in sales,Customers,sales,,706.12,4149.06
+2026-05-27,Invoice paid,Café Azul / Café Norte,cafe_payment,,1456.17,3442.94
+2026-05-27,Walk-in sales,Customers,sales,,664.16,1986.77
+2026-05-26,Walk-in sales,Customers,sales,,624.15,1322.61
+2026-05-25,Flour and dairy,Molinos del Sur,suppliers,3094.38,,698.46
+2026-05-25,Walk-in sales,Customers,sales,,524.38,3792.84
+2026-05-24,Walk-in sales,Customers,sales,,927.99,3268.46
+2026-05-23,Walk-in sales,Customers,sales,,1222.42,2340.47
+2026-05-22,Payroll (6 staff),Team,payroll,3600.0,,1118.05
+2026-05-22,Packaging,Empaques Bogotá,utilities,39.06,,4718.05
+2026-05-22,Owner's draw,Maria,owner_draw,1300.0,,4757.11
+2026-05-22,Walk-in sales,Customers,sales,,988.87,6057.11
+2026-05-21,Walk-in sales,Customers,sales,,737.54,5068.24
+2026-05-20,Invoice paid,Café Azul / Café Norte,cafe_payment,,1678.67,4330.7
+2026-05-20,Walk-in sales,Customers,sales,,571.9,2652.03
+2026-05-19,Walk-in sales,Customers,sales,,549.6,2080.13
+2026-05-18,Flour and dairy,Molinos del Sur,suppliers,3286.43,,1530.53
+2026-05-18,Walk-in sales,Customers,sales,,719.23,4816.96
+2026-05-17,Walk-in sales,Customers,sales,,1101.04,4097.73
+2026-05-16,Walk-in sales,Customers,sales,,1087.16,2996.69
+2026-05-15,Rent,Landlord,rent,900.0,,1909.53
+2026-05-15,Packaging,Empaques Bogotá,utilities,63.8,,2809.53
+2026-05-15,Owner's draw,Maria,owner_draw,1300.0,,2873.33
+2026-05-15,Walk-in sales,Customers,sales,,854.04,4173.33
+2026-05-14,Walk-in sales,Customers,sales,,715.01,3319.29
+2026-05-13,Invoice paid,Café Azul / Café Norte,cafe_payment,,1507.97,2604.28
+2026-05-13,Walk-in sales,Customers,sales,,687.86,1096.31
+2026-05-12,Walk-in sales,Customers,sales,,616.28,408.45
+2026-05-11,Flour and dairy,Molinos del Sur,suppliers,3426.85,,-207.83
+2026-05-11,Walk-in sales,Customers,sales,,639.23,3219.02
+2026-05-10,Walk-in sales,Customers,sales,,821.36,2579.79
+2026-05-09,Walk-in sales,Customers,sales,,1130.65,1758.43
+2026-05-08,Payroll (6 staff),Team,payroll,3600.0,,627.78
+2026-05-08,Packaging,Empaques Bogotá,utilities,56.8,,4227.78
+2026-05-08,Owner's draw,Maria,owner_draw,1300.0,,4284.58
+2026-05-08,Walk-in sales,Customers,sales,,908.28,5584.58
+2026-05-07,Walk-in sales,Customers,sales,,597.03,4676.3
+2026-05-06,Invoice paid,Café Azul / Café Norte,cafe_payment,,1479.93,4079.27
+2026-05-06,Walk-in sales,Customers,sales,,630.21,2599.34
+2026-05-05,"Electricity, gas and water",Enel / Vanti,utilities,269.35,,1969.13
+2026-05-05,Walk-in sales,Customers,sales,,661.43,2238.48
+2026-05-04,Flour and dairy,Molinos del Sur,suppliers,3145.06,,1577.05
+2026-05-04,Walk-in sales,Customers,sales,,533.35,4722.11
+2026-05-03,Walk-in sales,Customers,sales,,1062.55,4188.76
+2026-05-02,Walk-in sales,Customers,sales,,1145.09,3126.21
+2026-05-01,Packaging,Empaques Bogotá,utilities,55.58,,1981.12
+2026-05-01,Owner's draw,Maria,owner_draw,1300.0,,2036.7
+2026-04-30,Walk-in sales,Customers,sales,,614.48,3336.7
+2026-04-29,Invoice paid,Café Azul / Café Norte,cafe_payment,,1935.76,2722.22
+2026-04-29,Walk-in sales,Customers,sales,,805.48,786.46
+2026-04-28,Walk-in sales,Customers,sales,,525.37,-19.02
+2026-04-27,Flour and dairy,Molinos del Sur,suppliers,2911.62,,-544.39
+2026-04-27,Walk-in sales,Customers,sales,,759.58,2367.23
+2026-04-26,Walk-in sales,Customers,sales,,725.08,1607.65
+2026-04-25,Walk-in sales,Customers,sales,,867.98,882.57
+2026-04-24,Payroll (6 staff),Team,payroll,3600.0,,14.59
+2026-04-24,Packaging,Empaques Bogotá,utilities,58.87,,3614.59
+2026-04-24,Owner's draw,Maria,owner_draw,1300.0,,3673.46
+2026-04-24,Walk-in sales,Customers,sales,,836.62,4973.46
+2026-04-23,Walk-in sales,Customers,sales,,669.57,4136.84
+2026-04-22,Invoice paid,Café Azul / Café Norte,cafe_payment,,1340.64,3467.27
+2026-04-22,Walk-in sales,Customers,sales,,647.12,2126.63
+2026-04-21,Walk-in sales,Customers,sales,,449.11,1479.51
+2026-04-20,Flour and dairy,Molinos del Sur,suppliers,3053.47,,1030.4
+2026-04-20,Walk-in sales,Customers,sales,,552.07,4083.87
+2026-04-19,Walk-in sales,Customers,sales,,1007.34,3531.8
+2026-04-18,Walk-in sales,Customers,sales,,1141.66,2524.46
+2026-04-17,Packaging,Empaques Bogotá,utilities,52.91,,1382.8
+2026-04-17,Owner's draw,Maria,owner_draw,1300.0,,1435.71
+2026-04-17,Walk-in sales,Customers,sales,,770.8,2735.71
+2026-04-16,Walk-in sales,Customers,sales,,690.34,1964.91
+2026-04-15,Oven maintenance,Técnico,maintenance,111.6,,1274.57
+2026-04-15,Rent,Landlord,rent,900.0,,1386.17
+2026-04-15,Invoice paid,Café Azul / Café Norte,cafe_payment,,1781.53,2286.17
+2026-04-15,Walk-in sales,Customers,sales,,859.38,504.64
+2026-04-14,Walk-in sales,Customers,sales,,621.57,-354.74
+2026-04-13,Flour and dairy,Molinos del Sur,suppliers,3220.27,,-976.31
+2026-04-13,Walk-in sales,Customers,sales,,526.27,2243.96
+2026-04-12,Walk-in sales,Customers,sales,,898.65,1717.69
+2026-04-11,Walk-in sales,Customers,sales,,1132.01,819.04
+2026-04-10,Payroll (6 staff),Team,payroll,3600.0,,-312.97
+2026-04-10,Packaging,Empaques Bogotá,utilities,57.31,,3287.03
+2026-04-10,Owner's draw,Maria,owner_draw,1300.0,,3344.34
+2026-04-10,Walk-in sales,Customers,sales,,856.92,4644.34
+2026-04-09,Walk-in sales,Customers,sales,,701.74,3787.42
+2026-04-08,Invoice paid,Café Azul / Café Norte,cafe_payment,,1700.61,3085.68
+2026-04-08,Walk-in sales,Customers,sales,,702.62,1385.07
+2026-04-07,Walk-in sales,Customers,sales,,677.8,682.45
+2026-04-06,Flour and dairy,Molinos del Sur,suppliers,3126.6,,4.65
+2026-04-06,Walk-in sales,Customers,sales,,569.85,3131.25
+2026-04-05,"Electricity, gas and water",Enel / Vanti,utilities,254.01,,2561.4
+2026-04-05,Walk-in sales,Customers,sales,,739.93,2815.41
+2026-04-04,Walk-in sales,Customers,sales,,1220.9,2075.48
+2026-04-03,Packaging,Empaques Bogotá,utilities,55.99,,854.58
+2026-04-03,Owner's draw,Maria,owner_draw,1300.0,,910.57
+2026-04-03,Walk-in sales,Customers,sales,,836.47,2210.57
+2026-04-02,Walk-in sales,Customers,sales,,610.43,1374.1
+2026-04-01,Invoice paid,Café Azul / Café Norte,cafe_payment,,1373.52,763.67
+2026-04-01,Walk-in sales,Customers,sales,,656.14,-609.85
+2026-03-31,Walk-in sales,Customers,sales,,456.16,-1265.99
+2026-03-30,Flour and dairy,Molinos del Sur,suppliers,3344.24,,-1722.15
+2026-03-30,Walk-in sales,Customers,sales,,611.58,1622.09
+2026-03-29,Walk-in sales,Customers,sales,,1028.63,1010.51
+2026-03-28,Walk-in sales,Customers,sales,,1144.56,-18.12
+2026-03-27,Payroll (6 staff),Team,payroll,3600.0,,-1162.68
+2026-03-27,Packaging,Empaques Bogotá,utilities,58.04,,2437.32
+2026-03-27,Owner's draw,Maria,owner_draw,1300.0,,2495.36
+2026-03-27,Walk-in sales,Customers,sales,,934.43,3795.36
+2026-03-26,Walk-in sales,Customers,sales,,681.14,2860.93
+2026-03-25,Invoice paid,Café Azul / Café Norte,cafe_payment,,1596.5,2179.79
+2026-03-25,Walk-in sales,Customers,sales,,589.14,583.29
+2026-03-24,Walk-in sales,Customers,sales,,524.63,-5.85
+2026-03-23,Flour and dairy,Molinos del Sur,suppliers,3527.36,,-530.48
+2026-03-23,Walk-in sales,Customers,sales,,577.18,2996.88
+2026-03-22,Walk-in sales,Customers,sales,,861.04,2419.7
+2026-03-21,Walk-in sales,Customers,sales,,1327.52,1558.66
+2026-03-20,Packaging,Empaques Bogotá,utilities,79.81,,231.14
+2026-03-20,Owner's draw,Maria,owner_draw,1300.0,,310.95
+2026-03-20,Walk-in sales,Customers,sales,,781.49,1610.95
+2026-03-19,Walk-in sales,Customers,sales,,609.94,829.46
+2026-03-18,Invoice paid,Café Azul / Café Norte,cafe_payment,,1527.49,219.52
+2026-03-18,Walk-in sales,Customers,sales,,781.63,-1307.97
+2026-03-17,Walk-in sales,Customers,sales,,636.13,-2089.6
+2026-03-16,Flour and dairy,Molinos del Sur,suppliers,3447.81,,-2725.73
+2026-03-16,Walk-in sales,Customers,sales,,575.17,722.08
+2026-03-15,Rent,Landlord,rent,900.0,,146.91
+2026-03-15,Walk-in sales,Customers,sales,,903.17,1046.91
+2026-03-14,Walk-in sales,Customers,sales,,1272.39,143.74
+2026-03-13,Payroll (6 staff),Team,payroll,3600.0,,-1128.65
+2026-03-13,Packaging,Empaques Bogotá,utilities,63.43,,2471.35
+2026-03-13,Owner's draw,Maria,owner_draw,1300.0,,2534.78
+2026-03-13,Walk-in sales,Customers,sales,,921.69,3834.78
+2026-03-12,Walk-in sales,Customers,sales,,728.73,2913.09
+2026-03-11,Invoice paid,Café Azul / Café Norte,cafe_payment,,1736.86,2184.36
+2026-03-11,Walk-in sales,Customers,sales,,673.67,447.5
+2026-03-10,Walk-in sales,Customers,sales,,512.22,-226.17
+2026-03-09,Flour and dairy,Molinos del Sur,suppliers,2925.46,,-738.39
+2026-03-09,Walk-in sales,Customers,sales,,571.97,2187.07
+2026-03-08,Walk-in sales,Customers,sales,,927.11,1615.1
+2026-03-07,Walk-in sales,Customers,sales,,1013.57,687.99
+2026-03-06,Packaging,Empaques Bogotá,utilities,59.51,,-325.58
+2026-03-06,Owner's draw,Maria,owner_draw,1300.0,,-266.07
+2026-03-06,Walk-in sales,Customers,sales,,917.43,1033.93
+2026-03-05,"Electricity, gas and water",Enel / Vanti,utilities,253.83,,116.5
+2026-03-05,Walk-in sales,Customers,sales,,794.93,370.33
+2026-03-04,Invoice paid,Café Azul / Café Norte,cafe_payment,,1364.56,-424.6
+2026-03-04,Walk-in sales,Customers,sales,,726.41,-1789.16
+2026-03-03,Walk-in sales,Customers,sales,,545.37,-2515.57
+2026-03-02,Flour and dairy,Molinos del Sur,suppliers,3676.78,,-3060.94
+2026-03-02,Walk-in sales,Customers,sales,,552.35,615.84
+2026-03-01,Oven maintenance,Técnico,maintenance,106.57,,63.49
+2026-03-01,Walk-in sales,Customers,sales,,754.87,170.06
+2026-02-28,Walk-in sales,Customers,sales,,1034.09,-584.81
+2026-02-27,Payroll (6 staff),Team,payroll,3600.0,,-1618.9
+2026-02-27,Packaging,Empaques Bogotá,utilities,71.79,,1981.1
+2026-02-27,Owner's draw,Maria,owner_draw,1300.0,,2052.89
+2026-02-27,Walk-in sales,Customers,sales,,949.62,3352.89
+2026-02-26,Walk-in sales,Customers,sales,,866.69,2403.27
+2026-02-25,Invoice paid,Café Azul / Café Norte,cafe_payment,,1491.93,1536.58
+2026-02-25,Walk-in sales,Customers,sales,,621.48,44.65
+2026-02-24,Walk-in sales,Customers,sales,,483.42,-576.83
+2026-02-23,Flour and dairy,Molinos del Sur,suppliers,2968.01,,-1060.25
+2026-02-23,Walk-in sales,Customers,sales,,593.48,1907.76
+2026-02-22,Walk-in sales,Customers,sales,,896.58,1314.28
+2026-02-21,Walk-in sales,Customers,sales,,1240.71,417.7
+2026-02-20,Packaging,Empaques Bogotá,utilities,58.31,,-823.01
+2026-02-20,Owner's draw,Maria,owner_draw,1300.0,,-764.7
+2026-02-20,Walk-in sales,Customers,sales,,866.32,535.3
+2026-02-19,Walk-in sales,Customers,sales,,679.36,-331.02
+2026-02-18,Invoice paid,Café Azul / Café Norte,cafe_payment,,1378.06,-1010.38
+2026-02-18,Walk-in sales,Customers,sales,,681.2,-2388.44
+2026-02-17,Walk-in sales,Customers,sales,,450.21,-3069.64
+2026-02-16,Flour and dairy,Molinos del Sur,suppliers,2978.34,,-3519.85
+2026-02-16,Walk-in sales,Customers,sales,,635.09,-541.51
+2026-02-15,Rent,Landlord,rent,900.0,,-1176.6
+2026-02-15,Walk-in sales,Customers,sales,,1187.7,-276.6
+2026-02-14,Walk-in sales,Customers,sales,,1363.57,-1464.3
+2026-02-13,Payroll (6 staff),Team,payroll,3600.0,,-2827.87
+2026-02-13,Packaging,Empaques Bogotá,utilities,70.06,,772.13
+2026-02-13,Owner's draw,Maria,owner_draw,1300.0,,842.19
+2026-02-13,Walk-in sales,Customers,sales,,970.18,2142.19
+2026-02-12,Walk-in sales,Customers,sales,,627.86,1172.01
+2026-02-11,Invoice paid,Café Azul / Café Norte,cafe_payment,,1279.38,544.15
+2026-02-11,Walk-in sales,Customers,sales,,642.4,-735.23
+2026-02-10,Walk-in sales,Customers,sales,,651.11,-1377.63
+2026-02-09,Flour and dairy,Molinos del Sur,suppliers,2891.62,,-2028.74
+2026-02-09,Walk-in sales,Customers,sales,,576.7,862.88
+2026-02-08,Walk-in sales,Customers,sales,,782.15,286.18
+2026-02-07,Walk-in sales,Customers,sales,,1015.55,-495.97
+2026-02-06,Packaging,Empaques Bogotá,utilities,45.73,,-1511.52
+2026-02-06,Owner's draw,Maria,owner_draw,1300.0,,-1465.79
+2026-02-06,Walk-in sales,Customers,sales,,1099.18,-165.79
+2026-02-05,"Electricity, gas and water",Enel / Vanti,utilities,246.65,,-1264.97
+2026-02-05,Walk-in sales,Customers,sales,,786.65,-1018.32
+2026-02-04,Invoice paid,Café Azul / Café Norte,cafe_payment,,1703.88,-1804.97
+2026-02-04,Walk-in sales,Customers,sales,,677.42,-3508.85
+2026-02-03,Walk-in sales,Customers,sales,,618.02,-4186.27
+2026-02-02,Flour and dairy,Molinos del Sur,suppliers,2970.74,,-4804.29
+2026-02-02,Walk-in sales,Customers,sales,,587.62,-1833.55
+2026-02-01,Walk-in sales,Customers,sales,,1049.15,-2421.17
+2026-01-31,Walk-in sales,Customers,sales,,1102.88,-3470.32
+2026-01-30,Payroll (6 staff),Team,payroll,3600.0,,-4573.2
+2026-01-30,Packaging,Empaques Bogotá,utilities,62.79,,-973.2
+2026-01-30,Owner's draw,Maria,owner_draw,1300.0,,-910.41
+2026-01-30,Walk-in sales,Customers,sales,,875.59,389.59
+2026-01-29,Walk-in sales,Customers,sales,,721.19,-486.0
+2026-01-28,Invoice paid,Café Azul / Café Norte,cafe_payment,,1283.09,-1207.19
+2026-01-28,Walk-in sales,Customers,sales,,612.94,-2490.28
+2026-01-27,Walk-in sales,Customers,sales,,622.26,-3103.22
+2026-01-26,Flour and dairy,Molinos del Sur,suppliers,3297.31,,-3725.48
+2026-01-26,Walk-in sales,Customers,sales,,479.6,-428.17
+2026-01-25,Walk-in sales,Customers,sales,,968.74,-907.77
+2026-01-24,Walk-in sales,Customers,sales,,1055.25,-1876.51
+2026-01-23,Packaging,Empaques Bogotá,utilities,48.6,,-2931.76
+2026-01-23,Owner's draw,Maria,owner_draw,1300.0,,-2883.16
+2026-01-23,Walk-in sales,Customers,sales,,911.95,-1583.16
+2026-01-22,Walk-in sales,Customers,sales,,634.9,-2495.11
+2026-01-21,Invoice paid,Café Azul / Café Norte,cafe_payment,,1610.63,-3130.01
+2026-01-21,Walk-in sales,Customers,sales,,631.78,-4740.64
+2026-01-20,Walk-in sales,Customers,sales,,699.32,-5372.42
+2026-01-19,Flour and dairy,Molinos del Sur,suppliers,3115.29,,-6071.74
+2026-01-19,Walk-in sales,Customers,sales,,539.26,-2956.45
+2026-01-18,Walk-in sales,Customers,sales,,922.22,-3495.71
+2026-01-17,Walk-in sales,Customers,sales,,968.36,-4417.93
+2026-01-16,Payroll (6 staff),Team,payroll,3600.0,,-5386.29
+2026-01-16,Packaging,Empaques Bogotá,utilities,44.13,,-1786.29
+2026-01-16,Owner's draw,Maria,owner_draw,1300.0,,-1742.16
+2026-01-16,Walk-in sales,Customers,sales,,772.63,-442.16
+2026-01-15,Oven maintenance,Técnico,maintenance,74.07,,-1214.79
+2026-01-15,Rent,Landlord,rent,900.0,,-1140.72
+2026-01-15,Walk-in sales,Customers,sales,,708.16,-240.72
+2026-01-14,Invoice paid,Café Azul / Café Norte,cafe_payment,,1436.51,-948.88
+2026-01-14,Walk-in sales,Customers,sales,,652.2,-2385.39
+2026-01-13,Walk-in sales,Customers,sales,,653.31,-3037.59
+2026-01-12,Flour and dairy,Molinos del Sur,suppliers,3300.02,,-3690.9
+2026-01-12,Walk-in sales,Customers,sales,,639.9,-390.88
+2026-01-11,Walk-in sales,Customers,sales,,881.32,-1030.78
+2026-01-10,Walk-in sales,Customers,sales,,1038.04,-1912.1
+2026-01-09,Owner's draw,Maria,owner_draw,1300.0,,-2950.14
+2026-01-09,Walk-in sales,Customers,sales,,800.83,-1650.14
+2026-01-09,Packaging,Empaques Bogotá,utilities,65.84,,-2450.97
+2026-01-08,Walk-in sales,Customers,sales,,682.25,-2385.13
+2026-01-07,Invoice paid,Café Azul / Café Norte,cafe_payment,,1445.54,-3067.38
+2026-01-07,Walk-in sales,Customers,sales,,607.58,-4512.92
+2026-01-06,Walk-in sales,Customers,sales,,638.16,-5120.5
+2026-01-05,"Electricity, gas and water",Enel / Vanti,utilities,226.91,,-5758.66
+2026-01-05,Flour and dairy,Molinos del Sur,suppliers,3340.13,,-5531.75
+2026-01-05,Walk-in sales,Customers,sales,,616.51,-2191.62
+2026-01-04,Walk-in sales,Customers,sales,,834.88,-2808.13
+2026-01-03,Walk-in sales,Customers,sales,,1191.14,-3643.01
+2026-01-02,Payroll (6 staff),Team,payroll,3600.0,,-4834.15
+2026-01-02,Packaging,Empaques Bogotá,utilities,61.71,,-1234.15
+2026-01-02,Owner's draw,Maria,owner_draw,1300.0,,-1172.44
+2026-01-02,Walk-in sales,Customers,sales,,990.78,127.56
+2025-12-31,Invoice paid,Café Azul / Café Norte,cafe_payment,,1362.08,-863.22
+2025-12-31,Walk-in sales,Customers,sales,,570.24,-2225.3
+2025-12-30,Walk-in sales,Customers,sales,,512.39,-2795.54
+2025-12-29,Flour and dairy,Molinos del Sur,suppliers,3157.15,,-3307.93
+2025-12-29,Walk-in sales,Customers,sales,,667.29,-150.78
+2025-12-28,Walk-in sales,Customers,sales,,831.18,-818.07
+2025-12-27,Walk-in sales,Customers,sales,,1053.97,-1649.25
+2025-12-26,Packaging,Empaques Bogotá,utilities,69.52,,-2703.22
+2025-12-26,Owner's draw,Maria,owner_draw,1300.0,,-2633.7
+2025-12-26,Walk-in sales,Customers,sales,,1014.8,-1333.7
+2025-12-24,Invoice paid,Café Azul / Café Norte,cafe_payment,,1587.93,-2348.5
+2025-12-24,Walk-in sales,Customers,sales,,672.89,-3936.43
+2025-12-23,Walk-in sales,Customers,sales,,580.69,-4609.32
+2025-12-22,Flour and dairy,Molinos del Sur,suppliers,2823.04,,-5190.01
+2025-12-22,Walk-in sales,Customers,sales,,675.3,-2366.97
+2025-12-21,Walk-in sales,Customers,sales,,788.57,-3042.27
+2025-12-20,Walk-in sales,Customers,sales,,1297.33,-3830.84
+2025-12-19,Payroll (6 staff),Team,payroll,3600.0,,-5128.17
+2025-12-19,Packaging,Empaques Bogotá,utilities,56.7,,-1528.17
+2025-12-19,Owner's draw,Maria,owner_draw,1300.0,,-1471.47
+2025-12-19,Walk-in sales,Customers,sales,,863.32,-171.47
+2025-12-18,Walk-in sales,Customers,sales,,674.64,-1034.79
+2025-12-17,Invoice paid,Café Azul / Café Norte,cafe_payment,,1452.05,-1709.43
+2025-12-17,Walk-in sales,Customers,sales,,544.59,-3161.48
+2025-12-16,Walk-in sales,Customers,sales,,650.83,-3706.07
+2025-12-15,Rent,Landlord,rent,900.0,,-4356.9
+2025-12-15,Flour and dairy,Molinos del Sur,suppliers,3264.76,,-3456.9
+2025-12-15,Walk-in sales,Customers,sales,,609.91,-192.14
+2025-12-14,Walk-in sales,Customers,sales,,951.69,-802.05
+2025-12-13,Walk-in sales,Customers,sales,,1129.51,-1753.74
+2025-12-12,Packaging,Empaques Bogotá,utilities,70.46,,-2883.25
+2025-12-12,Owner's draw,Maria,owner_draw,1300.0,,-2812.79
+2025-12-12,Walk-in sales,Customers,sales,,959.54,-1512.79
+2025-12-11,Walk-in sales,Customers,sales,,725.01,-2472.33
+2025-12-10,Invoice paid,Café Azul / Café Norte,cafe_payment,,1534.82,-3197.34
+2025-12-10,Walk-in sales,Customers,sales,,607.29,-4732.16
+2025-12-09,Walk-in sales,Customers,sales,,644.43,-5339.45
+2025-12-08,Flour and dairy,Molinos del Sur,suppliers,3366.49,,-5983.88
+2025-12-07,Walk-in sales,Customers,sales,,948.7,-2617.39
+2025-12-06,Walk-in sales,Customers,sales,,991.17,-3566.09
+2025-12-05,"Electricity, gas and water",Enel / Vanti,utilities,210.37,,-4557.26
+2025-12-05,Payroll (6 staff),Team,payroll,3600.0,,-4346.89
+2025-12-05,Packaging,Empaques Bogotá,utilities,58.63,,-746.89
+2025-12-05,Owner's draw,Maria,owner_draw,1300.0,,-688.26
+2025-12-05,Walk-in sales,Customers,sales,,1061.67,611.74
+2025-12-04,Walk-in sales,Customers,sales,,767.85,-449.93
+2025-12-03,Invoice paid,Café Azul / Café Norte,cafe_payment,,1377.93,-1217.78
+2025-12-03,Walk-in sales,Customers,sales,,619.43,-2595.71
+2025-12-02,Walk-in sales,Customers,sales,,575.49,-3215.14
+2025-12-01,Oven maintenance,Técnico,maintenance,246.37,,-3790.63
+2025-12-01,Flour and dairy,Molinos del Sur,suppliers,3296.5,,-3544.26
+2025-12-01,Walk-in sales,Customers,sales,,634.96,-247.76
+2025-11-30,Walk-in sales,Customers,sales,,918.59,-882.72
+2025-11-29,Walk-in sales,Customers,sales,,1170.26,-1801.31
+2025-11-28,Packaging,Empaques Bogotá,utilities,55.77,,-2971.57
+2025-11-28,Owner's draw,Maria,owner_draw,1300.0,,-2915.8
+2025-11-28,Walk-in sales,Customers,sales,,886.94,-1615.8
+2025-11-27,Walk-in sales,Customers,sales,,701.74,-2502.74
+2025-11-26,Invoice paid,Café Azul / Café Norte,cafe_payment,,1683.38,-3204.48
+2025-11-26,Walk-in sales,Customers,sales,,606.07,-4887.86
+2025-11-25,Walk-in sales,Customers,sales,,591.58,-5493.93
+2025-11-24,Flour and dairy,Molinos del Sur,suppliers,3188.82,,-6085.51
+2025-11-24,Walk-in sales,Customers,sales,,668.78,-2896.69
+2025-11-23,Walk-in sales,Customers,sales,,778.74,-3565.47
+2025-11-22,Walk-in sales,Customers,sales,,1148.68,-4344.21
+2025-11-21,Payroll (6 staff),Team,payroll,3600.0,,-5492.89
+2025-11-21,Packaging,Empaques Bogotá,utilities,49.69,,-1892.89
+2025-11-21,Owner's draw,Maria,owner_draw,1300.0,,-1843.2
+2025-11-21,Walk-in sales,Customers,sales,,987.45,-543.2
+2025-11-20,Walk-in sales,Customers,sales,,811.72,-1530.65
+2025-11-19,Invoice paid,Café Azul / Café Norte,cafe_payment,,1509.9,-2342.37
+2025-11-19,Walk-in sales,Customers,sales,,721.6,-3852.27
+2025-11-18,Walk-in sales,Customers,sales,,668.84,-4573.87
+2025-11-17,Flour and dairy,Molinos del Sur,suppliers,3008.92,,-5242.71
+2025-11-17,Walk-in sales,Customers,sales,,603.78,-2233.79
+2025-11-16,Walk-in sales,Customers,sales,,846.6,-2837.57
+2025-11-15,Rent,Landlord,rent,900.0,,-3684.17
+2025-11-15,Walk-in sales,Customers,sales,,1116.87,-2784.17
+2025-11-14,Packaging,Empaques Bogotá,utilities,44.37,,-3901.04
+2025-11-14,Owner's draw,Maria,owner_draw,1300.0,,-3856.67
+2025-11-14,Walk-in sales,Customers,sales,,716.09,-2556.67
+2025-11-13,Walk-in sales,Customers,sales,,795.7,-3272.76
+2025-11-12,Invoice paid,Café Azul / Café Norte,cafe_payment,,1612.57,-4068.46
+2025-11-12,Walk-in sales,Customers,sales,,577.63,-5681.03
+2025-11-11,Walk-in sales,Customers,sales,,627.12,-6258.66

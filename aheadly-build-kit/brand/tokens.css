@@ -1,0 +1,20 @@
+:root {
+  /* Aheadly brand tokens */
+  --navy:   #13134A;  /* headings, primary text, wordmark */
+  --ink:    #3B3F6B;  /* body text, secondary text */
+  --purple: #7B4DFF;  /* primary accent, buttons, highlights */
+  --blue:   #1E9BFF;  /* secondary accent, gradient end, arrow in logo */
+  --teal:   #2CC4B8;  /* success, safe, positive */
+  --red:    #EF4F5F;  /* risk, shortfall, low cash line */
+  --lav:    #F2EDFF;  /* soft card background (purple tint) */
+  --sky:    #E9F4FF;  /* soft card background (blue tint) */
+  --mint:   #E5F7F4;  /* soft card background (teal tint) */
+  --rose:   #FDECEE;  /* soft card background (risk tint) */
+  --line:   #E6E0FA;  /* card borders */
+  --bg:     #FFFFFF;
+  --gradient: linear-gradient(135deg, #7B4DFF 0%, #1E9BFF 100%);
+  --radius-card: 20px;
+  --radius-pill: 999px;
+  --shadow-card: 0 24px 60px rgba(80,60,180,.10), 0 3px 10px rgba(80,60,180,.05);
+  --font: 'Inter', 'Plus Jakarta Sans', system-ui, sans-serif;
+}

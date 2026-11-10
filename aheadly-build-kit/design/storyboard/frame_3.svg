@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 540 224" width="100%" height="224" xmlns="http://www.w3.org/2000/svg"><style>text{font-family:Inter,'Helvetica Neue',Arial,sans-serif}</style><defs>
+<linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7b4dff"/><stop offset="1" stop-color="#1e9bff"/></linearGradient>
+<filter id="sh" x="-20%" y="-30%" width="140%" height="170%"><feDropShadow dx="0" dy="5" stdDeviation="7" flood-color="#5a3fd0" flood-opacity=".14"/></filter>
+<marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#5a5e8c"/></marker>
+</defs><rect width="540" height="224" fill="#e5f7f4"/>
+<rect x="18" y="14" width="504" height="196" rx="16" fill="#fff" filter="url(#sh)"/>
+<line x1="44" y1="34" x2="44" y2="182" stroke="#5a5e8c" stroke-width="2.5"/><line x1="44" y1="182" x2="502" y2="182" stroke="#5a5e8c" stroke-width="2.5"/>
+<text x="273" y="203" text-anchor="middle" font-size="14" fill="#3b3f6b">Weeks</text>
+<line x1="270" y1="40" x2="270" y2="182" stroke="#9aa0c0" stroke-width="2" stroke-dasharray="3 5"/>
+<text x="270" y="33" text-anchor="middle" font-size="14" font-weight="600" fill="#3b3f6b">Today</text>
+<line x1="44" y1="150" x2="502" y2="150" stroke="#ef4f5f" stroke-width="2.5" stroke-dasharray="8 7"/>
+<text x="54" y="171" font-size="14" font-weight="600" fill="#ef4f5f">Low cash line</text>
+<path d="M50 95 L90 78 L128 92 L170 64 L212 80 L254 70 L270 74" fill="none" stroke="url(#g)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M270 74 L320 96 L362 120 L410 150 L470 168" fill="none" stroke="#7b4dff" stroke-width="4" stroke-dasharray="9 8" stroke-linecap="round"/>
+<circle cx="410" cy="150" r="10" fill="#fff" stroke="#ef4f5f" stroke-width="3"/>
+<text x="150" y="52" text-anchor="middle" font-size="15" font-weight="600" fill="#7b4dff">Past</text>
+<text x="372" y="82" font-size="15" font-weight="600" fill="#7b4dff">Forecast</text>
+</svg>

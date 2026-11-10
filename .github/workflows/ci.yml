@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Format check
+        run: uv run black --check .
+      - name: Secret scan
+        run: |
+          if grep -rInE "(sk-ant-[A-Za-z0-9_-]{20,}|AIza[0-9A-Za-z_-]{30,})" --exclude-dir=.venv --exclude-dir=.git .; then
+            echo "Possible API key committed"; exit 1; fi
+      - name: Tests
+        run: uv run pytest -q
