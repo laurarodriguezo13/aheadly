@@ -21,18 +21,14 @@ Short state file so a fresh session (or teammate) can continue.
 - Suggested questions from the business's own payments (2026-11-11): the third suggestion names the biggest payment due before the end of next month and moves on to the next one once a plan is saved; the offline chat finds any scheduled payment by name; 69 tests.
 
 ## Next (for the final demonstration)
-Direction (agreed 2026-11-10): the client only has bank statements (CSV/Excel now, PDF later) and maybe their own Excel files. One-time sessions now; saved accounts and a subscription later. No Plaid or QuickBooks for the course (the scaffolds stay).
-1. Test businesses with answer keys: fake statements for several different businesses, made outside the code, plus automated tests that check the app against them.
-2. Finish reading real bank files: forecast from the statement's last date, check that the balance adds up.
-3. Categories and recurring payments from the statement (rules + Hugging Face zero-shot), without double counting.
-4. Money plan page + onboarding questions ("detect first, then ask"); one editable list of everything the forecast expects.
-5. Actions with "Test this" and suggested fixes for every warning; alert actions should name the payment that causes the alert.
-6. Financing helper: compares the owner's existing options (credit line, card, supplier terms) by cost; never offers credit.
-7. Insights page ("Things we noticed"), with a short summary under every chart.
-8. Download / Load my data, privacy page, glossary, chatbot test set.
-9. Demo day: regenerate Maria's files the same day (`uv run python ../aheadly-test-data/make_maria_files.py`) and rehearse at most twice on the Gemini key (free-tier daily quota).
+Follow `docs/ROADMAP.md` (one builder, about four weeks; Must / Should / Nice, sizes, dependencies, cut order). In short:
+1. Phase 1, foundation and proof: test businesses with answer keys (made separately from the code) + harness; finish bank files (as-of date, reconciliation, stable ids); groundwork (migrations, business profile, settings reload after a deploy, local time); "Try an example business".
+2. Phase 2, understand the business: multiple accounts + credit cards; categorizer; recurring detection on real dates (weekly to yearly) without double counting; "just say it"; any Excel file (receivables, bills, employee list, ledger, inventory); "How we built your forecast" page; onboarding questions; forecast confidence.
+3. Phase 3, solve, not just warn: chance below the line; actions with computed impact, Test this, how-to steps and drafted messages; suggested fixes; safe to spend / safe owner's pay; stress tests; financing helper.
+4. Phase 4, insights: pattern rules, chart summaries, Insights page.
+5. Phase 5, finish: Download / Load my data, privacy page, glossary, chatbot eval set, final demo with two test businesses.
 
-Later (after the course): PDF statements, Plaid / QuickBooks, accounts and a subscription.
+Demo day: regenerate Maria's files the same day (`uv run python ../aheadly-test-data/make_maria_files.py`) and rehearse at most twice on the Gemini key. After a merge to `main`, check the live site; reboot it on Streamlit Cloud if it shows `AttributeError` (cached settings, fixed in Phase 1).
 
 ## Open decisions
 - Whether idle-cash alerts should be shown on the dashboard or only in Alerts.
