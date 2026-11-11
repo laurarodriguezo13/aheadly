@@ -28,14 +28,14 @@ uv run python -m aheadly.jobs.daily_run   # the daily check from the command lin
 
 ## Demo script (storyboard frames 1 to 6)
 
-1. **Guessing.** Fresh start: the Accounts page shows the welcome card, no data yet.
-2. **Connect once.** Click *Use demo data*: 12 months of Panadería La Esquina sync in, "All set".
+1. **Guessing.** Fresh start: every visitor gets an empty app; the Accounts page shows the upload card.
+2. **Connect once.** Upload Maria's bank statement and her upcoming payments: 12 months of Panadería La Esquina come in, the balance is read from the statement, "All set".
 3. **Always watching.** Dashboard: $8,200 today, 8-week forecast crossing the red low cash line in week 5.
-4. **Early warning.** Alerts badge shows 1. The alert explains the week-5 cluster (quarterly flour order $4,000, inventory $1,200, rent $900 landing with the new oven $7,500) and lists three actions.
-5. **Ask in plain words.** Ask Aheadly: "What if I buy the new oven next month instead?" → the model calls `run_scenario`, and the answer plus the best/base/worst card show cash staying above $3,000.
+4. **Early warning.** Alerts badge shows 1. The alert explains the week-5 cluster (quarterly flour order $4,000 and inventory restock $1,200 land in the same week, after the new oven $7,500) and lists three actions.
+5. **Ask in plain words.** Ask Aheadly: "What if I buy the new oven next month instead?" → the model calls `run_scenario`, and the answer plus the best/base/worst card show cash staying above the $2,000 line even in the worst case ("That looks safe").
 6. **Act with confidence.** *Save as my plan*: the oven moves, the forecast reruns, the alert resolves.
 
-The story is generated relative to the run date; it is tuned for demos between the 1st and the 24th of a month.
+Maria's two files are created outside the app, relative to the day they are made: make them again on demo day so the statement ends yesterday. The built-in demo data (`DemoConnector`) is only used by the tests.
 
 ## Architecture (matches the Milestone 1 component diagram)
 
@@ -89,6 +89,10 @@ See `PROGRESS.md` for what is done and what is next, and `DECISIONS.md` for ever
 
 If Gemini answers 429 or 503 the client waits as long as Google asks and retries; if it still fails, the chat answers from the offline planner and templates and shows a small note. Switch models with `GEMINI_MODEL` in `.env`.
 
-## Importing a bank export
+## Uploading your data
 
-Accounts → *Import a bank export instead*. CSV or Excel; headers may be the app's (`date, description, amount[, category]`) or a bank's (`Date, Description, Debit, Credit, Balance`, Spanish accepted). A ready-made sample bank export of the demo bakery is in `data/samples/` and downloadable from that page; regenerate it with `uv run python -m scripts.make_sample_export`. Scheduled items (oven, payroll, rent) are not part of a bank export, so an imported file gives you the forecast without the planned payments until those connectors land.
+Accounts → upload a bank statement (CSV or Excel). Headers may be the app's (`date, description, amount[, category]`) or a bank's (`Date, Description, Debit, Credit, Balance`, Spanish accepted). If the file has a Balance column, the current balance is read from its newest row; otherwise type it in.
+
+Optionally upload a second file with upcoming **one-off** payments and expected income (`Date, Description, Amount`, minus = money going out), for example a planned purchase, a big supplier order or a customer order. Regular payments (payroll, rent, suppliers) are learned from the statement, so don't list them again: they would be counted twice.
+
+A sample bank export of the demo bakery is still in `data/samples/` for testing the import (regenerate it with `uv run python -m scripts.make_sample_export`).
