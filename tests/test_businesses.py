@@ -50,7 +50,9 @@ PENDING: dict[str, dict[str, str]] = {
         "taller-los-pistones": "2.3 no double counting (insurer payments are in the history and in the claims file)",
     },
     "recurring": {"*": "2.3 recurring payments"},
-    "categories": {"*": "2.2 categories"},
+    "categories": {
+        "taller-los-pistones": "the key counts a supplier payment the file shows as #¡VALOR! (unreadable line)",
+    },
     "owner_files": {"*": "2.5 any Excel file"},
     "internal_transfers": {},
     "insights": {"*": "4.1 things we noticed"},
@@ -219,8 +221,16 @@ def test_recurring(slug):
 
 @pytest.mark.parametrize("slug", _businesses("categories"))
 def test_categories(slug):
+    """After the owner answers what the app can't know (their own pay, cryptic transfers), as the
+    onboarding questions will ask (2.7)."""
     key = KEYS[slug]["categories"]
-    totals = import_business(slug).monthly_category_totals()
+    core = import_business(slug)
+    answers = KEYS[slug]["onboarding_answers"]
+    if answers["owner_pay"]["is_owner_pay"]:
+        core.set_payee_rule(answers["owner_pay"]["match_hint"], "owner_pay")
+    for payee, answer in answers["mystery_answers"].items():
+        core.answer_payee(payee, answer)
+    totals = core.monthly_category_totals()
     month = sorted(key["monthly_totals"])[-1]
     for category, amount in key["monthly_totals"][month].items():
         assert totals[month].get(category, 0) == pytest.approx(amount, rel=key["tolerance_pct"] / 100)

@@ -57,6 +57,22 @@ EXAMPLE_NOTICE = (
     "This is an example business, {name}. Its statement ends {end}, so Aheadly shows it as of {start}. "
     "To use your own files, go to Settings and click Start over."
 )
+CATEGORY_NAMES = {
+    "sales": "Sales",
+    "other_income": "Other income",
+    "payroll": "Payroll",
+    "owner_pay": "Owner's pay",
+    "rent": "Rent",
+    "utilities": "Utilities",
+    "suppliers": "Suppliers",
+    "taxes": "Taxes",
+    "loan": "Loan",
+    "equipment": "Equipment",
+    "bank_fees": "Bank fees",
+    "other": "Other",
+    "transfer_internal": "Between your accounts",
+    "card_payment": "Credit card payment",
+}
 ACCOUNT_KIND = {"bank": "bank account", "card": "credit card"}
 CARD_OWED = "owed {amount}"
 CARD_NOT_CASH = "A credit card's balance is money you owe, so it isn't counted as cash."

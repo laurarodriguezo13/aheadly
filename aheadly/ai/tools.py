@@ -10,6 +10,8 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any
 
+from aheadly.ai.categorizer import CATEGORIES
+
 if TYPE_CHECKING:  # avoids a runtime import cycle (App Core builds the dispatcher)
     from aheadly.core.app_core import AppCore
 
@@ -77,7 +79,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "parameters": {
             "type": "object",
             "properties": {
-                "category": {"type": "string"},
+                "category": {"type": "string", "enum": list(CATEGORIES)},
                 "since": {"type": "string", "description": "ISO date"},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50},
             },

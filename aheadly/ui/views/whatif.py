@@ -16,9 +16,11 @@ st.caption(copy.WHATIF_INTRO)
 
 labels = sorted({item.label for item in core.repo.list_scheduled_items(core.status().business.id)})
 
+# outside the form, so the boxes below change as soon as the owner picks another kind
+kind_label = st.selectbox("What do you want to test?", list(copy.WHATIF_TYPES))
+kind = copy.WHATIF_TYPES[kind_label]
+
 with st.form("whatif"):
-    kind_label = st.selectbox("What do you want to test?", list(copy.WHATIF_TYPES))
-    kind = copy.WHATIF_TYPES[kind_label]
     c1, c2 = st.columns(2)
     if kind == "one_time_expense":
         amount = c1.number_input("Amount ($)", min_value=1.0, value=2000.0, step=100.0, format="%.0f")

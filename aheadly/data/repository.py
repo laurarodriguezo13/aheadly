@@ -216,6 +216,65 @@ class Repository:
         )
         self._conn.commit()
 
+    # ------------------------------------------------------------ categories (roadmap 2.2)
+    def categorization_lines(self, business_id: int) -> list[tuple]:
+        """(id, description, amount, category, category_source, is_internal_transfer) for every line."""
+        return [
+            tuple(r)
+            for r in self._conn.execute(
+                "SELECT id, description, amount, category, category_source, "
+                "COALESCE(is_internal_transfer, 0) FROM transactions WHERE business_id=?",
+                (business_id,),
+            )
+        ]
+
+    def set_categories(self, updates: list[tuple[str, str, int]]) -> None:
+        """(category, source, transaction id) for each line whose category changed."""
+        self._conn.executemany("UPDATE transactions SET category=?, category_source=? WHERE id=?", updates)
+        self._conn.commit()
+
+    def payee_rules(self, business_id: int) -> list[tuple[str, str]]:
+        """(match_key, category) for each answer the owner gave, newest first."""
+        return [
+            (r["match_key"], r["category"])
+            for r in self._conn.execute(
+                "SELECT match_key, category FROM payee_rules WHERE business_id=? ORDER BY id DESC",
+                (business_id,),
+            )
+        ]
+
+    def save_payee_rule(self, business_id: int, match_key: str, category: str, label: str = "") -> None:
+        self._conn.execute(
+            "INSERT INTO payee_rules (business_id, match_key, category, label, created_at) VALUES (?,?,?,?,?) "
+            "ON CONFLICT(business_id, match_key) DO UPDATE SET category=excluded.category, "
+            "label=excluded.label, created_at=excluded.created_at",
+            (business_id, match_key, category, label, _now()),
+        )
+        self._conn.commit()
+
+    def monthly_category_totals(self, business_id: int) -> dict[str, dict[str, float]]:
+        """{'2026-10': {'sales': 16373.67, 'payroll': -6656.0, ...}}: signed sums per month. For a move
+        between the owner's own accounts only the sending side counts (the money left once)."""
+        totals: dict[str, dict[str, float]] = {}
+        for r in self._conn.execute(
+            "SELECT substr(date, 1, 7) AS month, COALESCE(category, 'other') AS category, "
+            "SUM(amount) AS total FROM transactions WHERE business_id=? "
+            "AND NOT (COALESCE(is_internal_transfer, 0)=1 AND amount > 0) "
+            "GROUP BY month, category ORDER BY month",
+            (business_id,),
+        ):
+            totals.setdefault(r["month"], {})[r["category"]] = round(r["total"], 2)
+        return totals
+
+    def category_total(self, business_id: int, category: str, start: date, end: date) -> float:
+        """Signed sum of one category from `start` up to (not including) `end`."""
+        row = self._conn.execute(
+            "SELECT COALESCE(SUM(amount), 0) AS total FROM transactions WHERE business_id=? "
+            "AND category=? AND date >= ? AND date < ? AND COALESCE(is_internal_transfer, 0)=0",
+            (business_id, category, start.isoformat(), end.isoformat()),
+        ).fetchone()
+        return float(row["total"])
+
     # ------------------------------------------------------------ transactions
     def add_transactions(self, business_id: int, account_id: int, transactions: list[Transaction]) -> int:
         rows = [

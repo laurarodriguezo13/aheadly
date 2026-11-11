@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas as pd
 
+from aheadly.ai import categorizer
 from aheadly.ai.forecast_engine import ForecastEngine, expand_scheduled_items, history_balances
 from aheadly.ai.insight_translator import InsightTranslator
 from aheadly.ai.llm_client import create_llm_client
@@ -181,6 +182,7 @@ class AppCore:
             if payload.scheduled_items:
                 self.repo.add_scheduled_items(business.id, payload.scheduled_items)
         self._mark_internal_transfers(business.id)
+        self._categorize(business.id)
         logger.info("connected %s file(s): %s transactions", len(connectors), added)
         self.run_daily_check(force=True)
         return added
@@ -204,6 +206,57 @@ class AppCore:
         """The example business being shown, or None for the owner's own data."""
         business = self.repo.get_business()
         return self.repo.get_profile(business.id).get("example") if business else None
+
+    # ------------------------------------------------------------ categories (roadmap 2.2)
+    def set_payee_rule(self, payee: str, category: str, label: str = "") -> int:
+        """The owner says what a payee is ("TRANSF 0045 REF 88213" → loan). Every line that mentions
+        it, now and in later uploads, gets that category; the owner's answer always wins.
+        Returns how many lines changed."""
+        if category not in categorizer.CATEGORIES:
+            raise ValueError(f"Unknown category {category!r}.")
+        key = categorizer.match_key(payee)
+        if not key:
+            raise ValueError("Say which payee or description this is about.")
+        business = self._business()
+        self.repo.save_payee_rule(business.id, key, category, label or payee)
+        changed = self._categorize(business.id)
+        if changed:
+            self.run_daily_check(force=True)
+        return changed
+
+    def answer_payee(self, payee: str, answer: str) -> str:
+        """The owner explains a payee in their own words ("loan for the car lift"); returns the
+        category it was put in."""
+        category = categorizer.category_from_answer(answer)
+        self.set_payee_rule(payee, category, answer)
+        return category
+
+    def monthly_category_totals(self) -> dict[str, dict[str, float]]:
+        return self.repo.monthly_category_totals(self._business().id)
+
+    def weekly_sales(self, weeks: int = 8) -> float:
+        """Average weekly sales over the last `weeks` weeks (money in, if nothing is called sales)."""
+        business = self._business()
+        start = self.today - timedelta(weeks=weeks)
+        sales = self.repo.category_total(business.id, "sales", start, self.today)
+        if sales <= 0:
+            sales = self.repo.flow_totals(business.id, start)["money_in"]
+        return round(sales / weeks, 2)
+
+    def _categorize(self, business_id: int) -> int:
+        rules = [categorizer.PayeeRule(*r) for r in self.repo.payee_rules(business_id)]
+        updates, own_money = [], []
+        for row in self.repo.categorization_lines(business_id):
+            line = categorizer.Line(*row[:5], bool(row[5]))
+            category, source = categorizer.categorize(line, rules)
+            if (category, source) != (line.category, line.category_source):
+                updates.append((category, source, line.id))
+            if category == "transfer_internal" and not line.is_internal_transfer:
+                own_money.append(line.id)  # the owner says it's their own money: not income or spending
+        self.repo.set_categories(updates)
+        if own_money:
+            self.repo.mark_internal_transfers(own_money, [])
+        return len(updates)
 
     def internal_transfer_counts(self) -> dict[str, int]:
         business = self.repo.get_business()
@@ -338,7 +391,9 @@ class AppCore:
         if not parsed:
             raise ValueError("A scenario needs at least one adjustment")
         items = self.repo.list_scheduled_items(business.id)
-        adjusted = apply_adjustments(items, parsed, self.today, self.settings.horizon_days)
+        adjusted = apply_adjustments(
+            items, parsed, self.today, self.settings.horizon_days, self.weekly_sales()
+        )
         baseline = self._baseline_forecast()
         scenario = self._forecast_for(adjusted)
         result = ScenarioResult(name, parsed, baseline, scenario, business.low_cash_line)
@@ -356,6 +411,7 @@ class AppCore:
             result.adjustments,
             self.today,
             self.settings.horizon_days,
+            self.weekly_sales(),
         )
         self.repo.replace_scheduled_items(business.id, [i for i in items if i.active])
         self.repo.save_scenario(
