@@ -81,11 +81,13 @@ def alert_text(facts: dict) -> dict:
             ),
             "actions": [
                 {"label": "Pay a supplier early", "detail": "Ask for a discount in exchange."},
-                {"label": "Buy inventory in bulk", "detail": "Lock in prices on flour and dairy."},
+                {"label": "Buy inventory in bulk", "detail": "Lock in prices with your main suppliers."},
             ],
         }
     outflows = facts["top_outflows"]
-    cause = " and ".join(f"{o['label'].lower()} ({money(o['amount'])})" for o in outflows[:2])
+    cause = " and ".join(
+        f"{o['label'][:1].lower()}{o['label'][1:]} ({money(o['amount'])})" for o in outflows[:2]
+    )
     return {
         "title": "Heads up: you may run low on cash",
         "body": (
@@ -97,7 +99,10 @@ def alert_text(facts: dict) -> dict:
                 "label": "Delay the planned purchase",
                 "detail": "Moving a big purchase by a few weeks changes a lot.",
             },
-            {"label": "Collect invoices early", "detail": "Ask the cafés to pay a little sooner."},
+            {
+                "label": "Collect invoices early",
+                "detail": "Ask customers who owe you to pay a little sooner.",
+            },
             {"label": "Negotiate payment terms", "detail": "Split the big supplier bill in two."},
         ],
     }

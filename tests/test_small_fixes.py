@@ -3,6 +3,7 @@
 from datetime import date, timedelta
 
 from aheadly.ai.llm_client import StubClient
+from aheadly.ai.templates import alert_text
 from aheadly.domain import ForecastPoint, ForecastResult
 from tests.conftest import TODAY
 
@@ -35,3 +36,19 @@ def test_next_month_answer_stays_inside_next_month(connected_core):
 
     answer = connected_core.ask("Will I have enough cash next month?")
     assert "2026-12-31" in answer.text
+
+
+def test_alert_text_is_not_bakery_specific():
+    facts = {
+        "type": "shortfall",
+        "lowest_balance": -3463,
+        "weeks_ahead": 5,
+        "low_cash_line": 2000,
+        "top_outflows": [
+            {"label": "Quarterly flour order (Molinos del Sur)", "amount": 4000, "date": "2026-12-14"}
+        ],
+    }
+    text = alert_text(facts)
+    words = " ".join([text["body"]] + [action["detail"] for action in text["actions"]])
+    assert "Molinos del Sur" in words
+    assert "café" not in words.lower()
