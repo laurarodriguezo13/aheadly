@@ -24,10 +24,11 @@ Short state file so a fresh session (or teammate) can continue.
 - Groundwork, roadmap 1.4 (2026-11-11): the database upgrades itself (numbered migrations), business profile, planned items remember where they came from and how sure we are, new link fields and tables for Phase 2, "today" in the owner's time zone; 97 tests.
 - Test businesses, roadmap 1.1 and 1.2 (2026-11-11): six businesses with answer keys made separately from the code (`tests/businesses/`), checked by `tests/test_businesses.py` with a scorecard; the reading bugs they found are fixed (DECISIONS #26). 126 tests pass, 48 checks wait for roadmap items (PENDING). Next: 2.1 (several accounts, credit cards), then 2.2 and 2.3.
 - Check-up (2026-11-11): the upcoming-payments file now reads the same bank formats as statements and reports lines it can't read (it used to drop Latin American dates and amounts silently); README updated; 128 tests.
+- Several accounts and credit cards, roadmap 2.1 (2026-11-11): upload several statements at once; overlapping statements of one account merge; credit card statements (debt, not cash); transfers between the owner's own accounts and card payments are left out of income, spending and the forecast's history. Bakery and hardware store go from 2 to 6 and 7 checks passing; 146 tests pass, 38 checks wait (PENDING).
 
 ## Next (for the final demonstration)
 Follow `docs/ROADMAP.md` (one builder, about four weeks; Must / Should / Nice, sizes, dependencies, cut order). In short:
-1. Phase 1, foundation and proof: done (1.1 to 1.4, 2026-11-11), except 1.5 "Try an example business", planned right after 2.1 so the example can be Maria's bakery (its statement comes in two overlapping files).
+1. Phase 1, foundation and proof: done (1.1 to 1.4, 2026-11-11), except 1.5 "Try an example business", next now that 2.1 is in (the example will be Maria's bakery from the test businesses).
 2. Phase 2, understand the business: multiple accounts + credit cards; categorizer; recurring detection on real dates (weekly to yearly) without double counting; "just say it"; any Excel file (receivables, bills, employee list, ledger, inventory); "How we built your forecast" page; onboarding questions; forecast confidence.
 3. Phase 3, solve, not just warn: chance below the line; actions with computed impact, Test this, how-to steps and drafted messages; suggested fixes; safe to spend / safe owner's pay; stress tests; financing helper.
 4. Phase 4, insights: pattern rules, chart summaries, Insights page.

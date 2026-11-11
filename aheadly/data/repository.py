@@ -136,10 +136,12 @@ class Repository:
         )
 
     # ---------------------------------------------------------------- accounts
-    def add_account(self, business_id: int, source: str, name: str, balance: float) -> int:
+    def add_account(
+        self, business_id: int, source: str, name: str, balance: float, kind: str = "bank"
+    ) -> int:
         cur = self._conn.execute(
-            "INSERT INTO accounts (business_id, source, name, balance, last_synced_at) VALUES (?,?,?,?,?)",
-            (business_id, source, name, balance, _now()),
+            "INSERT INTO accounts (business_id, source, name, balance, last_synced_at, kind) VALUES (?,?,?,?,?,?)",
+            (business_id, source, name, balance, _now(), kind),
         )
         self._conn.commit()
         return cur.lastrowid
@@ -150,9 +152,69 @@ class Repository:
 
     def current_balance(self, business_id: int) -> float:
         row = self._conn.execute(
-            "SELECT COALESCE(SUM(balance), 0) AS total FROM accounts WHERE business_id=?", (business_id,)
+            "SELECT COALESCE(SUM(balance), 0) AS total FROM accounts "
+            "WHERE business_id=? AND COALESCE(kind, 'bank')='bank'",
+            (business_id,),
         ).fetchone()
-        return float(row["total"])
+        return float(row["total"])  # cash in the bank; a card's balance is debt, not cash
+
+    def set_account_balance(self, account_id: int, balance: float) -> None:
+        self._conn.execute(
+            "UPDATE accounts SET balance=?, last_synced_at=? WHERE id=?", (balance, _now(), account_id)
+        )
+        self._conn.commit()
+
+    def account_last_date(self, account_id: int) -> date | None:
+        row = self._conn.execute(
+            "SELECT MAX(date) AS last FROM transactions WHERE account_id=?", (account_id,)
+        ).fetchone()
+        return date.fromisoformat(row["last"]) if row["last"] else None
+
+    def account_with_any(self, business_id: int, external_ids: list[str]) -> int | None:
+        """The account that already has some of these transactions (an overlapping statement of it)."""
+        for start in range(0, len(external_ids), 500):
+            chunk = external_ids[start : start + 500]
+            row = self._conn.execute(
+                f"SELECT account_id, COUNT(*) AS n FROM transactions WHERE business_id=? "
+                f"AND external_id IN ({','.join('?' * len(chunk))}) GROUP BY account_id ORDER BY n DESC LIMIT 1",
+                (business_id, *chunk),
+            ).fetchone()
+            if row:
+                return int(row["account_id"])
+        return None
+
+    def transfer_candidates(self, business_id: int) -> list[tuple]:
+        """(id, account_id, account kind, date, amount) of every line not yet marked as a transfer."""
+        rows = self._conn.execute(
+            "SELECT t.id, t.account_id, COALESCE(a.kind, 'bank') AS kind, t.date, t.amount "
+            "FROM transactions t JOIN accounts a ON a.id = t.account_id "
+            "WHERE t.business_id=? AND COALESCE(t.is_internal_transfer, 0)=0",
+            (business_id,),
+        ).fetchall()
+        return [
+            (r["id"], r["account_id"], r["kind"], date.fromisoformat(r["date"]), r["amount"]) for r in rows
+        ]
+
+    def internal_transfer_counts(self, business_id: int) -> dict[str, int]:
+        """How many transfers between the owner's own accounts (pairs), and card payments (pairs)."""
+        row = self._conn.execute(
+            "SELECT COALESCE(SUM(CASE WHEN COALESCE(category, '') != 'card_payment' THEN 1 END), 0) AS transfers, "
+            "COALESCE(SUM(CASE WHEN category = 'card_payment' THEN 1 END), 0) AS card "
+            "FROM transactions WHERE business_id=? AND is_internal_transfer=1",
+            (business_id,),
+        ).fetchone()
+        return {"transfers": int(row["transfers"]) // 2, "card_payments": int(row["card"]) // 2}
+
+    def mark_internal_transfers(self, transfer_ids: list[int], card_payment_ids: list[int]) -> None:
+        """Both sides of a move between the owner's own accounts; card payments also get their category."""
+        self._conn.executemany(
+            "UPDATE transactions SET is_internal_transfer=1 WHERE id=?", [(i,) for i in transfer_ids]
+        )
+        self._conn.executemany(
+            "UPDATE transactions SET category='card_payment', category_source='rule' WHERE id=?",
+            [(i,) for i in card_payment_ids],
+        )
+        self._conn.commit()
 
     # ------------------------------------------------------------ transactions
     def add_transactions(self, business_id: int, account_id: int, transactions: list[Transaction]) -> int:
@@ -207,7 +269,10 @@ class Repository:
         `exclude_categories` drops money that the forecast adds back as scheduled items
         (payroll, rent...), so it is never counted twice.
         """
-        query = "SELECT date, SUM(amount) AS net_flow FROM transactions WHERE business_id=?"
+        query = (
+            "SELECT date, SUM(amount) AS net_flow FROM transactions "
+            "WHERE business_id=? AND COALESCE(is_internal_transfer, 0)=0"
+        )
         params: list = [business_id]
         excluded = sorted(set(exclude_categories))
         if excluded:
@@ -224,7 +289,7 @@ class Repository:
         row = self._conn.execute(
             "SELECT COALESCE(SUM(CASE WHEN amount > 0 THEN amount END), 0) AS money_in, "
             "COALESCE(SUM(CASE WHEN amount < 0 THEN -amount END), 0) AS money_out "
-            "FROM transactions WHERE business_id=? AND date >= ?",
+            "FROM transactions WHERE business_id=? AND date >= ? AND COALESCE(is_internal_transfer, 0)=0",
             (business_id, since.isoformat()),
         ).fetchone()
         return {"money_in": float(row["money_in"]), "money_out": float(row["money_out"])}

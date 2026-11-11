@@ -20,14 +20,15 @@ WELCOME_BODY = (
 ALL_SET = "All set. We'll check your money every time you open Aheadly."
 NOT_CONNECTED = "No data yet. Upload your bank statement on **Accounts** to get started."
 GO_TO_ACCOUNTS = "Upload my bank statement"
-UPLOAD_TITLE = "Upload your bank statement"
+UPLOAD_TITLE = "Upload your bank statements"
 UPLOAD_HELP = (
-    "A CSV or Excel export from your bank with Date, Description and Amount (or Debit and Credit). "
-    "If it has a Balance column, we read your current balance from it."
+    "CSV or Excel exports from your bank with Date, Description and Amount (or Debit and Credit). "
+    "If they have a Balance column, we read your current balance from them. You can add several files at "
+    "once: your other accounts, your business credit card, or older periods of the same account."
 )
 BUSINESS_NAME = "Business name"
 OWNER_NAME = "Your name (optional)"
-STATEMENT_FILE = "Bank statement (CSV or Excel)"
+STATEMENT_FILE = "Bank statements (CSV or Excel, one or more)"
 UPCOMING_FILE = "Upcoming payments (optional, CSV or Excel)"
 UPCOMING_HELP = (
     "Only one-off things your bank can't know yet: a planned purchase, a big supplier order, a customer "
@@ -35,11 +36,28 @@ UPCOMING_HELP = (
     "like payroll and rent are learned from your statement, so don't list them here."
 )
 LOW_CASH_LINE_INPUT = "Lowest balance you're comfortable with ($)"
-BALANCE_INPUT = "Current balance ($)"
+BALANCE_INPUT = "Current balance ($, only if your statement has no Balance column)"
 BALANCE_PLACEHOLDER = "Read from the statement"
 UPLOAD_BUTTON = "Upload and analyse"
 UPLOAD_SPINNER = "Reading your statement and building your forecast…"
 UPLOAD_FAILED = "We couldn't read that file: {error}"
+MULTI_NO_BALANCE = (
+    "One of your statements has no Balance column. When you upload several files, each needs one. "
+    "Upload that statement on its own and type its current balance."
+)
+ACCOUNT_KIND = {"bank": "bank account", "card": "credit card"}
+CARD_OWED = "owed {amount}"
+CARD_NOT_CASH = "A credit card's balance is money you owe, so it isn't counted as cash."
+TRANSFERS_FOUND = (
+    "We found {n} transfer(s) between your own accounts. They aren't counted as income or spending."
+)
+CARD_PAYMENTS_FOUND = (
+    "Paying your credit card from the bank isn't counted as spending: the card's purchases already are."
+)
+BALANCE_BREAKS_IN_FILE = (
+    "In {file}, the Balance column doesn't add up in {n} place(s), starting {date}. "
+    "Some lines may be missing from that file, so check it before trusting the numbers."
+)
 PLANNED_TITLE = "What we're counting on"
 PLANNED_HELP = (
     "These upcoming payments and income come from your upcoming-payments file and any plan you save. "

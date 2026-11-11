@@ -21,6 +21,7 @@ from aheadly.ai.scenarios import apply_adjustments, parse_adjustment
 from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
 from aheadly.core import alert_rules
+from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
 from aheadly.data.repository import Repository
 from aheadly.domain import (
@@ -146,20 +147,57 @@ class AppCore:
 
     def connect(self, connector: Connector) -> int:
         """Feature 1: link a data source once; transactions then live in the repository."""
-        profile = {"low_cash_line": self.settings.default_low_cash_line, **connector.business_profile()}
+        return self.connect_files([connector])
+
+    def connect_files(self, connectors: list[Connector]) -> int:
+        """Upload one or more statements. A statement that shares lines with an account already here
+        is another period of that account (its balance is the newest file's); any other file is a
+        new account (bank or credit card). Then transfers between the owner's own accounts are
+        found, and the forecast runs once. Returns how many new transactions came in."""
+        if not connectors:
+            raise ValueError("Choose at least one bank statement.")
+        profile = {"low_cash_line": self.settings.default_low_cash_line, **connectors[0].business_profile()}
         business = self.repo.get_business() or self.repo.create_business(**profile)
         if self._pending_time_zone:
             self.set_time_zone(self._pending_time_zone)
-        payload = connector.sync()
-        account_id = self.repo.add_account(
-            business.id, connector.source, payload.account_name, payload.balance
-        )
-        added = self.repo.add_transactions(business.id, account_id, payload.transactions)
-        if payload.scheduled_items:
-            self.repo.add_scheduled_items(business.id, payload.scheduled_items)
-        logger.info("connected %s: %s transactions", connector.source, added)
+        added = 0
+        for connector in connectors:
+            payload = connector.sync()
+            newest = max((t.date for t in payload.transactions), default=None)
+            account_id = self.repo.account_with_any(
+                business.id, [t.external_id for t in payload.transactions]
+            )
+            if account_id is None:
+                account_id = self.repo.add_account(
+                    business.id, connector.source, payload.account_name, payload.balance, payload.account_kind
+                )
+            else:
+                last = self.repo.account_last_date(account_id)
+                if newest is not None and (last is None or newest >= last):
+                    self.repo.set_account_balance(account_id, payload.balance)
+            added += self.repo.add_transactions(business.id, account_id, payload.transactions)
+            if payload.scheduled_items:
+                self.repo.add_scheduled_items(business.id, payload.scheduled_items)
+        self._mark_internal_transfers(business.id)
+        logger.info("connected %s file(s): %s transactions", len(connectors), added)
         self.run_daily_check(force=True)
         return added
+
+    def internal_transfer_counts(self) -> dict[str, int]:
+        business = self.repo.get_business()
+        return (
+            self.repo.internal_transfer_counts(business.id)
+            if business
+            else {"transfers": 0, "card_payments": 0}
+        )
+
+    def _mark_internal_transfers(self, business_id: int) -> None:
+        lines = [Line(*row) for row in self.repo.transfer_candidates(business_id)]
+        pairs = find_transfers(lines)
+        self.repo.mark_internal_transfers(
+            [i for p in pairs for i in (p.out_id, p.in_id)],
+            [i for p in pairs if p.card_payment for i in (p.out_id, p.in_id)],
+        )
 
     # ------------------------------------------------------------- daily run
     def ensure_fresh(self) -> DailyRunSummary:

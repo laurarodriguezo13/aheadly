@@ -37,30 +37,22 @@ STATEMENTS = ("bank_statement", "card_statement")
 
 # check -> {business or "*": roadmap item that builds it}
 PENDING: dict[str, dict[str, str]] = {
-    "statement_file": {"ferreteria-don-perno/visa_empresarial_9031.csv": "2.1 credit card statements"},
-    "whole_import": {
-        "ferreteria-don-perno": "2.1 several accounts and a credit card",
-        "panaderia-la-esquina": "2.1 several statements of one account (now added up as two accounts)",
-    },
+    "statement_file": {},
+    "whole_import": {},
     "risk_level": {
         "cafe-la-tertulia": "2.3 recurring payments on their real dates (December bonus, payroll twice a month)",
-        "ferreteria-don-perno": "2.1 credit card statement",
-        "panaderia-la-esquina": "2.1 several statements of one account",
     },
     "shortfall_alerts": {
         "cafe-la-tertulia": "2.3 recurring payments on their real dates (December bonus, payroll twice a month)",
-        "ferreteria-don-perno": "2.1 credit card statement",
-        "panaderia-la-esquina": "2.1 several statements of one account",
     },
     "hidden_future": {
-        "ferreteria-don-perno": "2.1 credit card statement",
-        "panaderia-la-esquina": "2.1 several statements of one account",
+        "ferreteria-don-perno": "2.3 + 2.5 the big customer's monthly payment on its real (late) date",
         "taller-los-pistones": "2.3 no double counting (insurer payments are in the history and in the claims file)",
     },
     "recurring": {"*": "2.3 recurring payments"},
     "categories": {"*": "2.2 categories"},
     "owner_files": {"*": "2.5 any Excel file"},
-    "internal_transfers": {"*": "2.1 transfers between own accounts"},
+    "internal_transfers": {},
     "insights": {"*": "4.1 things we noticed"},
     "timing_or_structural": {"*": "3.6 financing helper"},
     "what_ifs": {"*": "5.4 chatbot test set (free-text what-ifs)"},
@@ -118,11 +110,13 @@ def import_business(slug: str, with_one_offs: bool = False) -> AppCore:
         "city": business.get("city", ""),
         "low_cash_line": business["low_cash_line"],
     }
+    connectors = []
     for entry in key["files"]:
         if entry["kind"] in STATEMENTS:
             balance = None if entry["has_balance"] else key["import"]["balance_to_type_if_no_column"]
             path = folder / entry["path"]
-            core.connect(CsvConnector(path.read_bytes(), balance, path.name, business_profile=profile))
+            connectors.append(CsvConnector(path.read_bytes(), balance, path.name, business_profile=profile))
+    core.connect_files(connectors)  # all statements in one upload, as the Accounts page does
     if with_one_offs and key["one_offs_known"]:
         items = [
             ScheduledItem(
@@ -247,9 +241,10 @@ def test_owner_files(slug):
 def test_internal_transfers(slug):
     core = import_business(slug)
     flagged = core.repo._conn.execute(
-        "SELECT COUNT(*) FROM transactions WHERE is_internal_transfer=1"
+        "SELECT COUNT(*) FROM transactions WHERE is_internal_transfer=1 AND COALESCE(category, '') != 'card_payment'"
     ).fetchone()[0]
-    assert flagged == 2 * len(KEYS[slug]["import"]["internal_transfers"])  # both sides of each transfer
+    # both sides of each transfer between bank accounts (card payments are listed apart, as card_payment)
+    assert flagged == 2 * len(KEYS[slug]["import"]["internal_transfers"])
 
 
 @pytest.mark.parametrize("slug", _businesses("insights"))

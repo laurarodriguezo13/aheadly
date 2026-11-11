@@ -37,12 +37,36 @@ ALIASES = {
         "retiro",
         "retiros",
         "cargo",
+        "cargos",
+        "charges",
     },
-    "credit": {"credit", "credito", "creditos", "deposit", "deposits", "entrada", "abono", "abonos"},
+    "credit": {
+        "credit",
+        "credito",
+        "creditos",
+        "deposit",
+        "deposits",
+        "entrada",
+        "abono",
+        "abonos",
+        "payments",
+        "pagos",
+    },
     "category": {"category", "categoria"},
     "counterparty": {"counterparty", "payee", "beneficiario", "tercero", "merchant"},
-    "balance": {"balance", "saldo", "running balance"},
+    "balance": {
+        "balance",
+        "saldo",
+        "running balance",
+        "balance owed",
+        "amount owed",
+        "saldo adeudado",
+        "saldo a pagar",
+    },
 }
+# A credit card statement: its balance is what is owed (we store it negative), and purchases are
+# its "charges". Recognised by an owed-type balance header, or English "Charges".
+OWED_HEADERS = {"balance owed", "amount owed", "saldo adeudado", "saldo a pagar"}
 SPANISH_MONTHS = {
     "ene": "jan",
     "abr": "apr",
@@ -115,11 +139,23 @@ class CsvConnector:
             read_upcoming(self._upcoming, self._upcoming_filename) if self._upcoming else ([], 0)
         )
         return SyncPayload(
-            account_name="Imported file",
+            account_name=account_label(self._filename),
             balance=balance,
             transactions=transactions,
             scheduled_items=scheduled,
+            account_kind="card" if is_card_statement(raw.columns) else "bank",
         )
+
+
+def account_label(filename: str) -> str:
+    """'cuenta_corriente_5510.csv' → 'Cuenta corriente 5510'."""
+    stem = filename.replace("\\", "/").rsplit("/", 1)[-1].rsplit(".", 1)[0].replace("_", " ").strip()
+    return (stem[:1].upper() + stem[1:]) if stem else "Imported file"
+
+
+def is_card_statement(headers) -> bool:
+    found = match_columns(headers)
+    return plain(found.get("balance", "")) in OWED_HEADERS or plain(found.get("debit", "")) == "charges"
 
 
 def plain(text) -> str:
@@ -198,6 +234,8 @@ def normalise_columns(frame: pd.DataFrame, keep_unreadable: bool = False) -> pd.
     out["category"] = frame[found["category"]].fillna("other") if "category" in found else "other"
     out["counterparty"] = frame[found["counterparty"]].fillna("") if "counterparty" in found else ""
     out["balance"] = parse_amounts(frame[found["balance"]]) if "balance" in found else None
+    if "balance" in found and plain(found["balance"]) in OWED_HEADERS:
+        out["balance"] = -out["balance"]  # a card's balance is money owed
     return out if keep_unreadable else out.dropna(subset=["date", "amount"])
 
 
