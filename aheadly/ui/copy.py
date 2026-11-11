@@ -44,6 +44,7 @@ BALANCE_PLACEHOLDER = "Read from the statement"
 UPLOAD_BUTTON = "Upload and analyse"
 UPLOAD_SPINNER = "Reading your statement and building your forecast…"
 UPLOAD_FAILED = "We couldn't read that file: {error}"
+SKIPPED_ROWS = "{n} row(s) of your statement had a date or amount we couldn't read, so we left them out. Check the file if that seems wrong."
 
 DASHBOARD_TITLE = "Dashboard"
 CURRENT_CASH = "Current cash"

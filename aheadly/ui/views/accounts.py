@@ -54,6 +54,7 @@ if not status.connected:
                 core.reset()
                 st.error(copy.UPLOAD_FAILED.format(error=exc))
             else:
+                st.session_state["skipped_rows"] = connector.skipped_rows
                 st.rerun()
 else:
     rows = "".join(
@@ -62,6 +63,8 @@ else:
         for a in status.accounts
     )
     card(f'<div class="ah-card-title">✓ {html.escape(copy.ALL_SET)}</div>{rows}', "mint")
+    if st.session_state.get("skipped_rows"):
+        st.warning(copy.SKIPPED_ROWS.format(n=st.session_state["skipped_rows"]))
     with st.container(border=True):
         section_title("Recent transactions")
         st.dataframe(

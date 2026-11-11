@@ -8,6 +8,7 @@ owner's upcoming one-off payments and expected income.
 
 from __future__ import annotations
 
+import re
 from io import BytesIO
 
 import pandas as pd
@@ -57,12 +58,15 @@ class CsvConnector:
         self._profile = business_profile or dict(NEW_BUSINESS)
         self._upcoming = upcoming
         self._upcoming_filename = upcoming_filename
+        self.skipped_rows = 0  # rows with a date or amount we could not read (set by sync)
 
     def business_profile(self) -> dict:
         return dict(self._profile)
 
     def sync(self) -> SyncPayload:
-        frame = normalise_columns(read_table(self._content, self._filename))
+        raw = read_table(self._content, self._filename)
+        frame = normalise_columns(raw)
+        self.skipped_rows = len(raw) - len(frame)
         transactions = [
             Transaction(
                 date=pd.Timestamp(r.date).date(),
@@ -100,17 +104,75 @@ def normalise_columns(frame: pd.DataFrame) -> pd.DataFrame:
         missing.add("amount (or debit + credit)")
     if missing:
         raise ValueError(f"File is missing columns: {sorted(missing)}")
-    out = pd.DataFrame({"date": frame[found["date"]], "description": frame[found["description"]]})
+    out = pd.DataFrame(
+        {"date": parse_dates(frame[found["date"]]), "description": frame[found["description"]]}
+    )
     if "amount" in found:
-        out["amount"] = pd.to_numeric(frame[found["amount"]], errors="coerce")
+        out["amount"] = parse_amounts(frame[found["amount"]])
     else:
-        credit = pd.to_numeric(frame[found["credit"]], errors="coerce").fillna(0)
-        debit = pd.to_numeric(frame[found["debit"]], errors="coerce").fillna(0)
+        credit = _blank_as_zero(frame[found["credit"]])
+        debit = _blank_as_zero(frame[found["debit"]])
         out["amount"] = credit - debit.abs()
     out["category"] = frame[found["category"]].fillna("other") if "category" in found else "other"
     out["counterparty"] = frame[found["counterparty"]].fillna("") if "counterparty" in found else ""
-    out["balance"] = pd.to_numeric(frame[found["balance"]], errors="coerce") if "balance" in found else None
+    out["balance"] = parse_amounts(frame[found["balance"]]) if "balance" in found else None
     return out.dropna(subset=["date", "amount"])
+
+
+def parse_dates(values: pd.Series) -> pd.Series:
+    """ISO dates as they are; 03/11/2026 is day/month/year (Latin American banks) unless the file
+    clearly uses month/day (a second number above 12). Unreadable dates become NaT."""
+    if pd.api.types.is_datetime64_any_dtype(values):
+        return values
+    text = values.astype(str).str.strip()
+    parts = text.str.extract(r"^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$").astype(float)
+    month_first = bool((parts[1] > 12).any()) and not bool((parts[0] > 12).any())
+    iso = text.str.match(r"^\d{4}-\d{1,2}-\d{1,2}")
+    parsed = pd.concat(
+        [
+            pd.to_datetime(text[iso], format="ISO8601", errors="coerce"),
+            pd.to_datetime(text[~iso], dayfirst=not month_first, format="mixed", errors="coerce"),
+        ]
+    )
+    return parsed.reindex(text.index)
+
+
+def parse_amounts(values: pd.Series) -> pd.Series:
+    """Numbers in bank formats: 1.250,00 · 1,250.00 · $ 2.000 · (900,50) for minus. Unreadable → NaN."""
+    if pd.api.types.is_numeric_dtype(values):
+        return values.astype(float)
+    return values.map(_parse_amount)
+
+
+def _parse_amount(value) -> float:
+    if value is None or (isinstance(value, float) and pd.isna(value)):
+        return float("nan")
+    text = str(value).strip()
+    negative = text.startswith("(") and text.endswith(")") or text.startswith("-")
+    text = re.sub(r"[^\d.,]", "", text)
+    if not text or not re.search(r"\d", text):
+        return float("nan")
+    if "." in text and "," in text:  # the separator that comes last is the decimal one
+        decimal = "." if text.rfind(".") > text.rfind(",") else ","
+        text = text.replace("," if decimal == "." else ".", "").replace(decimal, ".")
+    elif "," in text or "." in text:
+        sep = "," if "," in text else "."
+        groups = text.split(sep)
+        if len(groups) > 2 or len(groups[-1]) == 3:  # 1.250 / 12,500 / 1.250.000: thousands
+            text = text.replace(sep, "")
+        else:  # 850,5 / 75.25: decimals
+            text = text.replace(sep, ".")
+    try:
+        number = float(text)
+    except ValueError:
+        return float("nan")
+    return -number if negative else number
+
+
+def _blank_as_zero(values: pd.Series) -> pd.Series:
+    """Debit/credit columns: an empty cell means 0, but text we can't read stays NaN (the row is skipped)."""
+    blank = values.isna() | (values.astype(str).str.strip() == "")
+    return parse_amounts(values).where(~blank, 0.0)
 
 
 def closing_balance(frame: pd.DataFrame) -> float:
@@ -118,7 +180,7 @@ def closing_balance(frame: pd.DataFrame) -> float:
     rows = frame.dropna(subset=["balance"])
     if rows.empty:
         raise ValueError("The file has no Balance column, so please type your current balance.")
-    rows = rows.assign(when=pd.to_datetime(rows["date"])).sort_values("when", kind="stable")
+    rows = rows.sort_values("date", kind="stable")
     return float(rows["balance"].iloc[-1])
 
 
