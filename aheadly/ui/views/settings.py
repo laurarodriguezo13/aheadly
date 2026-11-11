@@ -5,7 +5,7 @@ import streamlit as st
 
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import require_data, reset_core, start_page
-from aheadly.ui.components import section_title
+from aheadly.ui.components import local_time, section_title
 
 core = start_page(copy.SETTINGS_TITLE)
 require_data(core)
@@ -28,7 +28,7 @@ with left, st.container(border=True):
 
 with right, st.container(border=True):
     section_title("Daily check")
-    st.write(f"Last run: {status.last_run_at:%Y-%m-%d %H:%M}" if status.last_run_at else "Never run yet.")
+    st.write(f"Last run: {local_time(status.last_run_at)}" if status.last_run_at else "Never run yet.")
     if st.button(copy.RUN_CHECK, type="primary"):
         with st.spinner("Forecasting the next 8 weeks…"):
             summary = core.run_daily_check(force=True)

@@ -6,6 +6,7 @@ import html
 
 import streamlit as st
 
+from aheadly.timefmt import format_local
 from aheadly.ui import copy
 
 
@@ -17,6 +18,15 @@ def money(value: float) -> str:
 def day(d) -> str:
     """Nov 10, 2026 (no zero padding, works on every operating system)."""
     return f"{d:%b} {d.day}, {d.year}"
+
+
+def local_time(value) -> str:
+    """A stored time (UTC) in the visitor's own time zone, read from their browser."""
+    try:
+        zone = st.context.timezone
+    except Exception:  # older Streamlit or no browser (tests): the server's zone
+        zone = None
+    return format_local(value, zone)
 
 
 def statement_notice(end, start, lag_days: int) -> None:

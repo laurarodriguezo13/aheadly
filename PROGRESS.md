@@ -20,6 +20,7 @@ Short state file so a fresh session (or teammate) can continue.
 - "What we're counting on" (2026-11-11): Accounts lists the upcoming payments the forecast uses (`AppCore.planned_items`) and updates when a plan is saved; 65 tests.
 - Suggested questions from the business's own payments (2026-11-11): the third suggestion names the biggest payment due before the end of next month and moves on to the next one once a plan is saved; the offline chat finds any scheduled payment by name; 69 tests.
 - Bank files, roadmap 1.3 (2026-11-11): the forecast starts where the statement ends (with a notice when it ends before yesterday), newest-first files read correctly, the Balance column is checked, the same bank line keeps the same id across files; 80 tests.
+- Live-check fixes, roadmap 1.4 (2026-11-11): cached objects keyed by a code fingerprint so an update can't crash the live site; times stored in UTC, shown in the visitor's time zone; 88 tests. Known: `AppCore.today` still uses the server's date (UTC on Streamlit Cloud), so after about 7 pm in New York "today" is already tomorrow; fix with the business profile's time zone (1.4 groundwork).
 
 ## Next (for the final demonstration)
 Follow `docs/ROADMAP.md` (one builder, about four weeks; Must / Should / Nice, sizes, dependencies, cut order). In short:

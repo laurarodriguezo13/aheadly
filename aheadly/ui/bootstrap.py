@@ -11,6 +11,7 @@ from aheadly.core.app_core import AppCore
 from aheadly.core.session import new_core
 from aheadly.ui import copy
 from aheadly.ui.theme import inject_theme
+from aheadly.version import code_version
 
 VIEWS = "aheadly/ui/views"
 PAGES = {
@@ -18,36 +19,45 @@ PAGES = {
 }
 
 
-@st.cache_resource(show_spinner=False)
 def get_settings() -> Settings:
+    """Read on every run (it's cheap), so an update that changes Settings never meets an old copy."""
     return load_settings()
 
 
+# The cached objects below take the code's fingerprint as an argument: after an update it changes,
+# so Streamlit builds fresh ones instead of handing the new code objects made by the old code.
+
+
 @st.cache_resource(show_spinner=False)
-def get_engine() -> ForecastEngine:
+def get_engine(version: str) -> ForecastEngine:
     """The forecast model is slow to build and holds no business data, so all visitors share it."""
     return ForecastEngine()
 
 
 @st.cache_resource(show_spinner=False)
-def get_llm():
+def get_llm(version: str):
     """The LLM client holds no business data either, so all visitors share it."""
     return create_llm_client(get_settings())
 
 
 @st.cache_resource(show_spinner="Starting Aheadly…")
-def _shared_core() -> AppCore:
+def _shared_core(version: str) -> AppCore:
     """Only used when PER_VISITOR_DATA is off: one database file for everyone."""
-    return new_core(get_settings(), get_engine(), llm=get_llm())
+    return new_core(get_settings(), get_engine(version), llm=get_llm(version))
 
 
 def get_core() -> AppCore:
-    """Each visitor (browser session) gets their own App Core and empty database."""
+    """Each visitor (browser session) gets their own App Core and empty database. A visitor whose
+    session was started by older code starts over: their objects don't fit the new code."""
+    version = code_version()
     settings = get_settings()
     if not settings.per_visitor_data:
-        return _shared_core()
+        return _shared_core(version)
+    if "core" in st.session_state and st.session_state.get("core_version") != version:
+        st.session_state.clear()
     if "core" not in st.session_state:
-        st.session_state["core"] = new_core(settings, get_engine(), llm=get_llm())
+        st.session_state["core"] = new_core(settings, get_engine(version), llm=get_llm(version))
+        st.session_state["core_version"] = version
     return st.session_state["core"]
 
 

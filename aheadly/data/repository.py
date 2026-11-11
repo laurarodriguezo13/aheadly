@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 from typing import Iterable
@@ -28,7 +28,8 @@ SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
 
 def _now() -> str:
-    return datetime.now().isoformat(timespec="seconds")
+    """Stored in UTC; the UI shows it in the visitor's own time zone."""
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
 class Repository:
@@ -253,7 +254,10 @@ class Repository:
         row = self._conn.execute(
             "SELECT run_at FROM forecast_runs WHERE business_id=? ORDER BY id DESC LIMIT 1", (business_id,)
         ).fetchone()
-        return datetime.fromisoformat(row["run_at"]) if row else None
+        if not row:
+            return None
+        run_at = datetime.fromisoformat(row["run_at"])
+        return run_at if run_at.tzinfo else run_at.astimezone()  # older files: server local time
 
     # ------------------------------------------------------------------ alerts
     def add_alert(

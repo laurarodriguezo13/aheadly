@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 
 import pandas as pd
 
@@ -137,7 +137,7 @@ class AppCore:
         """Run today's check on app load if the last one is older than 24 h."""
         last = self.repo.last_run_at(self._business().id)
         max_age = timedelta(hours=self.settings.daily_run_max_age_hours)
-        if last is not None and datetime.now() - last < max_age:
+        if last is not None and datetime.now(timezone.utc) - last < max_age:
             return DailyRunSummary(ran=False)
         return self.run_daily_check(force=True)
 

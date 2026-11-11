@@ -7,7 +7,7 @@ import streamlit as st
 from aheadly.data.connectors.csv_connector import CsvConnector
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import go_to, start_page
-from aheadly.ui.components import card, day, hero, section_title, statement_notice
+from aheadly.ui.components import card, day, hero, local_time, section_title, statement_notice
 
 core = start_page(copy.NAV["accounts"])
 status = core.status()
@@ -60,7 +60,7 @@ if not status.connected:
 else:
     rows = "".join(
         f'<div class="ah-row"><span><span class="ah-check">✔</span>&nbsp; <b>{html.escape(a["name"])}</b>'
-        f' · {html.escape(a["source"])}</span><span>last synced {a["last_synced_at"][:16].replace("T", " ")}</span></div>'
+        f' · {html.escape(a["source"])}</span><span>last synced {local_time(a["last_synced_at"])}</span></div>'
         for a in status.accounts
     )
     card(f'<div class="ah-card-title">✓ {html.escape(copy.ALL_SET)}</div>{rows}', "mint")
