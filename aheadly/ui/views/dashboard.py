@@ -6,7 +6,15 @@ from aheadly.core import alert_rules
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.charts import forecast_chart
-from aheadly.ui.components import alert_list_html, money, section_title, stat_card, weeks
+from aheadly.ui.components import (
+    alert_list_html,
+    day,
+    money,
+    section_title,
+    stat_card,
+    statement_notice,
+    weeks,
+)
 
 core = start_page(copy.DASHBOARD_TITLE)
 require_data(core)
@@ -15,10 +23,13 @@ with st.spinner("Checking your money…"):
     core.ensure_fresh()
 dash = core.get_dashboard()
 forecast, business = dash.forecast, dash.business
+lag = core.statement_lag_days()
+statement_notice(core.statement_end(), core.today, lag)
 
 col1, col2, col3 = st.columns(3)
 with col1:
-    stat_card(copy.CURRENT_CASH, money(dash.balance), copy.AVAILABLE_TODAY, "purple", "lav")
+    when = copy.ON_STATEMENT_DAY.format(end=day(core.statement_end())) if lag else copy.AVAILABLE_TODAY
+    stat_card(copy.CURRENT_CASH, money(dash.balance), when, "purple", "lav")
 with col2:
     if forecast:
         value, low_date = forecast.lowest_with_today()
@@ -37,13 +48,20 @@ with col2:
         )
 with col3:
     if dash.next_payment:
-        day, amount, label = dash.next_payment
-        stat_card(copy.NEXT_PAYMENT, money(-amount), f"{label} · {day:%b %d}", "", "sky")
+        due, amount, label = dash.next_payment
+        stat_card(copy.NEXT_PAYMENT, money(-amount), f"{label} · {due:%b %d}", "", "sky")
 
 with st.container(border=True):
     section_title(copy.CHART_TITLE)
     st.plotly_chart(
-        forecast_chart(dash.history, forecast, business.low_cash_line, core.today, dash.balance),
+        forecast_chart(
+            dash.history,
+            forecast,
+            business.low_cash_line,
+            core.today,
+            dash.balance,
+            copy.CHART_FORECAST_STARTS if lag else "Today",
+        ),
         width="stretch",
         config={"displayModeBar": False},
     )

@@ -45,11 +45,26 @@ PLANNED_HELP = (
     "These upcoming payments and income come from your upcoming-payments file and any plan you save. "
     "Regular payments like payroll and rent are learned from your statement, so they are not listed here."
 )
+STATEMENT_UP_TO = "Based on your statement up to {end}."
+STATEMENT_BEHIND = (
+    "Your statement ends on {end}, so the forecast starts on {start}. "
+    "Anything that happened after that isn't counted yet."
+)
+STATEMENT_OLD = (
+    "Your statement ends on {end}, {days} days ago, so the forecast starts on {start}. "
+    "Upload a newer statement for a forecast that starts today."
+)
+BALANCE_BREAKS = (
+    "The Balance column of your statement doesn't add up in {n} place(s), starting {date}. "
+    "Some lines may be missing from the file, so check it before trusting the numbers."
+)
 SKIPPED_ROWS = "{n} row(s) of your statement had a date or amount we couldn't read, so we left them out. Check the file if that seems wrong."
 
 DASHBOARD_TITLE = "Dashboard"
 CURRENT_CASH = "Current cash"
 AVAILABLE_TODAY = "Available today"
+ON_STATEMENT_DAY = "On {end}, the last day of your statement"
+CHART_FORECAST_STARTS = "Forecast starts"
 LOWEST_PROJECTED = "Lowest projected"
 LOWEST_IS_TODAY = "Today: no lower point ahead"
 NEXT_PAYMENT = "Next big payment"

@@ -112,6 +112,12 @@ class Repository:
         self._conn.commit()
         return cur.rowcount
 
+    def last_transaction_date(self, business_id: int) -> date | None:
+        row = self._conn.execute(
+            "SELECT MAX(date) AS last FROM transactions WHERE business_id=?", (business_id,)
+        ).fetchone()
+        return date.fromisoformat(row["last"]) if row["last"] else None
+
     def list_transactions(
         self, business_id: int, since: date | None = None, category: str | None = None, limit: int = 50
     ) -> pd.DataFrame:

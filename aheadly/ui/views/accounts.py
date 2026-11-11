@@ -7,7 +7,7 @@ import streamlit as st
 from aheadly.data.connectors.csv_connector import CsvConnector
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import go_to, start_page
-from aheadly.ui.components import card, hero, section_title
+from aheadly.ui.components import card, day, hero, section_title, statement_notice
 
 core = start_page(copy.NAV["accounts"])
 status = core.status()
@@ -55,6 +55,7 @@ if not status.connected:
                 st.error(copy.UPLOAD_FAILED.format(error=exc))
             else:
                 st.session_state["skipped_rows"] = connector.skipped_rows
+                st.session_state["balance_breaks"] = (connector.balance_breaks, connector.first_break)
                 st.rerun()
 else:
     rows = "".join(
@@ -63,8 +64,14 @@ else:
         for a in status.accounts
     )
     card(f'<div class="ah-card-title">✓ {html.escape(copy.ALL_SET)}</div>{rows}', "mint")
+    if core.statement_end():
+        st.caption(copy.STATEMENT_UP_TO.format(end=day(core.statement_end())))
+    statement_notice(core.statement_end(), core.today, core.statement_lag_days())
     if st.session_state.get("skipped_rows"):
         st.warning(copy.SKIPPED_ROWS.format(n=st.session_state["skipped_rows"]))
+    breaks, first_break = st.session_state.get("balance_breaks", (0, None))
+    if breaks:
+        st.warning(copy.BALANCE_BREAKS.format(n=breaks, date=day(first_break)))
     with st.container(border=True):
         section_title(copy.PLANNED_TITLE)
         planned = core.planned_items()

@@ -84,7 +84,24 @@ class AppCore:
 
     @property
     def today(self) -> date:
-        return self._today or date.today()
+        """The forecast's first day: today, or the day after the statement's last transaction
+        when the statement ends earlier (the days in between are not in the data)."""
+        if self._today:
+            return self._today
+        end = self.statement_end()
+        if end is not None and end + timedelta(days=1) < date.today():
+            return end + timedelta(days=1)
+        return date.today()
+
+    def statement_end(self) -> date | None:
+        """Date of the newest transaction uploaded (None before any upload)."""
+        business = self.repo.get_business()
+        return self.repo.last_transaction_date(business.id) if business else None
+
+    def statement_lag_days(self) -> int:
+        """Days missing between the statement's last transaction and yesterday (0 = up to date)."""
+        end = self.statement_end()
+        return max(0, (date.today() - end).days - 1) if end else 0
 
     # ------------------------------------------------------------ onboarding
     def status(self) -> AppStatus:

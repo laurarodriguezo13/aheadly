@@ -8,7 +8,9 @@ owner's upcoming one-off payments and expected income.
 
 from __future__ import annotations
 
+import hashlib
 import re
+from datetime import date
 from io import BytesIO
 
 import pandas as pd
@@ -58,15 +60,22 @@ class CsvConnector:
         self._profile = business_profile or dict(NEW_BUSINESS)
         self._upcoming = upcoming
         self._upcoming_filename = upcoming_filename
-        self.skipped_rows = 0  # rows with a date or amount we could not read (set by sync)
+        # set by sync(): rows we could not read, places where the Balance column doesn't add up,
+        # and the date of the statement's last transaction
+        self.skipped_rows = 0
+        self.balance_breaks = 0
+        self.first_break: date | None = None
+        self.statement_end: date | None = None
 
     def business_profile(self) -> dict:
         return dict(self._profile)
 
     def sync(self) -> SyncPayload:
         raw = read_table(self._content, self._filename)
-        frame = normalise_columns(raw)
+        frame = chronological(normalise_columns(raw))
         self.skipped_rows = len(raw) - len(frame)
+        self.balance_breaks, self.first_break = balance_breaks(frame)
+        self.statement_end = pd.Timestamp(frame["date"].max()).date() if len(frame) else None
         transactions = [
             Transaction(
                 date=pd.Timestamp(r.date).date(),
@@ -75,9 +84,9 @@ class CsvConnector:
                 category=str(r.category),
                 counterparty=str(r.counterparty),
                 source="csv",
-                external_id=f"csv-{i}-{r.date}-{r.amount}",
+                external_id=line_id,
             )
-            for i, r in enumerate(frame.itertuples())
+            for line_id, r in zip(transaction_ids(frame), frame.itertuples())
         ]
         balance = self._balance if self._balance is not None else closing_balance(frame)
         scheduled = read_upcoming_payments(self._upcoming, self._upcoming_filename) if self._upcoming else []
@@ -175,13 +184,48 @@ def _blank_as_zero(values: pd.Series) -> pd.Series:
     return parse_amounts(values).where(~blank, 0.0)
 
 
+def chronological(frame: pd.DataFrame) -> pd.DataFrame:
+    """Oldest line first. Many banks list the newest first; then the whole file is turned around,
+    so lines on the same day also end up in the order they happened."""
+    if len(frame) > 1 and frame["date"].iloc[0] > frame["date"].iloc[-1]:
+        frame = frame.iloc[::-1]
+    return frame.reset_index(drop=True)
+
+
 def closing_balance(frame: pd.DataFrame) -> float:
-    """The running balance on the newest row of the statement (needs a Balance column)."""
-    rows = frame.dropna(subset=["balance"])
+    """The running balance on the newest line of the statement (needs a Balance column)."""
+    rows = chronological(frame).dropna(subset=["balance"])
     if rows.empty:
         raise ValueError("The file has no Balance column, so please type your current balance.")
-    rows = rows.sort_values("date", kind="stable")
     return float(rows["balance"].iloc[-1])
+
+
+def balance_breaks(frame: pd.DataFrame) -> tuple[int, date | None]:
+    """With a Balance column, each line's balance is the previous one plus its amount. Returns how
+    many lines don't add up and the date of the first (0, None: it adds up, or nothing to check).
+    A break usually means lines are missing from the file or could not be read."""
+    rows = chronological(frame).dropna(subset=["balance"])
+    if len(rows) < 2:
+        return 0, None
+    expected = rows["balance"].shift(1) + rows["amount"]
+    off = ((expected - rows["balance"]).abs() > 0.01) & expected.notna()
+    if not off.any():
+        return 0, None
+    return int(off.sum()), pd.Timestamp(rows.loc[off, "date"].iloc[0]).date()
+
+
+def transaction_ids(frame: pd.DataFrame) -> list[str]:
+    """The same bank line gets the same id in any file, so uploading a statement again (or two that
+    overlap) never counts a transaction twice. Identical lines on one day are told apart by order."""
+    seen: dict[str, int] = {}
+    ids = []
+    for r in frame.itertuples():
+        balance = "" if pd.isna(r.balance) else f"{float(r.balance):.2f}"
+        words = " ".join(str(r.description).upper().split())
+        key = f"{pd.Timestamp(r.date).date()}|{float(r.amount):.2f}|{words}|{balance}"
+        seen[key] = seen.get(key, 0) + 1
+        ids.append("csv-" + hashlib.sha1(f"{key}|{seen[key]}".encode()).hexdigest()[:16])
+    return ids
 
 
 def read_upcoming_payments(content: bytes, filename: str) -> list[ScheduledItem]:

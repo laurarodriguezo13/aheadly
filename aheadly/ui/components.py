@@ -14,6 +14,19 @@ def money(value: float) -> str:
     return f"-${-value:,}" if value < 0 else f"${value:,}"
 
 
+def day(d) -> str:
+    """Nov 10, 2026 (no zero padding, works on every operating system)."""
+    return f"{d:%b} {d.day}, {d.year}"
+
+
+def statement_notice(end, start, lag_days: int) -> None:
+    """Say when the statement stops before yesterday, so the forecast can't start today."""
+    if lag_days >= 7:
+        st.warning(copy.STATEMENT_OLD.format(end=day(end), start=day(start), days=lag_days + 1))
+    elif lag_days > 0:
+        st.info(copy.STATEMENT_BEHIND.format(end=day(end), start=day(start)))
+
+
 def weeks(n: int) -> str:
     return "1 week" if n == 1 else f"{n} weeks"
 

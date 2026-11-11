@@ -35,8 +35,9 @@ def test_bank_export_with_debit_credit_columns_and_spanish_headers():
         "Fecha,Descripción,Débito,Crédito,Saldo\n2026-11-03,Ventas,,500,8700\n2026-11-02,Harina,300,,8200\n"
     )
     payload = CsvConnector(text, 8700, "extracto.csv").sync()
-    assert [t.amount for t in payload.transactions] == [500.0, -300.0]
-    assert payload.transactions[1].description == "Harina"
+    # newest-first file: transactions come out oldest first
+    assert [t.amount for t in payload.transactions] == [-300.0, 500.0]
+    assert payload.transactions[0].description == "Harina"
 
 
 def test_sample_bank_export_files_import(tmp_path):
