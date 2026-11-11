@@ -77,11 +77,9 @@ ALERT_FOOTER = "Plan ahead and take action now to stay on track."
 
 CHAT_TITLE = "Ask Aheadly"
 CHAT_INTRO = "Ask about your balance, what's coming, or test a decision before you make it."
-CHAT_SUGGESTIONS = [
-    "How am I doing this month?",
-    "Will I have enough cash next month?",
-    "What if I buy the new oven next month instead?",
-]
+CHAT_SUGGESTIONS = ["How am I doing this month?", "Will I have enough cash next month?"]
+MOVE_PAYMENT_QUESTION = "What if I move the {name} payment to next month?"
+SPEND_QUESTION = "What if I spend $2,000 next week?"
 CHAT_INPUT = "Ask in your own words…"
 CHAT_THINKING = "Looking at your numbers…"
 FALLBACK_NOTE = "Built directly from your numbers (the assistant's wording was not used this time)."

@@ -112,6 +112,10 @@ class ToolDispatcher:
     def schemas(self) -> list[dict]:
         return TOOL_SCHEMAS
 
+    def scheduled_labels(self) -> list[str]:
+        """Names of the business's scheduled items (the offline planner uses them when a provider is down)."""
+        return [item["description"] for item in self._core.planned_items()]
+
     def dispatch(self, name: str, arguments: dict) -> dict:
         """EAFP: run the tool, turn any failure into an error payload for the model."""
         try:

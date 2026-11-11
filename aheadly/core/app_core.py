@@ -327,6 +327,16 @@ class AppCore:
             "low_cash_line": round(line),
         }
 
+    def biggest_upcoming_payment(self) -> str | None:
+        """Label of the largest payment going out before the end of next month (for suggested questions)."""
+        end = end_of_next_month(self.today)
+        upcoming = [
+            item
+            for item in self.repo.list_scheduled_items(self._business().id)
+            if item.amount < 0 and self.today <= item.due_date < end
+        ]
+        return min(upcoming, key=lambda item: item.amount).label if upcoming else None
+
     def planned_items(self) -> list[dict]:
         """What the forecast counts on beyond the statement: the owner's upcoming payments and income."""
         return [
