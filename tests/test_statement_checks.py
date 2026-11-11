@@ -127,3 +127,14 @@ def test_a_statement_ending_yesterday_keeps_today():
     core.connect(CsvConnector(_statement_ending(date.today() - timedelta(days=1)), None, "statement.csv"))
     assert core.today == date.today()
     assert core.statement_lag_days() == 0
+
+
+def test_an_unreadable_line_is_reported_once_not_as_a_break_too():
+    garbled = (
+        HEADER
+        + "2026-11-02,CARD SALES,,1500,9000\n2026-11-03,PAYROLL,8#0,,8200\n2026-11-04,CARD SALES,,300,8500\n"
+    )
+    connector = CsvConnector(garbled, None, "statement.csv")
+    connector.sync()
+    assert connector.skipped_rows == 1
+    assert (connector.balance_breaks, connector.first_break) == (0, None)

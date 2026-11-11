@@ -22,6 +22,7 @@ Short state file so a fresh session (or teammate) can continue.
 - Bank files, roadmap 1.3 (2026-11-11): the forecast starts where the statement ends (with a notice when it ends before yesterday), newest-first files read correctly, the Balance column is checked, the same bank line keeps the same id across files; 80 tests.
 - Live-check fixes, roadmap 1.4 (2026-11-11): cached objects keyed by a code fingerprint so an update can't crash the live site; times stored in UTC, shown in the visitor's time zone; 88 tests.
 - Groundwork, roadmap 1.4 (2026-11-11): the database upgrades itself (numbered migrations), business profile, planned items remember where they came from and how sure we are, new link fields and tables for Phase 2, "today" in the owner's time zone; 97 tests.
+- Test businesses, roadmap 1.1 and 1.2 (2026-11-11): six businesses with answer keys made separately from the code (`tests/businesses/`), checked by `tests/test_businesses.py` with a scorecard; the reading bugs they found are fixed (DECISIONS #26). 126 tests pass, 48 checks wait for roadmap items (PENDING). Next: 2.1 (several accounts, credit cards), then 2.2 and 2.3.
 
 ## Next (for the final demonstration)
 Follow `docs/ROADMAP.md` (one builder, about four weeks; Must / Should / Nice, sizes, dependencies, cut order). In short:

@@ -10,8 +10,9 @@ from __future__ import annotations
 
 import hashlib
 import re
+import unicodedata
 from datetime import date
-from io import BytesIO
+from io import BytesIO, StringIO
 
 import pandas as pd
 
@@ -20,16 +21,35 @@ from aheadly.domain import ScheduledItem, Transaction
 
 NEW_BUSINESS = {"name": "My business", "owner_name": "", "city": "", "low_cash_line": 2000.0}
 
-# header aliases, lower-cased: bank exports rarely use our column names
+# header aliases, lower-case and without accents: bank exports rarely use our column names.
+# A header also matches when its FIRST word is a one-word alias ("Fecha Movimiento", "Saldo Disponible").
 ALIASES = {
-    "date": {"date", "fecha", "posted date", "transaction date", "fecha de transacción"},
-    "description": {"description", "descripción", "descripcion", "memo", "concepto", "details", "detalle"},
+    "date": {"date", "fecha", "posted date", "transaction date", "fecha de transaccion", "fecha operacion"},
+    "description": {"description", "descripcion", "memo", "concepto", "details", "detalle"},
     "amount": {"amount", "monto", "valor", "importe"},
-    "debit": {"debit", "débito", "debito", "withdrawal", "salida"},
-    "credit": {"credit", "crédito", "credito", "deposit", "entrada"},
-    "category": {"category", "categoría", "categoria"},
+    "debit": {
+        "debit",
+        "debito",
+        "debitos",
+        "withdrawal",
+        "withdrawals",
+        "salida",
+        "retiro",
+        "retiros",
+        "cargo",
+    },
+    "credit": {"credit", "credito", "creditos", "deposit", "deposits", "entrada", "abono", "abonos"},
+    "category": {"category", "categoria"},
     "counterparty": {"counterparty", "payee", "beneficiario", "tercero", "merchant"},
     "balance": {"balance", "saldo", "running balance"},
+}
+SPANISH_MONTHS = {
+    "ene": "jan",
+    "abr": "apr",
+    "ago": "aug",
+    "sept": "sep",
+    "set": "sep",
+    "dic": "dec",
 }
 UPCOMING_COLUMNS = {
     "date": ALIASES["date"] | {"due date", "fecha de pago"},
@@ -72,9 +92,10 @@ class CsvConnector:
 
     def sync(self) -> SyncPayload:
         raw = read_table(self._content, self._filename)
-        frame = chronological(normalise_columns(raw))
+        every_line = chronological(normalise_columns(raw, keep_unreadable=True))
+        self.balance_breaks, self.first_break = balance_breaks(every_line)
+        frame = every_line.dropna(subset=["date", "amount"]).reset_index(drop=True)
         self.skipped_rows = len(raw) - len(frame)
-        self.balance_breaks, self.first_break = balance_breaks(frame)
         self.statement_end = pd.Timestamp(frame["date"].max()).date() if len(frame) else None
         transactions = [
             Transaction(
@@ -98,16 +119,65 @@ class CsvConnector:
         )
 
 
+def plain(text) -> str:
+    """Lower case, no accents, single spaces: 'Descripción ' → 'descripcion'."""
+    decomposed = unicodedata.normalize("NFKD", str(text))
+    return " ".join("".join(c for c in decomposed if not unicodedata.combining(c)).lower().split())
+
+
+def match_columns(headers, aliases: dict[str, set[str]] = ALIASES) -> dict[str, object]:
+    """Which header is the date, the description, the amount...: exact alias first, then first word."""
+    names = {plain(h): h for h in headers}
+    found = {}
+    for field, options in aliases.items():
+        exact = [names[n] for n in options if n in names]
+        loose = [h for n, h in names.items() if n.split(" ")[0] in options] if not exact else []
+        if exact or loose:
+            found[field] = (exact or loose)[0]
+    return found
+
+
+def _looks_like_header(cells) -> bool:
+    found = match_columns([c for c in cells if str(c).strip()])
+    return "date" in found and ("amount" in found or {"debit", "credit"} <= set(found))
+
+
+def _decode(content: bytes) -> str:
+    """UTF-8 (with or without the Excel BOM), else Windows-1252, as Excel on Windows saves it."""
+    try:
+        return content.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return content.decode("cp1252")
+
+
 def read_table(content: bytes, filename: str) -> pd.DataFrame:
+    """A bank export as a table, starting at its header row (banks often put the account number,
+    holder and period above it). CSV: comma, semicolon or tab separated, UTF-8 or Windows-1252."""
     if filename.lower().endswith((".xlsx", ".xls")):
-        return pd.read_excel(BytesIO(content))
-    return pd.read_csv(BytesIO(content))
+        sheet = pd.read_excel(BytesIO(content), header=None)
+        start = next((i for i in range(min(len(sheet), 30)) if _looks_like_header(sheet.iloc[i])), 0)
+        table = sheet.iloc[start + 1 :].reset_index(drop=True)
+        table.columns = [str(c) for c in sheet.iloc[start]]
+        return table.dropna(how="all").infer_objects()
+    lines = _decode(content).splitlines()
+    start = 0
+    for i, line in enumerate(lines[:30]):
+        if _looks_like_header(re.split(r"[;,\t]", line)):
+            start = i
+            break
+    header = lines[start] if lines else ""
+    sep = max([",", ";", "\t"], key=header.count)
+    body = StringIO("\n".join(lines[start:]))
+    if sep == ",":
+        return pd.read_csv(body)  # numbers like 1500 or 12.5 are read as numbers, as before
+    return pd.read_csv(body, sep=sep, dtype=str)  # ';' files use decimal commas: keep text, parse below
 
 
-def normalise_columns(frame: pd.DataFrame) -> pd.DataFrame:
-    """Map bank headers onto date / description / amount / category. LBYL: validate before any work."""
-    lower = {str(c).strip().lower(): c for c in frame.columns}
-    found = {field: lower[name] for field, names in ALIASES.items() for name in names if name in lower}
+def normalise_columns(frame: pd.DataFrame, keep_unreadable: bool = False) -> pd.DataFrame:
+    """Map bank headers onto date / description / amount / category. LBYL: validate before any work.
+    Lines whose date or amount can't be read are dropped, unless `keep_unreadable` (the balance check
+    still uses their Balance)."""
+    found = match_columns(frame.columns)
     missing = {"date", "description"} - set(found)
     if "amount" not in found and not {"debit", "credit"} <= set(found):
         missing.add("amount (or debit + credit)")
@@ -125,7 +195,7 @@ def normalise_columns(frame: pd.DataFrame) -> pd.DataFrame:
     out["category"] = frame[found["category"]].fillna("other") if "category" in found else "other"
     out["counterparty"] = frame[found["counterparty"]].fillna("") if "counterparty" in found else ""
     out["balance"] = parse_amounts(frame[found["balance"]]) if "balance" in found else None
-    return out.dropna(subset=["date", "amount"])
+    return out if keep_unreadable else out.dropna(subset=["date", "amount"])
 
 
 def parse_dates(values: pd.Series) -> pd.Series:
@@ -134,6 +204,9 @@ def parse_dates(values: pd.Series) -> pd.Series:
     if pd.api.types.is_datetime64_any_dtype(values):
         return values
     text = values.astype(str).str.strip()
+    text = text.str.lower().str.replace(
+        r"[a-z]+", lambda m: SPANISH_MONTHS.get(m.group(0), m.group(0)), regex=True
+    )
     parts = text.str.extract(r"^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})$").astype(float)
     month_first = bool((parts[1] > 12).any()) and not bool((parts[0] > 12).any())
     iso = text.str.match(r"^\d{4}-\d{1,2}-\d{1,2}")
@@ -156,9 +229,13 @@ def parse_amounts(values: pd.Series) -> pd.Series:
 def _parse_amount(value) -> float:
     if value is None or (isinstance(value, float) and pd.isna(value)):
         return float("nan")
+    if isinstance(value, (int, float)):  # a real number (an Excel cell): nothing to guess
+        return float(value)
     text = str(value).strip()
     negative = text.startswith("(") and text.endswith(")") or text.startswith("-")
-    text = re.sub(r"[^\d.,]", "", text)
+    text = re.sub(r"[A-Za-z$€£\s()+\-/]", "", text)  # currency marks, signs, spaces
+    if re.search(r"[^\d.,]", text):  # anything else (8#0, 1?2) means the cell is garbled
+        return float("nan")
     if not text or not re.search(r"\d", text):
         return float("nan")
     if "." in text and "," in text:  # the separator that comes last is the decimal one
@@ -187,14 +264,15 @@ def _blank_as_zero(values: pd.Series) -> pd.Series:
 def chronological(frame: pd.DataFrame) -> pd.DataFrame:
     """Oldest line first. Many banks list the newest first; then the whole file is turned around,
     so lines on the same day also end up in the order they happened."""
-    if len(frame) > 1 and frame["date"].iloc[0] > frame["date"].iloc[-1]:
+    dates = frame["date"].dropna()
+    if len(dates) > 1 and dates.iloc[0] > dates.iloc[-1]:
         frame = frame.iloc[::-1]
     return frame.reset_index(drop=True)
 
 
 def closing_balance(frame: pd.DataFrame) -> float:
     """The running balance on the newest line of the statement (needs a Balance column)."""
-    rows = chronological(frame).dropna(subset=["balance"])
+    rows = chronological(frame).dropna(subset=["balance", "date"])
     if rows.empty:
         raise ValueError("The file has no Balance column, so please type your current balance.")
     return float(rows["balance"].iloc[-1])
@@ -207,11 +285,14 @@ def balance_breaks(frame: pd.DataFrame) -> tuple[int, date | None]:
     rows = chronological(frame).dropna(subset=["balance"])
     if len(rows) < 2:
         return 0, None
+    # a line whose amount can't be read is not compared (it's reported as unreadable), but its
+    # Balance still carries the chain on to the next line
     expected = rows["balance"].shift(1) + rows["amount"]
     off = ((expected - rows["balance"]).abs() > 0.01) & expected.notna()
     if not off.any():
         return 0, None
-    return int(off.sum()), pd.Timestamp(rows.loc[off, "date"].iloc[0]).date()
+    when = rows.loc[off, "date"].dropna()
+    return int(off.sum()), pd.Timestamp(when.iloc[0]).date() if len(when) else None
 
 
 def transaction_ids(frame: pd.DataFrame) -> list[str]:
