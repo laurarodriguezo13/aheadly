@@ -13,7 +13,7 @@ cd Aheadly
 uv sync                      # or: python3.11 -m venv .venv && pip install -r requirements.txt
 cp .env.example .env         # defaults: DEMO_MODE=true, LLM_PROVIDER=stub
 uv run streamlit run app.py
-# Accounts → "Use demo data"
+# Accounts → upload a bank statement (+ optional upcoming payments)
 ```
 
 Optional, a real language model: set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY=...` in `.env` (or `anthropic` + `ANTHROPIC_API_KEY`). Keys never go anywhere else.

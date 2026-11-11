@@ -60,8 +60,8 @@ with st.container(border=True):
         )
 
 with st.container(border=True):
-    section_title("Demo")
-    st.caption("Wipes the local database. The next visit to Accounts starts from onboarding again.")
+    section_title("Start over")
+    st.caption("Deletes the data you uploaded in this session. You go back to the upload page.")
     if st.button(copy.RESET_DEMO):
         reset_core()
         st.rerun()

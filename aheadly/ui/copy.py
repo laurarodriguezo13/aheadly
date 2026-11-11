@@ -14,15 +14,36 @@ NAV = {
 
 WELCOME_TITLE = "Know what's coming."
 WELCOME_BODY = (
-    "Connect your accounts once and Aheadly checks your money every time you open it, "
-    "warns you weeks before cash runs low, and answers your questions in plain words."
+    "Upload your bank statement and Aheadly shows what's coming, warns you weeks before cash runs low, "
+    "and answers your questions in plain words."
 )
 CONNECT_BANK = "Connect bank (Plaid sandbox)"
 CONNECT_QBO = "Connect QuickBooks"
 USE_DEMO = "Use demo data"
 CONNECT_LATER = "Connect later: no sandbox keys found. Demo data works without any keys."
 ALL_SET = "All set. We'll check your money every time you open Aheadly."
-NOT_CONNECTED = "No data yet. Go to **Accounts** and choose a data source to get started."
+NOT_CONNECTED = "No data yet. Upload your bank statement on **Accounts** to get started."
+GO_TO_ACCOUNTS = "Upload my bank statement"
+UPLOAD_TITLE = "Upload your bank statement"
+UPLOAD_HELP = (
+    "A CSV or Excel export from your bank with Date, Description and Amount (or Debit and Credit). "
+    "If it has a Balance column, we read your current balance from it."
+)
+BUSINESS_NAME = "Business name"
+OWNER_NAME = "Your name (optional)"
+STATEMENT_FILE = "Bank statement (CSV or Excel)"
+UPCOMING_FILE = "Upcoming payments (optional, CSV or Excel)"
+UPCOMING_HELP = (
+    "Only one-off things your bank can't know yet: a planned purchase, a big supplier order, a customer "
+    "payment you expect. Columns: Date, Description, Amount (minus for money going out). Regular payments "
+    "like payroll and rent are learned from your statement, so don't list them here."
+)
+LOW_CASH_LINE_INPUT = "Lowest balance you're comfortable with ($)"
+BALANCE_INPUT = "Current balance ($)"
+BALANCE_PLACEHOLDER = "Read from the statement"
+UPLOAD_BUTTON = "Upload and analyse"
+UPLOAD_SPINNER = "Reading your statement and building your forecast…"
+UPLOAD_FAILED = "We couldn't read that file: {error}"
 
 DASHBOARD_TITLE = "Dashboard"
 CURRENT_CASH = "Current cash"
@@ -77,5 +98,5 @@ SETTINGS_TITLE = "Settings"
 LOW_CASH_LINE = "Low cash line"
 LOW_CASH_HELP = "Your safety buffer. Below this line Aheadly warns you."
 RUN_CHECK = "Run today's check"
-RESET_DEMO = "Reset demo"
+RESET_DEMO = "Start over"
 BACKTEST = "Compare forecast models (backtest)"

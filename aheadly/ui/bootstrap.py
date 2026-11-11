@@ -76,12 +76,8 @@ def require_data(core: AppCore) -> None:
     if core.status().connected:
         return
     st.info(copy.NOT_CONNECTED)
-    if st.button(copy.USE_DEMO, type="primary"):
-        from aheadly.data.connectors.demo_connector import DemoConnector
-
-        with st.spinner("Loading Panadería La Esquina…"):
-            core.connect(DemoConnector())
-        st.rerun()
+    if st.button(copy.GO_TO_ACCOUNTS, type="primary"):
+        go_to("accounts")
     st.stop()
 
 
