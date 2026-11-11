@@ -17,10 +17,6 @@ WELCOME_BODY = (
     "Upload your bank statement and Aheadly shows what's coming, warns you weeks before cash runs low, "
     "and answers your questions in plain words."
 )
-CONNECT_BANK = "Connect bank (Plaid sandbox)"
-CONNECT_QBO = "Connect QuickBooks"
-USE_DEMO = "Use demo data"
-CONNECT_LATER = "Connect later: no sandbox keys found. Demo data works without any keys."
 ALL_SET = "All set. We'll check your money every time you open Aheadly."
 NOT_CONNECTED = "No data yet. Upload your bank statement on **Accounts** to get started."
 GO_TO_ACCOUNTS = "Upload my bank statement"

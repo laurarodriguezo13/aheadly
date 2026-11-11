@@ -86,7 +86,7 @@ Triggered (a) by `python -m aheadly.jobs.daily_run`, (b) on app load when the la
 * Fail fast: invalid `LLM_PROVIDER` or missing key → `st.error` + `st.stop()` before any cached call. Graceful fallback: LLM error or guardrail failure → template answer with a small note; a file that can't be read → a friendly error, nothing is saved, the owner can try again.
 * `@st.cache_resource` for the shared forecast model and LLM client; one `AppCore` with its own in-memory SQLite database per visitor in `st.session_state` (every visit starts fresh, nobody sees anyone else's data); `st.session_state` also holds pending questions and scenario cards; `st.spinner` on sync / forecast / LLM.
 * Secrets only in `.env` (`python-dotenv`), `.env.example` shipped, CI secret scan.
-* 34 pytest tests (unit tests per component + the demo script as a functional test), all offline, run in under a second. `black` formatting. CI on push and PR.
+* 69 pytest tests (unit tests per component, plus the demo script and the upload flow as functional tests), all offline, run in a few seconds. `black` formatting. CI on push and PR.
 
 ---
 
@@ -110,11 +110,11 @@ Success metric from the storyboard: from opening the alert to a saved decision i
 
 **Direction (agreed 2026-11-10).** The final version targets a small business that only has bank statements (Excel/CSV), plus maybe its own Excel files. No QuickBooks or live bank connection yet; the Plaid and QuickBooks scaffolds stay for later. The app learns the business by detecting patterns in the statement and asking the owner short questions. It works as a one-time session (each visit starts fresh), with a way to save and reload a setup.
 
-**Done since the first draft of this check-in (2026-11-10).** Every visitor starts with an empty app (no shared data); upload-only onboarding (bank statement + optional upcoming payments, balance read from the file, no demo or Plaid/QuickBooks buttons, no bakery defaults); honest verdicts with three risk levels (act now / keep an eye on it / safe) using the worst case; "next month" questions answered for next month; wording that works for any business. 59 tests.
+**Done since the first draft of this check-in (2026-11-10).** Every visitor starts with an empty app (no shared data); upload-only onboarding (bank statement + optional upcoming payments, balance read from the file, no demo or Plaid/QuickBooks buttons, no bakery defaults); honest verdicts with three risk levels (act now / keep an eye on it / safe) using the worst case; "next month" questions answered for next month; wording that works for any business. On 2026-11-11: Latin American bank formats (day/month dates, "1.250,00" amounts, unreadable rows reported instead of becoming $0), a "What we're counting on" list on Accounts, and suggested questions that name the business's own biggest upcoming payment. 69 tests.
 
 | Priority | Task | Notes |
 |---|---|---|
-| 1 | Read real bank files correctly | Day/month dates and "1.250,00" amounts are currently misread without an error; forecast from the statement's last date; check that the balance adds up |
+| 1 | Finish reading real bank files | Day/month dates and "1.250,00" amounts are done; still to do: forecast from the statement's last date, check that the balance adds up |
 | 1 | Test businesses with answer keys + automated tests | Fake statements for several different businesses, made separately from the code |
 | 1 | Categories and recurring payments from bank statements | Rules + Hugging Face zero-shot categoriser; recurring detection without double counting |
 | 1 | Money plan page + onboarding questions | One editable list of everything the forecast expects; "detect first, then ask" |

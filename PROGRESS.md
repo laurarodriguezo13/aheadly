@@ -21,12 +21,19 @@ Short state file so a fresh session (or teammate) can continue.
 - Suggested questions from the business's own payments (2026-11-11): the third suggestion names the biggest payment due before the end of next month and moves on to the next one once a plan is saved; the offline chat finds any scheduled payment by name; 69 tests.
 
 ## Next (for the final demonstration)
-1. Plaid sandbox: public token → access token → `/transactions/sync`, `/accounts/balance/get` (plaid-python).
-2. QuickBooks sandbox OAuth: open Bills → scheduled bills, open Invoices → receivables.
-3. Gemini verified live on 2026-11-10 (`gemini-3.5-flash-lite`, tool calling, guardrail). Still to do: run the full demo script twice more on a fresh day and tune prompts from what you see; keep the free-tier daily quota in mind (do not rehearse 50 times on one key).
-4. Deploy to Streamlit Community Cloud; smoke tests; screenshots in `docs/`.
-5. Nice-to-haves: Spanish copy (`copy.py`), transaction categoriser (Hugging Face zero-shot), utilities-trend insight.
+Direction (agreed 2026-11-10): the client only has bank statements (CSV/Excel now, PDF later) and maybe their own Excel files. One-time sessions now; saved accounts and a subscription later. No Plaid or QuickBooks for the course (the scaffolds stay).
+1. Test businesses with answer keys: fake statements for several different businesses, made outside the code, plus automated tests that check the app against them.
+2. Finish reading real bank files: forecast from the statement's last date, check that the balance adds up.
+3. Categories and recurring payments from the statement (rules + Hugging Face zero-shot), without double counting.
+4. Money plan page + onboarding questions ("detect first, then ask"); one editable list of everything the forecast expects.
+5. Actions with "Test this" and suggested fixes for every warning; alert actions should name the payment that causes the alert.
+6. Financing helper: compares the owner's existing options (credit line, card, supplier terms) by cost; never offers credit.
+7. Insights page ("Things we noticed"), with a short summary under every chart.
+8. Download / Load my data, privacy page, glossary, chatbot test set.
+9. Demo day: regenerate Maria's files the same day (`uv run python ../aheadly-test-data/make_maria_files.py`) and rehearse at most twice on the Gemini key (free-tier daily quota).
+
+Later (after the course): PDF statements, Plaid / QuickBooks, accounts and a subscription.
 
 ## Open decisions
-- Whether to encrypt stored Plaid tokens with Fernet (spec) or keep sandbox tokens in `.env` only.
 - Whether idle-cash alerts should be shown on the dashboard or only in Alerts.
+- When Plaid comes back: encrypt stored tokens with Fernet (spec) or keep sandbox tokens in `.env` only.

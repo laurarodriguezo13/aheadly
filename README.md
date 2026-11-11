@@ -21,7 +21,7 @@ Optional, a real language model: set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY=.
 Other commands:
 
 ```bash
-uv run pytest -q                      # 53 tests, all offline, < 1 s
+uv run pytest -q                      # 69 tests, all offline, a few seconds
 uv run black .                        # formatting
 uv run python -m aheadly.jobs.daily_run   # the daily check from the command line (cron-able)
 ```

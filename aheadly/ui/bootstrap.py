@@ -52,7 +52,7 @@ def get_core() -> AppCore:
 
 
 def reset_core() -> None:
-    """Settings → 'Reset demo': wipe this visitor's data and start again from onboarding."""
+    """Settings → 'Start over': wipe this visitor's data and start again from onboarding."""
     get_core().reset()
     _shared_core.clear()
     st.session_state.clear()
