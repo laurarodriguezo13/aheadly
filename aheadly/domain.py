@@ -83,6 +83,13 @@ class ForecastResult:
     def horizon_end(self) -> date:
         return self.points[-1].date
 
+    def lowest_with_today(self) -> tuple[float, date | None]:
+        """Lowest base-case balance, counting today's balance too (date None = today is the lowest)."""
+        low = self.lowest
+        if self.opening_balance <= low.balance_p50:
+            return self.opening_balance, None
+        return low.balance_p50, low.date
+
     def risk_level(self, low_cash_line: float) -> str:
         """act_now: the base case drops below the line; watch: only the worst case does; safe: neither."""
         if self.lowest.balance_p50 < low_cash_line:

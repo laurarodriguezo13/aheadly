@@ -290,10 +290,14 @@ class AppCore:
             "currency": business.currency,
         }
 
-    def forecast_summary(self, weeks: int = 8) -> dict:
+    def forecast_summary(self, weeks: int = 8, until: str | None = None) -> dict:
+        """`until` (ISO date) limits the answer to a window, e.g. the end of next month."""
         weeks = max(1, min(8, weeks))
         forecast = self._baseline_forecast()
         points = forecast.points[: weeks * 7]
+        if until:
+            end = date.fromisoformat(until)
+            points = [p for p in forecast.points if p.date <= end] or points
         weekly = [
             {
                 "week": i + 1,
@@ -310,6 +314,7 @@ class AppCore:
         window = ForecastResult(forecast.opening_balance, points, forecast.model)
         return {
             "weeks": weeks,
+            "until": until,
             "weekly_balances": weekly,
             "lowest_point": {
                 "date": lowest.date.isoformat(),

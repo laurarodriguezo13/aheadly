@@ -44,8 +44,13 @@ def answer_from_tool(tool: str, data: dict) -> str:
             ),
             "act_now": "you would dip below your low cash line, so it is worth acting early.",
         }[data["risk_level"]]
+        period = (
+            f"Between now and {data['until']}"
+            if data.get("until")
+            else f"Over the next {data['weeks']} weeks"
+        )
         return (
-            f"Over the next {data['weeks']} weeks your lowest point is about {money(low['balance_base_case'])} "
+            f"{period} your lowest point is about {money(low['balance_base_case'])} "
             f"on {low['date']}, which means {verdict}"
         )
     if tool == "get_cash_summary":

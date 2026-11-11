@@ -10,10 +10,11 @@ Short state file so a fresh session (or teammate) can continue.
 - Alert rules (shortfall, idle cash, de-duplication, resolution) and App Core daily run.
 - Insight Translator with function calling (6 tools), number guardrail, template fallback; stub / Gemini / Claude clients.
 - Streamlit UI: Dashboard, Alerts, Ask Aheadly (chat + scenario card + save plan), What-if form, Accounts, Settings. Brand theme via native Streamlit theme options; 2x screenshots in `docs/screenshots/`.
-- 38 pytest tests incl. the demo script and provider-down fallbacks as functional tests. All offline.
+- 41 pytest tests incl. the demo script and provider-down fallbacks as functional tests. All offline.
 - Gemini verified live (2026-11-10): `gemini-3.5-flash-lite` through the OpenAI-compatible endpoint, tool calling with Gemini 3 thought signatures, guardrail passing on the alert and the four demo questions, about 2 to 5 s per answer.
 - Fresh start for every visitor (2026-11-10): each browser session gets its own App Core and in-memory database (`aheadly/core/session.py`, `PER_VISITOR_DATA`), 44 tests.
 - Honest verdicts (2026-11-10): three risk levels (act now / keep an eye on it / safe) using the worst case, in the chat, What-if, templates and dashboard; 49 tests.
+- Small fixes (2026-11-10): "Lowest projected" counts today's balance, "next month" questions answer up to the end of next month (`get_forecast` `until`), Ask button no longer cut off, no "every day" promise; 53 tests.
 
 ## Next (for the final demonstration)
 1. Plaid sandbox: public token → access token → `/transactions/sync`, `/accounts/balance/get` (plaid-python).

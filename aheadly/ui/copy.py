@@ -14,20 +14,21 @@ NAV = {
 
 WELCOME_TITLE = "Know what's coming."
 WELCOME_BODY = (
-    "Connect your accounts once and Aheadly checks your money every day, "
+    "Connect your accounts once and Aheadly checks your money every time you open it, "
     "warns you weeks before cash runs low, and answers your questions in plain words."
 )
 CONNECT_BANK = "Connect bank (Plaid sandbox)"
 CONNECT_QBO = "Connect QuickBooks"
 USE_DEMO = "Use demo data"
 CONNECT_LATER = "Connect later: no sandbox keys found. Demo data works without any keys."
-ALL_SET = "All set. We'll check your money every day."
+ALL_SET = "All set. We'll check your money every time you open Aheadly."
 NOT_CONNECTED = "No data yet. Go to **Accounts** and choose a data source to get started."
 
 DASHBOARD_TITLE = "Dashboard"
 CURRENT_CASH = "Current cash"
 AVAILABLE_TODAY = "Available today"
 LOWEST_PROJECTED = "Lowest projected"
+LOWEST_IS_TODAY = "Today: no lower point ahead"
 NEXT_PAYMENT = "Next big payment"
 CHART_TITLE = "Cash flow forecast, next 8 weeks"
 UPCOMING_ALERTS = "Upcoming alerts"

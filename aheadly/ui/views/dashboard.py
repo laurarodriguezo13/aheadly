@@ -21,13 +21,17 @@ with col1:
     stat_card(copy.CURRENT_CASH, money(dash.balance), copy.AVAILABLE_TODAY, "purple", "lav")
 with col2:
     if forecast:
-        low = forecast.lowest
-        in_weeks = weeks(alert_rules.weeks_until(core.today, low.date))
-        below = low.balance_p50 < business.low_cash_line
+        value, low_date = forecast.lowest_with_today()
+        when = (
+            copy.LOWEST_IS_TODAY
+            if low_date is None
+            else f"In {weeks(alert_rules.weeks_until(core.today, low_date))}"
+        )
+        below = value < business.low_cash_line
         stat_card(
             copy.LOWEST_PROJECTED,
-            money(low.balance_p50),
-            f"In {in_weeks}",
+            money(value),
+            when,
             "red" if below else "teal",
             "rose" if below else "mint",
         )
@@ -60,7 +64,7 @@ with left, st.container(border=True):
 with right, st.container(border=True):
     section_title(copy.ASK_BOX)
     st.caption(copy.CHAT_INTRO)
-    box, send = st.columns([4, 1])
+    box, send = st.columns([3, 1])
     question = box.text_input(copy.ASK_BOX, placeholder=copy.ASK_PLACEHOLDER, label_visibility="collapsed")
     if send.button("Ask", type="primary", width="stretch") and question.strip():
         go_to("ask", question.strip())

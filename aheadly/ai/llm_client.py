@@ -224,7 +224,9 @@ class StubClient:
             return ToolCall(call_id, "get_alerts", {})
         if any(w in q for w in ("bill", "payment", "due", "going out", "pay")):
             return ToolCall(call_id, "get_upcoming_outflows", {"weeks": 8})
-        if any(w in q for w in ("enough", "next month", "forecast", "weeks", "run out", "short")):
+        if "next month" in q:
+            return ToolCall(call_id, "get_forecast", {"until": end_of_next_month(self.today).isoformat()})
+        if any(w in q for w in ("enough", "forecast", "weeks", "run out", "short")):
             return ToolCall(call_id, "get_forecast", {"weeks": 8})
         if any(w in q for w in ("transaction", "spent", "sales")):
             return ToolCall(call_id, "get_transactions", {"limit": 10})
