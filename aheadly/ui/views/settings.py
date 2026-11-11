@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 from aheadly.ui import copy
-from aheadly.ui.bootstrap import get_core, require_data, start_page
+from aheadly.ui.bootstrap import require_data, reset_core, start_page
 from aheadly.ui.components import section_title
 
 core = start_page(copy.SETTINGS_TITLE)
@@ -63,7 +63,5 @@ with st.container(border=True):
     section_title("Demo")
     st.caption("Wipes the local database. The next visit to Accounts starts from onboarding again.")
     if st.button(copy.RESET_DEMO):
-        core.reset()
-        get_core.clear()
-        st.session_state.clear()
+        reset_core()
         st.rerun()
