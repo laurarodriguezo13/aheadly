@@ -6,6 +6,8 @@ LLM call fails or the guardrail rejects its answer twice.
 
 from __future__ import annotations
 
+from datetime import date
+
 
 def money(value: float) -> str:
     value = round(value)
@@ -68,7 +70,27 @@ def answer_from_tool(tool: str, data: dict) -> str:
         return f"{first['title']}: {first['body']}"
     if tool == "get_transactions":
         return f"Here are your last {len(data['transactions'])} transactions."
+    if tool == "propose_plan_items":
+        if not data["proposed"]:
+            return 'I couldn\'t find a payment or income in that. Try with the amount and the day, like "$1,650 on Dec 2".'
+        parts = []
+        for item in data["proposed"]:
+            way = "coming in" if item["direction"] == "in" else "going out"
+            amount = money(item["amount"]) if item["amount"] else "an amount you didn't say"
+            when = f" on {_short_date(item['due_date'])}" if item["due_date"] else ""
+            parts.append(f"{item['label']}, {amount} {way}{when}")
+        return (
+            "Here's what I understood: "
+            + "; ".join(parts)
+            + ". It isn't saved yet: check it below and press Add."
+        )
     return "Here is what I found."
+
+
+def _short_date(iso: str) -> str:
+    """'2026-12-02' → 'Dec 2'."""
+    d = date.fromisoformat(iso)
+    return f"{d:%b} {d.day}"
 
 
 def alert_text(facts: dict) -> dict:

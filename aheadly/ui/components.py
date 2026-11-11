@@ -131,3 +131,59 @@ def scenario_metrics(result) -> None:
         tone = "red" if value < result.low_cash_line else tone
         with col:
             stat_card(label, money(value), copy.LOWEST_BALANCE, tone, "sky" if tone != "red" else "rose")
+
+
+def proposal_card(core, items, key: str) -> int:
+    """Roadmap 2.4: plan items read from the owner's words, editable, saved only on Add.
+    Returns how many were added (0 if not yet)."""
+    names = {v: k for k, v in copy.DIRECTION_NAMES.items()}
+    cols = copy.PROPOSAL_COLUMNS
+    st.caption(copy.PROPOSAL_INTRO)
+    rows = [
+        {
+            cols["label"]: i.label,
+            cols["direction"]: copy.DIRECTION_NAMES[i.direction],
+            cols["amount"]: i.amount,
+            cols["due_date"]: i.due_date,
+            cols["repeats"]: i.repeats,
+            cols["maybe"]: i.certainty == "maybe",
+        }
+        for i in items
+    ]
+    edited = st.data_editor(
+        rows,
+        key=f"{key}-editor",
+        hide_index=True,
+        num_rows="dynamic",
+        width="stretch",
+        column_config={
+            cols["direction"]: st.column_config.SelectboxColumn(options=list(copy.DIRECTION_NAMES.values())),
+            cols["amount"]: st.column_config.NumberColumn(min_value=0.0, format="dollar"),
+            cols["due_date"]: st.column_config.DateColumn(format="MMM D, YYYY"),
+            cols["repeats"]: st.column_config.SelectboxColumn(
+                options=["once", "weekly", "every two weeks", "monthly"]
+            ),
+        },
+    )
+    for item in items:
+        if item.problem:
+            st.caption(f"⚠ {item.label or 'An item'}: {item.problem}")
+    if not st.button(copy.ADD_TO_PLAN, key=f"{key}-add", type="primary"):
+        return 0
+    chosen = [
+        {
+            "label": row.get(cols["label"]),
+            "direction": names.get(row.get(cols["direction"]), "out"),
+            "amount": row.get(cols["amount"]),
+            "date": row.get(cols["due_date"]),
+            "repeats": row.get(cols["repeats"]) or "once",
+            "certainty": "maybe" if row.get(cols["maybe"]) else "sure",
+        }
+        for row in edited
+        if row.get(cols["label"]) or row.get(cols["amount"])
+    ]
+    try:
+        return core.add_plan_items(chosen)
+    except ValueError as exc:
+        st.error(copy.ADD_PROBLEM.format(problem=exc))
+        return 0

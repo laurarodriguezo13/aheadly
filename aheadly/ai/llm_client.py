@@ -24,6 +24,7 @@ from typing import Any
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
+from aheadly.ai.plan_text import read_by_rules
 from aheadly.ai.templates import alert_text, answer_from_tool
 from aheadly.domain import end_of_next_month
 from aheadly.config import Settings
@@ -221,6 +222,9 @@ class StubClient:
         call_id = f"stub-{uuid.uuid4().hex[:8]}"
         if "what if" in q or "instead" in q:
             return ToolCall(call_id, "run_scenario", self._scenario_args(q, labels or []))
+        proposals = self._plan_items(question)
+        if proposals:
+            return ToolCall(call_id, "propose_plan_items", {"items": proposals})
         if "alert" in q or "warning" in q or "why" in q:
             return ToolCall(call_id, "get_alerts", {})
         if any(w in q for w in ("bill", "payment", "due", "going out", "pay")):
@@ -232,6 +236,26 @@ class StubClient:
         if any(w in q for w in ("transaction", "spent", "sales")):
             return ToolCall(call_id, "get_transactions", {"limit": 10})
         return ToolCall(call_id, "get_cash_summary", {})
+
+    def _plan_items(self, question: str) -> list[dict]:
+        """The owner telling us about money still to come ("I'm buying a laptop for $1,650 on Dec 2"),
+        not asking a question: the offline reader's items, as the model would propose them."""
+        q = question.strip().lower()
+        if q.endswith("?") or q.split(" ", 1)[0] in QUESTION_WORDS:
+            return []
+        items = read_by_rules(question, self.today)
+        return [
+            {
+                "label": i.label,
+                "amount": i.amount,
+                "direction": i.direction,
+                "date": i.due_date.isoformat() if i.due_date else None,
+                "repeats": i.repeats,
+                "certainty": "maybe" if i.certainty == "maybe" else "sure",
+            }
+            for i in items
+            if i.amount
+        ]
 
     def _scenario_args(self, q: str, labels: list[str]) -> dict:
         amount = re.search(r"\$?\s?(\d[\d,]{2,})", q)
@@ -264,6 +288,9 @@ class StubClient:
             ],
         }
 
+
+QUESTION_WORDS = {"what", "how", "when", "will", "can", "should", "is", "do", "does", "am", "are", "why", "which",
+                  "could", "would", "qué", "que", "cuándo", "cuando", "cómo", "como", "puedo", "debo"}  # fmt: skip
 
 # -------------------------------------------------------------------------- factory
 SCHEDULED_PREFIX = "Scheduled items you can move or remove by label: "

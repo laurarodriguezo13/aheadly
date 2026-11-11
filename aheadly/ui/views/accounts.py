@@ -7,7 +7,16 @@ import streamlit as st
 from aheadly.data.connectors.csv_connector import CsvConnector
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import go_to, start_page
-from aheadly.ui.components import card, day, hero, local_time, money, section_title, statement_notice
+from aheadly.ui.components import (
+    card,
+    day,
+    hero,
+    local_time,
+    money,
+    proposal_card,
+    section_title,
+    statement_notice,
+)
 
 core = start_page(copy.NAV["accounts"])
 status = core.status()
@@ -136,6 +145,24 @@ else:
                 },
             )
         st.caption(copy.PLANNED_HELP)
+        if st.session_state.get("plan_added"):
+            st.success(copy.PLAN_ITEMS_ADDED.format(n=st.session_state.pop("plan_added")))
+        said = st.text_area(
+            copy.JUST_SAY_IT, placeholder=copy.JUST_SAY_IT_PLACEHOLDER, help=copy.JUST_SAY_IT_HELP
+        )
+        if st.button(copy.READ_IT, disabled=not said.strip()):
+            with st.spinner(copy.READING_IT):
+                st.session_state["plan_proposals"] = core.parse_plan_text(said)
+        proposals = st.session_state.get("plan_proposals")
+        if proposals is not None:
+            if not proposals:
+                st.info(copy.NOTHING_UNDERSTOOD)
+            else:
+                added = proposal_card(core, proposals, "accounts-plan")
+                if added:
+                    st.session_state.pop("plan_proposals", None)
+                    st.session_state["plan_added"] = added
+                    st.rerun()
     regular = core.recurring_table()
     if regular:
         with st.expander(copy.RECURRING_TITLE.format(n=len(regular))):

@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-11 after 2.3** (branch `Migue` at `5ed8dff`, 235 tests passing). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-11 after 2.4** (branch `Migue`, 268 tests passing). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#31**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#32**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -29,15 +29,15 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (branch `Migue`; `main` is frozen at the Milestone 2 version until after the presentation):** Phase 1 done (1.1–1.5); 2.1, 2.2, 2.3 done. Next: 2.4. Test-business scorecard: 46 checks pass, 24 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (branch `Migue`; `main` is frozen at the Milestone 2 version until after the presentation):** Phase 1 done (1.1–1.5); 2.1–2.4 done. Next: 2.5. Test-business scorecard: 49 checks pass, 24 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`.
-- **Understanding the business:** `aheadly/core/transfers.py` (moves between own accounts, card payments), `aheadly/ai/categorizer.py` (owner answers → own-account moves → file category → keyword rules → defaults; `set_payee_rule`, `answer_payee`), `aheadly/ai/recurring.py` (calendar rules per payee, `drop_duplicates`), `aheadly/core/examples.py` + `aheadly/examples/` (the example bakery).
+- **Understanding the business:** `aheadly/core/transfers.py` (moves between own accounts, card payments), `aheadly/ai/categorizer.py` (owner answers → own-account moves → file category → keyword rules → defaults; `set_payee_rule`, `answer_payee`), `aheadly/ai/recurring.py` (calendar rules per payee, `drop_duplicates`), `aheadly/ai/plan_text.py` ("just say it": `read_by_rules`, `check_item`, the `propose_plan_items` tool), `aheadly/core/examples.py` + `aheadly/examples/` (the example bakery).
 - **Forecast:** `aheadly/ai/forecast_engine.py` (Prophet with weekly seasonality on the residual daily flow, 500 paths, p10/p50/p90; `SeasonalNaiveModel` fallback; `month_day:` and `every:` recurrence rules). `_model_history` leaves out lines linked to a scheduled item (`transactions.scheduled_item_id`) and own-account moves; detected items land on their real dates; known one-offs replace matching detected occurrences.
-- **Core:** `aheadly/core/app_core.py`: `today` (day after the statement's end when it's older), `detected_recurring`, `recurring_table`, `monthly_category_totals`, `weekly_sales`, `load_example`, `forecast_summary`, `planned_items` (owner's items only), `save_plan` (keeps removed detected items switched off). Database migrations in `Repository.MIGRATIONS` (`PRAGMA user_version`).
-- **AI:** `aheadly/ai/tools.py` (six tools; `get_transactions` category enum), `llm_client.py` (stub, Gemini, Anthropic), `prompts.py`, `templates.py` (generic alert actions still), `insight_translator.py`, `guardrails.py`.
-- **UI:** `aheadly/ui/views/` dashboard (statement / example notice, "Next big payment" = soonest payment at least a quarter of the biggest), alerts, ask, whatif (kind picker outside the form), accounts (multi-file upload, "Try the example bakery", accounts and cards, "What we're counting on", "Regular payments and income we found", recent transactions with category names), settings.
+- **Core:** `aheadly/core/app_core.py`: `today` (day after the statement's end when it's older), `detected_recurring`, `recurring_table`, `monthly_category_totals`, `weekly_sales`, `load_example`, `parse_plan_text` / `add_plan_items`, `scheduled_labels`, `forecast_summary`, `planned_items` (owner's items only), `save_plan` (keeps removed detected items switched off). Database migrations in `Repository.MIGRATIONS` (`PRAGMA user_version`).
+- **AI:** `aheadly/ai/tools.py` (seven tools incl. `propose_plan_items`; `get_transactions` category enum), `insight_translator.extract_plan_items`, `llm_client.py` (stub, Gemini, Anthropic), `prompts.py`, `templates.py` (generic alert actions still), `insight_translator.py`, `guardrails.py`.
+- **UI:** `aheadly/ui/views/` dashboard (statement / example notice, "Next big payment" = soonest payment at least a quarter of the biggest), alerts, ask, whatif (kind picker outside the form), accounts (multi-file upload, "Try the example bakery", accounts and cards, "What we're counting on" with "Just say it", "Regular payments and income we found", recent transactions with category names), settings.
 - **Demo data:** Maria's files are generated outside the repo by `../aheadly-test-data/make_maria_files.py` (statement ends yesterday; regenerate on demo day). The test businesses' generator is outside the repo too (`../aheadly-test-data/test_businesses/`).
 
 **Known issues** (from the Milestone 2 check-in; status):
@@ -71,8 +71,8 @@
 | 2.1 | Multiple bank accounts (Must) + credit cards (Should) | Must / Should | M + S | 1.3, 1.4 | Done |
 | 2.2 | Transaction categorizer (+ fix `revenue_change`) | Must | M | 1.4 | Done |
 | 2.3 | Recurring detection on real dates (weekly → yearly), no double counting | Must | L | 2.2 | Done |
-| 2.4 | "Just say it": free text → plan item, confirmed | Must | S | 1.4 | **Next** |
-| 2.5 | Any Excel file: receivables + bills (Must), employee list (Should), ledger + inventory (Nice) | Must / Should | M + S | 1.4, 2.2 |  |
+| 2.4 | "Just say it": free text → plan item, confirmed | Must | S | 1.4 | Done |
+| 2.5 | Any Excel file: receivables + bills (Must), employee list (Should), ledger + inventory (Nice) | Must / Should | M + S | 1.4, 2.2 | **Next** |
 | 2.6 | "How we built your forecast" page (replaces Money plan + "What we're counting on") | Must | L | 2.3, 2.4, 2.5 |  |
 | 2.7 | Onboarding questions (detect first, then ask), with AI category suggestions for leftover payees | Must | L | 2.2, 2.3, 2.4 |  |
 | 2.8 | Forecast confidence + "no big purchases known" note | Must | S | 1.3, 2.2 |  |
@@ -164,6 +164,7 @@ A button on Accounts loads one of the 1.1 businesses (files bundled read-only in
 #### 2.4 "Just say it" · Must · S
 `AppCore.parse_plan_text(text) -> list[ProposedItem]`: the LLM extracts {label, amount, date or cadence, in/out, certainty} with a JSON schema; code validates (amount > 0, date parseable and ≥ as-of, sign from in/out) and shows a confirmation card; nothing saved without "Add". Stub planner: regex for "$7,500 … Dec 1". New chat tool `add_plan_item` that **proposes** (returns a card), never writes directly. Also a text box on the 2.6 page and in 2.7 answers.
 **Done when:** tests for extraction validation (bad dates/amounts rejected), the confirm step, and the stub path.
+**Built (2026-11-11, DECISIONS #31):** as planned, with the tool named `propose_plan_items` (several items at once: "$5,500 each, paid Dec 16 and 17" is two). Text box on Accounts ("Anything coming up? Just say it") and a card with Add under chat answers; the 2.6 page and 2.7 answers will reuse `proposal_card`. Code also checks each amount appears in the owner's words, so a model can't slip in an invented number. New harness check `just_say_it`: the test owners' own sentences become their known one-offs (3 businesses where an amount was said).
 
 #### 2.5 Upload any Excel file · receivables + bills Must · employee list Should · ledger + inventory Nice · M + S
 - Accounts: the second uploader becomes "Other files you keep (optional)", multiple files.

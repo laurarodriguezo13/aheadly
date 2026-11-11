@@ -19,6 +19,7 @@ from typing import Any
 from aheadly.ai import prompts, templates
 from aheadly.ai.guardrails import check_numbers
 from aheadly.ai.llm_client import LLMError, LLMReply, StubClient
+from aheadly.ai.plan_text import PROPOSE_TOOL, ProposedItem, read_by_rules, read_tool_call
 from aheadly.ai.tools import ToolDispatcher
 from aheadly.domain import ChatAnswer
 
@@ -65,6 +66,8 @@ class InsightTranslator:
     # -------------------------------------------------------------- job B: chat
     def answer(self, question: str, history: list[dict], context: dict[str, Any]) -> ChatAnswer:
         self._tools.last_scenario = None
+        self._tools.last_proposals = []
+        self._tools.last_question = question
         messages = [{"role": "system", "content": prompts.CHAT_SYSTEM_PROMPT.format(**context)}]
         messages += [{"role": m["role"], "content": m["content"]} for m in history[-8:]]
         messages.append({"role": "user", "content": question})
@@ -78,7 +81,32 @@ class InsightTranslator:
             return self._fallback(question, evidence, tool_names)
         if text is None:
             return self._fallback(question, evidence, tool_names)
-        return ChatAnswer(text=text, tool_names=tool_names, scenario=self._tools.last_scenario)
+        return ChatAnswer(
+            text=text,
+            tool_names=tool_names,
+            scenario=self._tools.last_scenario,
+            proposals=self._tools.last_proposals,
+        )
+
+    # ------------------------------------------------------ job C: just say it
+    def extract_plan_items(self, text: str, today) -> tuple[list[ProposedItem], bool]:
+        """Roadmap 2.4: the owner's own words → plan items to confirm. Returns (items, used_rules).
+        The model reads it when one is connected; the offline rules read it otherwise or when the
+        model fails or finds nothing."""
+        if not isinstance(self._llm, StubClient):
+            messages = [
+                {"role": "system", "content": prompts.PLAN_TEXT_INSTRUCTIONS.format(today=today.isoformat())},
+                {"role": "user", "content": text},
+            ]
+            try:
+                reply = self._llm.chat(messages, [PROPOSE_TOOL])
+                calls = [c for c in reply.tool_calls if c.name == PROPOSE_TOOL["name"]]
+                items = [i for c in calls for i in read_tool_call(c.arguments, today, text)]
+                if items:
+                    return items, False
+            except LLMError as exc:
+                logger.warning("plan text: model failed, reading with rules: %s", exc)
+        return read_by_rules(text, today), True
 
     def explain_scenario(self, summary: dict, context: dict[str, Any]) -> str:
         """Used by the What-if form page: explain numbers the engine already produced."""
@@ -167,7 +195,11 @@ class InsightTranslator:
         name, data = usable[-1]
         text = templates.answer_from_tool(name, data)
         return ChatAnswer(
-            text=text, tool_names=tool_names, scenario=self._tools.last_scenario, used_fallback=True
+            text=text,
+            tool_names=tool_names,
+            scenario=self._tools.last_scenario,
+            used_fallback=True,
+            proposals=self._tools.last_proposals,
         )
 
 

@@ -5,15 +5,16 @@ import streamlit as st
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import require_data, start_page
 from aheadly.ui.charts import scenario_chart
-from aheadly.ui.components import scenario_metrics
+from aheadly.ui.components import proposal_card, scenario_metrics
 
 core = start_page(copy.CHAT_TITLE)
 require_data(core)
 st.caption(copy.CHAT_INTRO)
 st.write("")
 
-# Scenario cards are kept per message index only for this session (the DB keeps the text).
+# Scenario and plan-item cards are kept per message index only for this session (the DB keeps the text).
 st.session_state.setdefault("scenario_cards", {})
+st.session_state.setdefault("proposal_cards", {})
 
 biggest = core.biggest_upcoming_payment()
 what_if = (
@@ -44,6 +45,14 @@ for index, message in enumerate(history):
                 with st.spinner("Saving your plan…"):
                     core.save_plan(result)
                 st.success(copy.PLAN_SAVED)
+        proposals = st.session_state["proposal_cards"].get(index)
+        if isinstance(proposals, int):
+            st.success(copy.PLAN_ITEMS_ADDED.format(n=proposals))
+        elif proposals:
+            added = proposal_card(core, proposals, f"chat-{index}")
+            if added:
+                st.session_state["proposal_cards"][index] = added
+                st.rerun()
 
 question = st.chat_input(copy.CHAT_INPUT) or st.session_state.pop("pending_question", None)
 if question:
@@ -56,9 +65,12 @@ if question:
             st.caption(copy.FALLBACK_NOTE)
     if answer.scenario is not None:
         st.session_state["scenario_cards"][len(history) + 1] = answer.scenario
+    if answer.proposals:
+        st.session_state["proposal_cards"][len(history) + 1] = answer.proposals
     st.rerun()
 
 if history and st.button(copy.CLEAR_CHAT):
     core.clear_chat()
     st.session_state["scenario_cards"] = {}
+    st.session_state["proposal_cards"] = {}
     st.rerun()

@@ -200,6 +200,7 @@ class ChatAnswer:
     tool_names: list[str] = field(default_factory=list)
     scenario: ScenarioResult | None = None
     used_fallback: bool = False
+    proposals: list = field(default_factory=list)  # plan items to confirm (roadmap 2.4), never saved yet
 
 
 def end_of_next_month(today: date) -> date:

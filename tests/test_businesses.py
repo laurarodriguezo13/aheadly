@@ -45,6 +45,7 @@ PENDING: dict[str, dict[str, str]] = {
         "panaderia-la-esquina": "2.7 busy months (December card sales are far above November's)",
     },
     "recurring": {},
+    "just_say_it": {},
     "categories": {
         "taller-los-pistones": "the key counts a supplier payment the file shows as #¡VALOR! (unreadable line)",
     },
@@ -203,6 +204,40 @@ def test_hidden_future(slug):
     point = next(p for p in forecast.points if p.date == _d(actual["date"]))
     margin = 0.10 * abs(forecast.opening_balance)
     assert point.balance_p10 - margin <= actual["balance"] <= point.balance_p90 + margin
+
+
+def _said(known: dict, said: list[str]) -> bool:
+    """The owner wrote this payment's amount in their own words."""
+    amount = abs(known["amount"])
+    return any(f"{amount:,.0f}" in s or f"{amount:,.2f}" in s for s in said)
+
+
+@pytest.mark.parametrize(
+    "slug",
+    _businesses(
+        "just_say_it",
+        lambda key: any(
+            _said(k, key["onboarding_answers"]["upcoming_in_own_words"]) for k in key["one_offs_known"]
+        ),
+    ),
+)
+def test_just_say_it(slug):
+    """Roadmap 2.4: what the owner says in their own words becomes the payments the key knows about.
+    Every known one-off whose amount the owner said must be read with its sign and within 3 days."""
+    key = KEYS[slug]
+    core = import_business(slug)
+    said = key["onboarding_answers"]["upcoming_in_own_words"]
+    read = [item for sentence in said for item in core.parse_plan_text(sentence)]
+    for known in key["one_offs_known"]:
+        if not _said(known, said):
+            continue  # the owner didn't say this one (it's in a file: 2.5)
+        assert any(
+            abs(item.signed_amount - known["amount"]) <= 0.01 * abs(known["amount"])
+            and item.due_date is not None
+            and abs((item.due_date - _d(known["date"])).days) <= 3
+            for item in read
+        ), f"not read: {known['label']} {known['amount']} on {known['date']}"
+    assert not any(item.ready is False and item.problem != "How much?" for item in read)
 
 
 # ------------------------------------------------------------- not built yet (see PENDING)

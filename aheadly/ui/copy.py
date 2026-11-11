@@ -93,9 +93,35 @@ BALANCE_BREAKS_IN_FILE = (
     "In {file}, the Balance column doesn't add up in {n} place(s), starting {date}. "
     "Some lines may be missing from that file, so check it before trusting the numbers."
 )
+JUST_SAY_IT = "Anything coming up? Just say it"
+JUST_SAY_IT_PLACEHOLDER = (
+    "For example: I'm buying a new oven for $7,500 on Nov 14. A customer owes me $3,200, due Dec 1."
+)
+JUST_SAY_IT_HELP = (
+    "Write it the way you'd tell a friend. We'll show you what we understood before anything is added."
+)
+READ_IT = "Read it"
+READING_IT = "Reading what you wrote…"
+NOTHING_UNDERSTOOD = (
+    'We couldn\'t find a payment or income in that. Try with the amount and the day, like "$1,650 on Dec 2".'
+)
+PROPOSAL_INTRO = "Here's what we understood. Fix anything that's off, then press Add."
+ADD_TO_PLAN = "Add to my plan"
+PLAN_ITEMS_ADDED = "Added {n} item(s) to your plan. The forecast now counts on them."
+ADD_PROBLEM = "Not added yet. {problem}"
+PROPOSAL_COLUMNS = {
+    "label": "What",
+    "direction": "In or out",
+    "amount": "Amount ($)",
+    "due_date": "Date",
+    "repeats": "Repeats",
+    "maybe": "Not sure yet",
+}
+DIRECTION_NAMES = {"in": "Coming in", "out": "Going out"}
 PLANNED_TITLE = "What we're counting on"
 PLANNED_HELP = (
-    "These upcoming payments and income come from your upcoming-payments file and any plan you save. "
+    "These upcoming payments and income come from your upcoming-payments file, what you tell us below, "
+    "and any plan you save. "
     "Regular payments like payroll and rent are learned from your statement, so they are not listed here."
 )
 STATEMENT_UP_TO = "Based on your statement up to {end}."

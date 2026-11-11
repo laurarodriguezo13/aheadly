@@ -14,6 +14,9 @@ SAMPLE_ARGS = {
         "name": "t",
         "adjustments": [{"type": "move_item", "label": "oven", "new_date": "2026-12-31"}],
     },
+    "propose_plan_items": {
+        "items": [{"label": "New laptop", "amount": 1650, "direction": "out", "date": "2026-12-02"}]
+    },
 }
 
 

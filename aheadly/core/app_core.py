@@ -14,7 +14,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas as pd
 
-from aheadly.ai import categorizer, recurring
+from aheadly.ai import categorizer, plan_text, recurring
+from aheadly.ai.plan_text import ProposedItem
 from aheadly.ai.forecast_engine import ForecastEngine, expand_scheduled_items, history_balances
 from aheadly.ai.insight_translator import InsightTranslator
 from aheadly.ai.llm_client import create_llm_client
@@ -245,6 +246,48 @@ class AppCore:
         if sales <= 0:
             sales = self.repo.flow_totals(business.id, start)["money_in"]
         return round(sales / weeks, 2)
+
+    # ------------------------------------------------------------ just say it (roadmap 2.4)
+    def parse_plan_text(self, text: str) -> list[ProposedItem]:
+        """What the owner wrote ("I'm buying a new oven for $7,500 on Nov 14") as plan items to
+        confirm. Saves nothing."""
+        if not text.strip():
+            return []
+        items, _ = self.translator.extract_plan_items(text, self.today)
+        return items
+
+    def check_proposals(self, arguments: dict, text: str) -> list[ProposedItem]:
+        """The chat's proposed items, checked like any other (the amounts must be in the owner's words)."""
+        return plan_text.read_tool_call(arguments, self.today, text or None)
+
+    def add_plan_items(self, items: list[ProposedItem | dict], source: str = "owner") -> int:
+        """Save the items the owner confirmed (Add). Each is checked again; items with a problem are
+        refused, the rest are saved and the forecast reruns. Returns how many were added."""
+        checked = [i if isinstance(i, ProposedItem) else plan_text.check_item(i, self.today) for i in items]
+        checked = [plan_text.check_item({**i.to_dict()}, self.today) for i in checked]
+        problems = [i for i in checked if not i.ready]
+        if problems:
+            raise ValueError(f"{problems[0].label or 'An item'}: {problems[0].problem}")
+        business = self._business()
+        self.repo.add_scheduled_items(
+            business.id,
+            [
+                ScheduledItem(
+                    label=i.label,
+                    amount=round(i.signed_amount, 2),
+                    due_date=i.due_date,
+                    kind="receivable" if i.direction == "in" else "bill",
+                    recurrence=plan_text.RECURRENCE[i.repeats],
+                    source=source,
+                    status="user",
+                    certainty=i.certainty,
+                )
+                for i in checked
+            ],
+        )
+        if checked:
+            self.run_daily_check(force=True)
+        return len(checked)
 
     # ------------------------------------------------------------ recurring (roadmap 2.3)
     def detected_recurring(self) -> list[recurring.Recurring]:
@@ -662,8 +705,13 @@ class AppCore:
         totals = self.repo.flow_totals(self._business().id, self.today - timedelta(days=90))
         return totals["money_out"] / 3
 
+    def scheduled_labels(self) -> list[str]:
+        """Names of every payment the forecast counts on (the owner's and the ones found in the
+        statement), so the chat can move or remove any of them."""
+        return sorted({i.label for i in self.repo.list_scheduled_items(self._business().id)})
+
     def _prompt_context(self, business: Business) -> dict:
-        labels = ", ".join(sorted({i.label for i in self.repo.list_scheduled_items(business.id)}))
+        labels = ", ".join(self.scheduled_labels())
         return {
             "business_name": business.name,
             "end_of_next_month": end_of_next_month(self.today).isoformat(),
