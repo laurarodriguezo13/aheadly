@@ -26,6 +26,38 @@ from aheadly.domain import (
 
 SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 
+# Numbered upgrades on top of schema.sql. A database remembers how many it has (PRAGMA user_version),
+# so an older file (a local database, or a saved file loaded later) upgrades itself when opened.
+# Never edit or reorder a step that has shipped: add a new one at the end.
+MIGRATIONS: list[list[str]] = [
+    # 1 · roadmap 1.4: groundwork for understanding a business from its own files
+    [
+        "CREATE TABLE business_profile (business_id INTEGER PRIMARY KEY, "
+        "profile_json TEXT NOT NULL DEFAULT '{}', updated_at TEXT)",
+        "ALTER TABLE scheduled_items ADD COLUMN status TEXT DEFAULT 'user'",
+        "ALTER TABLE scheduled_items ADD COLUMN certainty TEXT DEFAULT 'confirmed'",
+        "ALTER TABLE scheduled_items ADD COLUMN likelihood REAL DEFAULT 1.0",
+        "ALTER TABLE scheduled_items ADD COLUMN category TEXT",
+        "ALTER TABLE scheduled_items ADD COLUMN match_key TEXT",
+        "ALTER TABLE scheduled_items ADD COLUMN end_date TEXT",
+        "ALTER TABLE scheduled_items ADD COLUMN user_edited INTEGER DEFAULT 0",
+        "ALTER TABLE scheduled_items ADD COLUMN paused INTEGER DEFAULT 0",
+        "ALTER TABLE transactions ADD COLUMN scheduled_item_id INTEGER",
+        "ALTER TABLE transactions ADD COLUMN category_source TEXT DEFAULT 'bank'",
+        "ALTER TABLE transactions ADD COLUMN is_internal_transfer INTEGER DEFAULT 0",
+        "ALTER TABLE accounts ADD COLUMN kind TEXT DEFAULT 'bank'",
+        "ALTER TABLE accounts ADD COLUMN currency TEXT DEFAULT 'USD'",
+        "ALTER TABLE forecast_runs ADD COLUMN chance_below_line REAL",
+        "CREATE TABLE payee_rules (id INTEGER PRIMARY KEY, business_id INTEGER, match_key TEXT, "
+        "category TEXT, label TEXT, created_at TEXT, UNIQUE (business_id, match_key))",
+        "CREATE TABLE insights (id INTEGER PRIMARY KEY, business_id INTEGER, run_id INTEGER, type TEXT, "
+        "severity TEXT, facts_json TEXT, title TEXT, body TEXT, actions_json TEXT, created_at TEXT, "
+        "dismissed INTEGER DEFAULT 0, resolved INTEGER DEFAULT 0)",
+        "CREATE TABLE uploaded_files (id INTEGER PRIMARY KEY, business_id INTEGER, name TEXT, "
+        "detected_type TEXT, mapping_json TEXT, confirmed INTEGER DEFAULT 0, uploaded_at TEXT)",
+    ],
+]
+
 
 def _now() -> str:
     """Stored in UTC; the UI shows it in the visitor's own time zone."""
@@ -41,6 +73,39 @@ class Repository:
         self._conn = sqlite3.connect(str(db_path), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.executescript(SCHEMA_PATH.read_text())
+        self._migrate()
+
+    def schema_version(self) -> int:
+        return int(self._conn.execute("PRAGMA user_version").fetchone()[0])
+
+    def _migrate(self) -> None:
+        """Apply the upgrades this database doesn't have yet, each one all-or-nothing."""
+        current = self.schema_version()
+        for number, steps in enumerate(MIGRATIONS[current:], start=current + 1):
+            with self._conn:
+                for statement in steps:
+                    self._conn.execute(statement)
+                self._conn.execute(f"PRAGMA user_version = {int(number)}")
+
+    # ---------------------------------------------------------------- profile
+    def get_profile(self, business_id: int) -> dict:
+        """What the owner told us about the business (type, payment terms, time zone...)."""
+        row = self._conn.execute(
+            "SELECT profile_json FROM business_profile WHERE business_id=?", (business_id,)
+        ).fetchone()
+        return json.loads(row["profile_json"]) if row else {}
+
+    def save_profile(self, business_id: int, changes: dict) -> dict:
+        """Merge `changes` into the profile and return the result."""
+        profile = {**self.get_profile(business_id), **changes}
+        self._conn.execute(
+            "INSERT INTO business_profile (business_id, profile_json, updated_at) VALUES (?,?,?) "
+            "ON CONFLICT(business_id) DO UPDATE SET profile_json=excluded.profile_json, "
+            "updated_at=excluded.updated_at",
+            (business_id, json.dumps(profile), _now()),
+        )
+        self._conn.commit()
+        return profile
 
     # ---------------------------------------------------------------- business
     def get_business(self) -> Business | None:
@@ -167,10 +232,27 @@ class Repository:
     # --------------------------------------------------------- scheduled items
     def add_scheduled_items(self, business_id: int, items: list[ScheduledItem]) -> None:
         self._conn.executemany(
-            "INSERT INTO scheduled_items (business_id, kind, label, amount, due_date, recurrence, source, active) "
-            "VALUES (?,?,?,?,?,?,?,1)",
+            "INSERT INTO scheduled_items (business_id, kind, label, amount, due_date, recurrence, source, "
+            "active, status, certainty, likelihood, category, match_key, end_date, user_edited, paused) "
+            "VALUES (?,?,?,?,?,?,?,1,?,?,?,?,?,?,?,?)",
             [
-                (business_id, i.kind, i.label, i.amount, i.due_date.isoformat(), i.recurrence, i.source)
+                (
+                    business_id,
+                    i.kind,
+                    i.label,
+                    i.amount,
+                    i.due_date.isoformat(),
+                    i.recurrence,
+                    i.source,
+                    i.status,
+                    i.certainty,
+                    i.likelihood,
+                    i.category,
+                    i.match_key,
+                    i.end_date.isoformat() if i.end_date else None,
+                    int(i.user_edited),
+                    int(i.paused),
+                )
                 for i in items
             ],
         )
@@ -189,6 +271,14 @@ class Repository:
                 kind=r["kind"],
                 recurrence=r["recurrence"],
                 source=r["source"],
+                status=r["status"] or "user",
+                certainty=r["certainty"] or "confirmed",
+                likelihood=1.0 if r["likelihood"] is None else float(r["likelihood"]),
+                category=r["category"],
+                match_key=r["match_key"],
+                end_date=date.fromisoformat(r["end_date"]) if r["end_date"] else None,
+                user_edited=bool(r["user_edited"]),
+                paused=bool(r["paused"]),
             )
             for r in rows
         ]
@@ -409,6 +499,10 @@ class Repository:
     def reset(self) -> None:
         """Wipe everything (Settings → 'Reset demo')."""
         for table in (
+            "uploaded_files",
+            "insights",
+            "payee_rules",
+            "business_profile",
             "chat_messages",
             "scenarios",
             "alerts",

@@ -46,6 +46,15 @@ class ScheduledItem:
     id: int | None = None
     source: str = "demo"
     active: bool = True
+    # where it came from and how sure we are (roadmap 1.4; used by detection and the forecast page)
+    status: str = "user"  # detected (found in the statement) | confirmed (by the owner) | user (added)
+    certainty: str = "confirmed"  # confirmed | maybe
+    likelihood: float = 1.0  # for a maybe item: the chance it happens
+    category: str | None = None
+    match_key: str | None = None  # normalized payee, links it to the transactions it explains
+    end_date: date | None = None
+    user_edited: bool = False  # the owner changed it: detection never overwrites it again
+    paused: bool = False
 
 
 @dataclass

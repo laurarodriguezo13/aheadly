@@ -10,6 +10,7 @@ from aheadly.config import Settings, load_settings
 from aheadly.core.app_core import AppCore
 from aheadly.core.session import new_core
 from aheadly.ui import copy
+from aheadly.ui.components import browser_time_zone
 from aheadly.ui.theme import inject_theme
 from aheadly.version import code_version
 
@@ -77,6 +78,7 @@ def start_page(title: str) -> AppCore:
         st.error(f"Configuration problem: {exc}")
         st.stop()
     core = get_core()
+    core.set_time_zone(browser_time_zone())  # "today" is the owner's date, not the server's
     st.title(title)
     return core
 

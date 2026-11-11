@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas as pd
 
@@ -80,6 +81,7 @@ class AppCore:
         self.engine = engine
         self.settings = settings
         self._today = today
+        self._pending_time_zone: str | None = None  # from the browser, kept until a business exists
         self.translator = InsightTranslator(llm or create_llm_client(settings), ToolDispatcher(self))
 
     @property
@@ -88,10 +90,35 @@ class AppCore:
         when the statement ends earlier (the days in between are not in the data)."""
         if self._today:
             return self._today
+        real = self.real_today()
         end = self.statement_end()
-        if end is not None and end + timedelta(days=1) < date.today():
+        if end is not None and end + timedelta(days=1) < real:
             return end + timedelta(days=1)
-        return date.today()
+        return real
+
+    def real_today(self) -> date:
+        """Today's date where the owner is (the server may be in another time zone, e.g. UTC)."""
+        zone = self.time_zone
+        return datetime.now(ZoneInfo(zone)).date() if zone else date.today()
+
+    @property
+    def time_zone(self) -> str | None:
+        business = self.repo.get_business()
+        saved = self.repo.get_profile(business.id).get("time_zone") if business else None
+        return saved or self._pending_time_zone
+
+    def set_time_zone(self, name: str | None) -> None:
+        """The owner's time zone, read from their browser. Unknown names are ignored."""
+        if not name:
+            return
+        try:
+            ZoneInfo(name)
+        except (ZoneInfoNotFoundError, ValueError):
+            return
+        self._pending_time_zone = name
+        business = self.repo.get_business()
+        if business and self.repo.get_profile(business.id).get("time_zone") != name:
+            self.repo.save_profile(business.id, {"time_zone": name})
 
     def statement_end(self) -> date | None:
         """Date of the newest transaction uploaded (None before any upload)."""
@@ -101,7 +128,7 @@ class AppCore:
     def statement_lag_days(self) -> int:
         """Days missing between the statement's last transaction and yesterday (0 = up to date)."""
         end = self.statement_end()
-        return max(0, (date.today() - end).days - 1) if end else 0
+        return max(0, (self.real_today() - end).days - 1) if end else 0
 
     # ------------------------------------------------------------ onboarding
     def status(self) -> AppStatus:
@@ -121,6 +148,8 @@ class AppCore:
         """Feature 1: link a data source once; transactions then live in the repository."""
         profile = {"low_cash_line": self.settings.default_low_cash_line, **connector.business_profile()}
         business = self.repo.get_business() or self.repo.create_business(**profile)
+        if self._pending_time_zone:
+            self.set_time_zone(self._pending_time_zone)
         payload = connector.sync()
         account_id = self.repo.add_account(
             business.id, connector.source, payload.account_name, payload.balance

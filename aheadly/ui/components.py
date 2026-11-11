@@ -20,13 +20,17 @@ def day(d) -> str:
     return f"{d:%b} {d.day}, {d.year}"
 
 
-def local_time(value) -> str:
-    """A stored time (UTC) in the visitor's own time zone, read from their browser."""
+def browser_time_zone() -> str | None:
+    """The visitor's time zone as their browser reports it ("America/New_York"), if known."""
     try:
-        zone = st.context.timezone
-    except Exception:  # older Streamlit or no browser (tests): the server's zone
-        zone = None
-    return format_local(value, zone)
+        return st.context.timezone
+    except Exception:  # older Streamlit, or no browser (tests): unknown
+        return None
+
+
+def local_time(value) -> str:
+    """A stored time (UTC) in the visitor's own time zone."""
+    return format_local(value, browser_time_zone())
 
 
 def statement_notice(end, start, lag_days: int) -> None:
