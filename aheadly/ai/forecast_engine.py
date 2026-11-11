@@ -16,6 +16,7 @@ from datetime import date, timedelta
 import numpy as np
 import pandas as pd
 
+from aheadly.ai.recurring import month_rule_dates
 from aheadly.ai.models import ForecastModel, ProphetModel, SeasonalNaiveModel, prophet_available
 from aheadly.domain import ForecastPoint, ForecastResult, ScheduledItem
 
@@ -32,12 +33,20 @@ def expand_scheduled_items(
     for item in items:
         if not item.active:
             continue
+        if item.recurrence and item.recurrence.startswith("month_day:"):
+            # a day of the month every N months, weekends moved (roadmap 2.3)
+            for event in month_rule_dates(item.recurrence, item.due_date, end):
+                if event >= start:
+                    events.append((event, item.amount, item.label))
+            continue
         due = item.due_date
         while due <= end:
             if due >= start:
                 events.append((due, item.amount, item.label))
             if item.recurrence in RECURRENCE_DAYS:
                 due += timedelta(days=RECURRENCE_DAYS[item.recurrence])
+            elif item.recurrence and item.recurrence.startswith("every:"):
+                due += timedelta(days=max(1, int(item.recurrence.split(":")[1])))
             elif item.recurrence == "monthly":
                 due = _add_month(due)
             else:

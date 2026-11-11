@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas as pd
 
-from aheadly.ai import categorizer
+from aheadly.ai import categorizer, recurring
 from aheadly.ai.forecast_engine import ForecastEngine, expand_scheduled_items, history_balances
 from aheadly.ai.insight_translator import InsightTranslator
 from aheadly.ai.llm_client import create_llm_client
@@ -34,6 +34,7 @@ from aheadly.domain import (
     ChatAnswer,
     ForecastResult,
     ScenarioResult,
+    ScheduledItem,
     end_of_next_month,
 )
 
@@ -183,6 +184,7 @@ class AppCore:
                 self.repo.add_scheduled_items(business.id, payload.scheduled_items)
         self._mark_internal_transfers(business.id)
         self._categorize(business.id)
+        self._detect_recurring(business.id)
         logger.info("connected %s file(s): %s transactions", len(connectors), added)
         self.run_daily_check(force=True)
         return added
@@ -221,6 +223,7 @@ class AppCore:
         self.repo.save_payee_rule(business.id, key, category, label or payee)
         changed = self._categorize(business.id)
         if changed:
+            self._detect_recurring(business.id)  # an item's kind follows its category
             self.run_daily_check(force=True)
         return changed
 
@@ -242,6 +245,69 @@ class AppCore:
         if sales <= 0:
             sales = self.repo.flow_totals(business.id, start)["money_in"]
         return round(sales / weeks, 2)
+
+    # ------------------------------------------------------------ recurring (roadmap 2.3)
+    def detected_recurring(self) -> list[recurring.Recurring]:
+        """Every repeating payment and income found in the statements, with its rule."""
+        lines = [
+            recurring.TxLine(r[0], date.fromisoformat(r[1]), r[2], r[3], r[4], bool(r[5]))
+            for r in self.repo.recurring_lines(self._business().id)
+        ]
+        return recurring.detect(lines, self.today)
+
+    def recurring_table(self) -> list[dict]:
+        """What the Accounts page lists: each regular payment and income, how often, and how the
+        forecast uses it."""
+        rows = []
+        for r in self.detected_recurring():
+            if r.internal:
+                continue
+            rows.append(
+                {
+                    "description": r.label,
+                    "how_often": r.cadence,
+                    "amount": r.amount,
+                    "varies": r.amount_varies,
+                    "next": r.next_due.isoformat() if r.next_due else "",
+                    "in_forecast": "on its dates" if r.scheduled else "in the daily pattern",
+                    "category": r.category,
+                }
+            )
+        return sorted(
+            rows, key=lambda row: (-abs(row["amount"]) if row["in_forecast"] == "on its dates" else 0)
+        )
+
+    def _detect_recurring(self, business_id: int) -> None:
+        """Put each recurring payment on its real dates (as scheduled items) and take its past lines
+        out of what the model learns from, so nothing is counted twice."""
+        found = self.detected_recurring()
+        existing = self.repo.list_scheduled_items(business_id)
+        # the demo data (and an owner who typed their payroll) already has items for these kinds
+        covered = {i.kind for i in existing if i.status != "detected" and i.recurrence} & SCHEDULED_CATEGORIES
+        edited = self.repo.edited_items_by_key(business_id)
+        items, keep_links = [], {}
+        for found_item in found:
+            if not found_item.scheduled or _kind(found_item.category, found_item.amount) in covered:
+                continue
+            if found_item.match_key in edited:
+                keep_links[edited[found_item.match_key]] = found_item.transaction_ids
+                continue
+            for i, (rule, nominal) in enumerate(zip(found_item.rules, found_item.next_dates)):
+                item = ScheduledItem(
+                    label=found_item.label,
+                    amount=found_item.amount,
+                    due_date=nominal,
+                    kind=_kind(found_item.category, found_item.amount),
+                    recurrence=recurring.recurrence_for(rule),
+                    source="statement",
+                    status="detected",
+                    certainty=found_item.certainty,
+                    category=found_item.category,
+                    match_key=found_item.match_key,
+                )
+                # every line of the payee is linked to its first item (that's what leaves the history)
+                items.append((item, found_item.transaction_ids if i == 0 else []))
+        self.repo.replace_detected_items(business_id, items, keep_links)
 
     def _categorize(self, business_id: int) -> int:
         rules = [categorizer.PayeeRule(*r) for r in self.repo.payee_rules(business_id)]
@@ -338,12 +404,14 @@ class AppCore:
         balance = self.repo.current_balance(business.id)
         forecast = self.repo.latest_forecast(business.id)
         if forecast is not None:  # stored runs do not keep the scheduled events; recompute them
-            forecast.scheduled = expand_scheduled_items(
-                self.repo.list_scheduled_items(business.id), self.today, forecast.horizon_end
-            )
+            forecast.scheduled = self._events(forecast.horizon_end)
         history = history_balances(self.repo.daily_net_flow(business.id), balance)
         upcoming = [e for e in (forecast.scheduled if forecast else []) if e[1] < 0]
-        next_payment = min(upcoming, key=lambda e: (e[0], e[1])) if upcoming else None
+        # "next big payment": the soonest one at least a quarter the size of the biggest ahead
+        # (not this week's $449 flour delivery when a $7,500 oven is due in three days)
+        biggest = -min((e[1] for e in upcoming), default=0.0)
+        big = [e for e in upcoming if -e[1] >= 0.25 * biggest]
+        next_payment = min(big, key=lambda e: (e[0], e[1])) if big else None
         return Dashboard(
             business=business,
             balance=balance,
@@ -413,7 +481,7 @@ class AppCore:
             self.settings.horizon_days,
             self.weekly_sales(),
         )
-        self.repo.replace_scheduled_items(business.id, [i for i in items if i.active])
+        self.repo.replace_scheduled_items(business.id, items)  # removed ones are kept, switched off
         self.repo.save_scenario(
             business.id,
             result.name,
@@ -492,12 +560,8 @@ class AppCore:
     def biggest_upcoming_payment(self) -> str | None:
         """Label of the largest payment going out before the end of next month (for suggested questions)."""
         end = end_of_next_month(self.today)
-        upcoming = [
-            item
-            for item in self.repo.list_scheduled_items(self._business().id)
-            if item.amount < 0 and self.today <= item.due_date < end
-        ]
-        return min(upcoming, key=lambda item: item.amount).label if upcoming else None
+        upcoming = [e for e in self._events(end - timedelta(days=1)) if e[1] < 0]
+        return min(upcoming, key=lambda e: e[1])[2] if upcoming else None
 
     def planned_items(self) -> list[dict]:
         """What the forecast counts on beyond the statement: the owner's upcoming payments and income."""
@@ -509,11 +573,12 @@ class AppCore:
                 "repeats": item.recurrence or "once",
             }
             for item in self.repo.list_scheduled_items(self._business().id)
+            if item.status != "detected"
         ]
 
     def upcoming_outflows(self, weeks: int = 8) -> list[dict]:
         end = self.today + timedelta(days=7 * max(1, min(8, weeks)))
-        events = expand_scheduled_items(self.repo.list_scheduled_items(self._business().id), self.today, end)
+        events = self._events(end)
         outflows = sorted((e for e in events if e[1] < 0), key=lambda e: e[1])
         return [
             {"label": label, "amount": round(-amount), "date": d.isoformat()}
@@ -549,8 +614,10 @@ class AppCore:
         Demo data has payroll/rent/bills as scheduled items, so they leave the history; a plain
         bank export has no scheduled items, so everything stays in and is forecast from the past.
         """
-        covered = {item.kind for item in self.repo.list_scheduled_items(business.id)} & SCHEDULED_CATEGORIES
-        return self.repo.daily_net_flow(business.id, exclude_categories=covered)
+        covered = {
+            item.kind for item in self.repo.list_scheduled_items(business.id) if item.status != "detected"
+        } & SCHEDULED_CATEGORIES
+        return self.repo.daily_net_flow(business.id, exclude_categories=covered, exclude_linked=True)
 
     def _business(self) -> Business:
         business = self.repo.get_business()
@@ -567,10 +634,29 @@ class AppCore:
         return self.engine.forecast(
             history,
             self.repo.current_balance(business.id),
-            scheduled_items,
+            self._without_duplicates(scheduled_items),
             self.today,
             self.settings.horizon_days,
         )
+
+    def _events(self, end: date) -> list[tuple[date, float, str]]:
+        """Dated money in and out from today to `end`, each payment once."""
+        items = self._without_duplicates(self.repo.list_scheduled_items(self._business().id), end)
+        return [(i.due_date, i.amount, i.label) for i in items]
+
+    def _without_duplicates(self, items: list[ScheduledItem], end: date | None = None) -> list[ScheduledItem]:
+        """A payment the owner told us about that is also one of the recurring ones found in the
+        statement (the quarterly flour order, an insurer's claim) is counted once."""
+        end = end or self.today + timedelta(days=self.settings.horizon_days - 1)
+        events = [
+            (when, amount, label, item.status == "detected")
+            for item in items
+            for when, amount, label in expand_scheduled_items([item], self.today, end)
+        ]
+        return [
+            ScheduledItem(label, amount, when, source="forecast")
+            for when, amount, label in recurring.drop_duplicates(events)
+        ]
 
     def _avg_monthly_outflow(self) -> float:
         totals = self.repo.flow_totals(self._business().id, self.today - timedelta(days=90))
@@ -587,6 +673,13 @@ class AppCore:
             "low_cash_line": round(business.low_cash_line),
             "scheduled_labels": labels or "none",
         }
+
+
+def _kind(category: str | None, amount: float) -> str:
+    """A scheduled item's kind from the category of the lines it comes from."""
+    if category in ("payroll", "rent"):
+        return category
+    return "receivable" if amount > 0 else "bill"
 
 
 def _adjustment_dict(adjustment) -> dict:

@@ -322,16 +322,21 @@ class Repository:
         params.append(limit)
         return pd.read_sql_query(query, self._conn, params=params)
 
-    def daily_net_flow(self, business_id: int, exclude_categories: Iterable[str] = ()) -> pd.DataFrame:
+    def daily_net_flow(
+        self, business_id: int, exclude_categories: Iterable[str] = (), exclude_linked: bool = False
+    ) -> pd.DataFrame:
         """Daily sum of transactions as a continuous series (missing days = 0).
 
-        `exclude_categories` drops money that the forecast adds back as scheduled items
-        (payroll, rent...), so it is never counted twice.
+        With `exclude_linked`, lines linked to a scheduled item (a recurring payment found in the
+        statement, roadmap 2.3) are left out: the forecast puts them back on their own dates, so they are never counted
+        twice. `exclude_categories` does the same by category for the demo data's items.
         """
         query = (
             "SELECT date, SUM(amount) AS net_flow FROM transactions "
             "WHERE business_id=? AND COALESCE(is_internal_transfer, 0)=0"
         )
+        if exclude_linked:
+            query += " AND scheduled_item_id IS NULL"
         params: list = [business_id]
         excluded = sorted(set(exclude_categories))
         if excluded:
@@ -339,9 +344,16 @@ class Repository:
             params.extend(excluded)
         query += " GROUP BY date ORDER BY date"
         df = pd.read_sql_query(query, self._conn, params=params, parse_dates=["date"])
-        if df.empty:
+        span = self._conn.execute(
+            "SELECT MIN(date) AS first, MAX(date) AS last FROM transactions WHERE business_id=?",
+            (business_id,),
+        ).fetchone()
+        if span["first"] is None:
             return df
-        full_index = pd.date_range(df["date"].min(), df["date"].max(), freq="D")
+        # the whole statement period, so days whose lines are all forecast elsewhere count as 0
+        full_index = pd.date_range(span["first"], span["last"], freq="D")
+        if df.empty:
+            return pd.DataFrame({"date": full_index, "net_flow": 0.0})
         return df.set_index("date").reindex(full_index, fill_value=0.0).rename_axis("date").reset_index()
 
     def flow_totals(self, business_id: int, since: date) -> dict[str, float]:
@@ -408,9 +420,87 @@ class Repository:
         ]
 
     def replace_scheduled_items(self, business_id: int, items: list[ScheduledItem]) -> None:
-        """Used when a scenario is saved as the plan."""
+        """Used when a scenario is saved as the plan. Statement lines linked to an item stay linked
+        to its new copy. An item the plan removes is kept, switched off: its lines stay out of the
+        history, so removing rent from the plan really removes it."""
         self._conn.execute("UPDATE scheduled_items SET active=0 WHERE business_id=?", (business_id,))
-        self.add_scheduled_items(business_id, items)
+        for item in items:
+            new_id = self._insert_scheduled_item(business_id, item)
+            if item.id is not None:
+                self._conn.execute(
+                    "UPDATE transactions SET scheduled_item_id=? WHERE scheduled_item_id=?", (new_id, item.id)
+                )
+        self._conn.commit()
+
+    def _insert_scheduled_item(self, business_id: int, i: ScheduledItem) -> int:
+        cur = self._conn.execute(
+            "INSERT INTO scheduled_items (business_id, kind, label, amount, due_date, recurrence, source, "
+            "active, status, certainty, likelihood, category, match_key, end_date, user_edited, paused) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                business_id,
+                i.kind,
+                i.label,
+                i.amount,
+                i.due_date.isoformat(),
+                i.recurrence,
+                i.source,
+                int(i.active),
+                i.status,
+                i.certainty,
+                i.likelihood,
+                i.category,
+                i.match_key,
+                i.end_date.isoformat() if i.end_date else None,
+                int(i.user_edited),
+                int(i.paused),
+            ),
+        )
+        return cur.lastrowid
+
+    # ------------------------------------------------------- recurring (roadmap 2.3)
+    def recurring_lines(self, business_id: int) -> list[tuple]:
+        """(id, date, amount, description, category, is_internal) of the owner's own statements."""
+        return [
+            tuple(r)
+            for r in self._conn.execute(
+                "SELECT id, date, amount, description, category, COALESCE(is_internal_transfer, 0) "
+                "FROM transactions WHERE business_id=? AND COALESCE(source, '') != 'demo' ORDER BY date, id",
+                (business_id,),
+            )
+        ]
+
+    def edited_items_by_key(self, business_id: int) -> dict[str, int]:
+        """match_key → id of an item the owner changed (moved, removed in a plan, edited): detection
+        leaves those alone."""
+        rows = self._conn.execute(
+            "SELECT match_key, MAX(id) AS id FROM scheduled_items WHERE business_id=? AND user_edited=1 "
+            "AND match_key IS NOT NULL GROUP BY match_key",
+            (business_id,),
+        )
+        return {r["match_key"]: r["id"] for r in rows}
+
+    def replace_detected_items(
+        self, business_id: int, items: list[tuple[ScheduledItem, list[int]]], keep_links: dict[int, list[int]]
+    ) -> None:
+        """Swap the items found in the statement for a fresh set, and link each statement line to
+        the item that now forecasts it. items: (item, its statement lines). keep_links: an edited
+        item's id → its lines."""
+        self._conn.execute(
+            "DELETE FROM scheduled_items WHERE business_id=? AND status='detected' AND COALESCE(user_edited, 0)=0",
+            (business_id,),
+        )
+        self._conn.execute(
+            "UPDATE transactions SET scheduled_item_id=NULL WHERE business_id=?", (business_id,)
+        )
+        links: list[tuple[int, int]] = []
+        for item, line_ids in items:
+            new_id = self._insert_scheduled_item(business_id, item)
+            links.extend((new_id, line_id) for line_id in line_ids)
+        for item_id, line_ids in keep_links.items():
+            links.extend((item_id, line_id) for line_id in line_ids)
+        self._conn.executemany("UPDATE transactions SET scheduled_item_id=? WHERE id=?", links)
+        self._conn.commit()
 
     # ----------------------------------------------------------- forecast runs
     def save_forecast(self, business_id: int, result: ForecastResult, horizon_days: int) -> int:

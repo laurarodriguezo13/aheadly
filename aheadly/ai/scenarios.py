@@ -68,14 +68,17 @@ def _apply_one(
     if adj.type in ("move_item", "collect_early"):
         target = _find(items, p["label"])
         target.due_date = p["new_date"]
+        target.user_edited = True  # a later upload must not undo the owner's plan
         return items
     if adj.type == "remove_item":
         target = _find(items, p["label"])
         target.active = False
+        target.user_edited = True
         return items
     if adj.type == "recurring_change":
         target = _find(items, p["label"])
         target.amount += float(p["amount_delta"])
+        target.user_edited = True
         if p.get("start_date"):
             target.due_date = max(target.due_date, p["start_date"])
         return items

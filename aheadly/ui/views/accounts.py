@@ -136,6 +136,25 @@ else:
                 },
             )
         st.caption(copy.PLANNED_HELP)
+    regular = core.recurring_table()
+    if regular:
+        with st.expander(copy.RECURRING_TITLE.format(n=len(regular))):
+            st.caption(copy.RECURRING_HELP)
+            st.dataframe(
+                [
+                    {
+                        "What": row["description"],
+                        "How often": row["how_often"],
+                        "Amount": ("≈ " if row["varies"] else "") + money(row["amount"]),
+                        "Next": row["next"],
+                        "In the forecast": row["in_forecast"],
+                        "Category": copy.CATEGORY_NAMES.get(row["category"], row["category"]),
+                    }
+                    for row in regular
+                ],
+                hide_index=True,
+                width="stretch",
+            )
     with st.container(border=True):
         section_title("Recent transactions")
         recent = core.repo.list_transactions(status.business.id, limit=20)

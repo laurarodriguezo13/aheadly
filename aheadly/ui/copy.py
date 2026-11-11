@@ -57,6 +57,13 @@ EXAMPLE_NOTICE = (
     "This is an example business, {name}. Its statement ends {end}, so Aheadly shows it as of {start}. "
     "To use your own files, go to Settings and click Start over."
 )
+RECURRING_TITLE = "Regular payments and income we found ({n})"
+RECURRING_HELP = (
+    'Found in your statement. "On its dates": the forecast puts it on the day it\'s due (rent on the '
+    '15th, payroll on Fridays). "In the daily pattern": it changes too much from one time to the next '
+    "(card sales, weekly supplier orders), so the forecast learns it with the rest of your daily ups and downs. "
+    "≈ means the amount varies; we use a typical recent amount."
+)
 CATEGORY_NAMES = {
     "sales": "Sales",
     "other_income": "Other income",

@@ -39,17 +39,12 @@ STATEMENTS = ("bank_statement", "card_statement")
 PENDING: dict[str, dict[str, str]] = {
     "statement_file": {},
     "whole_import": {},
-    "risk_level": {
-        "cafe-la-tertulia": "2.3 recurring payments on their real dates (December bonus, payroll twice a month)",
-    },
-    "shortfall_alerts": {
-        "cafe-la-tertulia": "2.3 recurring payments on their real dates (December bonus, payroll twice a month)",
-    },
+    "risk_level": {},
+    "shortfall_alerts": {},
     "hidden_future": {
-        "ferreteria-don-perno": "2.3 + 2.5 the big customer's monthly payment on its real (late) date",
-        "taller-los-pistones": "2.3 no double counting (insurer payments are in the history and in the claims file)",
+        "panaderia-la-esquina": "2.7 busy months (December card sales are far above November's)",
     },
-    "recurring": {"*": "2.3 recurring payments"},
+    "recurring": {},
     "categories": {
         "taller-los-pistones": "the key counts a supplier payment the file shows as #¡VALOR! (unreadable line)",
     },
