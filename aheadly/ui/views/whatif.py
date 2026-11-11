@@ -8,7 +8,7 @@ import streamlit as st
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import require_data, start_page
 from aheadly.ui.charts import scenario_chart
-from aheadly.ui.components import banner, local_time, scenario_metrics
+from aheadly.ui.components import banner, local_time, money, scenario_metrics
 
 core = start_page(copy.WHATIF_TITLE)
 require_data(core)
@@ -72,5 +72,5 @@ if saved:
             flag = " · saved as plan" if row["saved_as_plan"] else ""
             st.write(
                 f"**{row['name']}**{flag}: lowest base case "
-                f"${row['result']['scenario']['lowest_base_case']:,} ({local_time(row['created_at'])})"
+                f"{money(row['result']['scenario']['lowest_base_case'])} ({local_time(row['created_at'])})"
             )

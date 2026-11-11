@@ -52,7 +52,7 @@ SPANISH_MONTHS = {
     "dic": "dec",
 }
 UPCOMING_COLUMNS = {
-    "date": ALIASES["date"] | {"due date", "fecha de pago"},
+    "date": ALIASES["date"] | {"due date", "fecha de pago", "vencimiento", "fecha limite"},
     "description": ALIASES["description"],
     "amount": ALIASES["amount"],
 }
@@ -86,6 +86,7 @@ class CsvConnector:
         self.balance_breaks = 0
         self.first_break: date | None = None
         self.statement_end: date | None = None
+        self.skipped_upcoming = 0  # lines of the upcoming-payments file we could not read
 
     def business_profile(self) -> dict:
         return dict(self._profile)
@@ -110,7 +111,9 @@ class CsvConnector:
             for line_id, r in zip(transaction_ids(frame), frame.itertuples())
         ]
         balance = self._balance if self._balance is not None else closing_balance(frame)
-        scheduled = read_upcoming_payments(self._upcoming, self._upcoming_filename) if self._upcoming else []
+        scheduled, self.skipped_upcoming = (
+            read_upcoming(self._upcoming, self._upcoming_filename) if self._upcoming else ([], 0)
+        )
         return SyncPayload(
             account_name="Imported file",
             balance=balance,
@@ -312,17 +315,27 @@ def transaction_ids(frame: pd.DataFrame) -> list[str]:
 def read_upcoming_payments(content: bytes, filename: str) -> list[ScheduledItem]:
     """The owner's own list of one-off payments and expected income: Date, Description, Amount (+ in, - out)."""
     frame = read_table(content, filename)
-    lower = {str(c).strip().lower(): c for c in frame.columns}
-    found = {
-        field: lower[name] for field, names in UPCOMING_COLUMNS.items() for name in names if name in lower
-    }
+    found = match_columns(frame.columns, UPCOMING_COLUMNS)
     missing = set(UPCOMING_COLUMNS) - set(found)
     if missing:
         raise ValueError(f"The upcoming payments file is missing columns: {sorted(missing)}")
-    amounts = pd.to_numeric(frame[found["amount"]], errors="coerce")
-    items = []
-    for when, label, amount in zip(frame[found["date"]], frame[found["description"]], amounts):
+    return read_upcoming(content, filename)[0]
+
+
+def read_upcoming(content: bytes, filename: str) -> tuple[list[ScheduledItem], int]:
+    """Like read_upcoming_payments, plus how many lines couldn't be read (date or amount). Same bank
+    formats as statements: 14/11/2026, -7.500,00, semicolons, Windows encoding."""
+    frame = read_table(content, filename)
+    found = match_columns(frame.columns, UPCOMING_COLUMNS)
+    missing = set(UPCOMING_COLUMNS) - set(found)
+    if missing:
+        raise ValueError(f"The upcoming payments file is missing columns: {sorted(missing)}")
+    dates = parse_dates(frame[found["date"]])
+    amounts = parse_amounts(frame[found["amount"]])
+    items, skipped = [], 0
+    for when, label, amount in zip(dates, frame[found["description"]], amounts):
         if pd.isna(when) or pd.isna(amount):
+            skipped += 1
             continue
         items.append(
             ScheduledItem(
@@ -333,4 +346,4 @@ def read_upcoming_payments(content: bytes, filename: str) -> list[ScheduledItem]
                 source="csv",
             )
         )
-    return items
+    return items, skipped

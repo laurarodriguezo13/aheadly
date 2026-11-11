@@ -72,3 +72,25 @@ def test_comma_file_keeps_reading_us_numbers_as_before():
     _, payload = _sync(text)
     assert sorted(t.amount for t in payload.transactions) == [-12.5, 1500.0]
     assert payload.balance == 8987.5
+
+
+def test_upcoming_payments_file_in_latin_american_format():
+    from aheadly.data.connectors.csv_connector import read_upcoming_payments
+
+    text = "Fecha;Concepto;Valor\n14/11/2026;Horno nuevo;-7.500,00\n17/12/2026;Pedido Café Azul;5.500,00\n"
+    items = read_upcoming_payments(text.encode("cp1252"), "proximos_pagos.csv")
+    assert [(i.label, i.amount, i.due_date) for i in items] == [
+        ("Horno nuevo", -7500.0, date(2026, 11, 14)),
+        ("Pedido Café Azul", 5500.0, date(2026, 12, 17)),
+    ]
+
+
+def test_upcoming_line_that_cant_be_read_is_counted_not_silently_dropped():
+    from aheadly.data.connectors.csv_connector import CsvConnector
+
+    statement = "Date,Description,Amount,Balance\n2026-11-02,SALES,100,5000\n"
+    upcoming = "Date,Description,Amount\n2026-11-20,New oven,-7500\nsoon,Mystery,abc\n"
+    connector = CsvConnector(statement, None, "s.csv", upcoming=upcoming.encode(), upcoming_filename="u.csv")
+    payload = connector.sync()
+    assert [i.label for i in payload.scheduled_items] == ["New oven"]
+    assert connector.skipped_upcoming == 1

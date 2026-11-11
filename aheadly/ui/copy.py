@@ -58,6 +58,9 @@ BALANCE_BREAKS = (
     "The Balance column of your statement doesn't add up in {n} place(s), starting {date}. "
     "Some lines may be missing from the file, so check it before trusting the numbers."
 )
+SKIPPED_UPCOMING = (
+    "{n} line(s) of your upcoming payments file had a date or amount we couldn't read, so we left them out."
+)
 SKIPPED_ROWS = "{n} row(s) of your statement had a date or amount we couldn't read, so we left them out. Check the file if that seems wrong."
 
 DASHBOARD_TITLE = "Dashboard"

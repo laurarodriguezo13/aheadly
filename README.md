@@ -21,7 +21,7 @@ Optional, a real language model: set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY=.
 Other commands:
 
 ```bash
-uv run pytest -q                      # 69 tests, all offline, a few seconds
+uv run pytest -q                      # all offline, a few seconds; ends with the test-business scorecard
 uv run black .                        # formatting
 uv run python -m aheadly.jobs.daily_run   # the daily check from the command line (cron-able)
 ```
@@ -62,7 +62,7 @@ Rules we keep: the UI only calls `AppCore`; only the Insight Translator talks to
 | `aheadly/ai/` | `ForecastEngine` + models, `scenarios`, `InsightTranslator`, `llm_client`, `tools`, `guardrails`, `prompts`, `templates` |
 | `aheadly/data/` | `schema.sql`, `Repository`, `seed_demo`, `connectors/` |
 | `aheadly/jobs/` | `daily_run` (cron-able) |
-| `tests/` | pytest: unit tests per component plus the demo script as a functional test |
+| `tests/` | pytest: unit tests per component, the demo script as a functional test, and `test_businesses.py`, which runs the six test businesses in `tests/businesses/` against their answer keys |
 | `docs/` | UML diagrams, milestone check-in |
 
 ## How the AI works
@@ -91,8 +91,8 @@ If Gemini answers 429 or 503 the client waits as long as Google asks and retries
 
 ## Uploading your data
 
-Accounts → upload a bank statement (CSV or Excel). Headers may be the app's (`date, description, amount[, category]`) or a bank's (`Date, Description, Debit, Credit, Balance`, Spanish accepted). If the file has a Balance column, the current balance is read from its newest row; otherwise type it in.
+Accounts → upload a bank statement (CSV or Excel). Headers may be the app's (`date, description, amount[, category]`) or a bank's (`Date, Description, Debit, Credit, Balance`, or Spanish: `Fecha, Descripción, Valor, Saldo`, `Fecha Movimiento`, `Monto`, `Saldo Disponible`…). Real bank exports are fine: comma, semicolon or tab separated, UTF-8 or Windows-1252, bank lines above the header, newest line first, dates like `10/11/2026` (day first), `11-nov-2026` or `2026-11-10`, amounts like `1.250,00`, `1,250.00`, `$ 2.000` or `(900,50)`. If the file has a Balance column, the current balance is read from its newest line and checked line by line; otherwise type it in. Lines that can't be read are left out and counted, never turned into $0. If the statement ends before yesterday, the forecast starts the day after it ends, and the app says so.
 
-Optionally upload a second file with upcoming **one-off** payments and expected income (`Date, Description, Amount`, minus = money going out), for example a planned purchase, a big supplier order or a customer order. Regular payments (payroll, rent, suppliers) are learned from the statement, so don't list them again: they would be counted twice.
+Optionally upload a second file with upcoming **one-off** payments and expected income (`Date, Description, Amount`, minus = money going out, same formats as above), for example a planned purchase, a big supplier order or a customer order. Regular payments (payroll, rent, suppliers) are learned from the statement, so don't list them again: they would be counted twice.
 
-A sample bank export of the demo bakery is still in `data/samples/` for testing the import (regenerate it with `uv run python -m scripts.make_sample_export`).
+A sample bank export of the demo bakery is still in `data/samples/` for testing the import (regenerate it with `uv run python -m scripts.make_sample_export`). For realistic files, use the statements in `tests/businesses/<business>/statements/`: six test businesses made separately from the code, each with an answer key (DECISIONS #25).

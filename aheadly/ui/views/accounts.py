@@ -55,6 +55,7 @@ if not status.connected:
                 st.error(copy.UPLOAD_FAILED.format(error=exc))
             else:
                 st.session_state["skipped_rows"] = connector.skipped_rows
+                st.session_state["skipped_upcoming"] = connector.skipped_upcoming
                 st.session_state["balance_breaks"] = (connector.balance_breaks, connector.first_break)
                 st.rerun()
 else:
@@ -69,6 +70,8 @@ else:
     statement_notice(core.statement_end(), core.today, core.statement_lag_days())
     if st.session_state.get("skipped_rows"):
         st.warning(copy.SKIPPED_ROWS.format(n=st.session_state["skipped_rows"]))
+    if st.session_state.get("skipped_upcoming"):
+        st.warning(copy.SKIPPED_UPCOMING.format(n=st.session_state["skipped_upcoming"]))
     breaks, first_break = st.session_state.get("balance_breaks", (0, None))
     if breaks:
         st.warning(copy.BALANCE_BREAKS.format(n=breaks, date=day(first_break)))
