@@ -128,11 +128,11 @@ Risks: Gemini free-tier rate limits during a live demo (the offline fallback cov
 
 ---
 
-## Appendix: screenshots (taken 2026-11-09/10 before the upload-only change; the Accounts screens now show the upload card instead of the connect options)
+## Appendix: screenshots (Maria's upload-only flow, 2026-11-11)
 
 | | |
 |---|---|
-| ![Onboarding](screenshots/1_accounts_onboarding.png) | ![Connected](screenshots/2_accounts_connected.png) |
-| ![Dashboard](screenshots/3_dashboard.png) | ![Alerts](screenshots/4_alerts.png) |
-| ![Ask Aheadly what-if](screenshots/5_ask_whatif.png) | ![What-if form](screenshots/6_whatif_form.png) |
-| ![Settings and backtest](screenshots/7_settings.png) | ![Bank export import](screenshots/8_import_bank_export.png) |
+| ![First visit: empty app](screenshots/8_first_visit.png) | ![Upload card with Maria's files](screenshots/1_accounts_onboarding.png) |
+| ![After upload: what we're counting on](screenshots/2_accounts_connected.png) | ![Dashboard](screenshots/3_dashboard.png) |
+| ![Alert with actions](screenshots/4_alerts.png) | ![Ask Aheadly: move the oven payment](screenshots/5_ask_whatif.png) |
+| ![What-if form](screenshots/6_whatif_form.png) | ![Settings and Start over](screenshots/7_settings.png) |
