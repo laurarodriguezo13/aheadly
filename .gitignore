@@ -9,3 +9,4 @@ data/*.db-journal
 *.log
 .DS_Store
 .streamlit/secrets.toml
+.idea/

@@ -211,26 +211,29 @@ class StubClient:
             return LLMReply(content=answer_from_tool(last["name"], json.loads(last["content"])))
         if last["role"] == "user" and last["content"].startswith("WRITE_ALERT"):
             return LLMReply(content=json.dumps(alert_text(json.loads(last["content"][len("WRITE_ALERT") :]))))
-        return LLMReply(tool_calls=[self.plan(last["content"])])
+        return LLMReply(tool_calls=[self.plan(last["content"], scheduled_labels(messages))])
 
     # ----- turn 1: choose a tool
-    def plan(self, question: str) -> ToolCall:
-        """Keyword routing. Also the Insight Translator's fallback planner when a real provider is down."""
+    def plan(self, question: str, labels: list[str] | None = None) -> ToolCall:
+        """Keyword routing. Also the Insight Translator's fallback planner when a real provider is down.
+        `labels` = the business's scheduled items, so "move the flour order" finds the right one."""
         q = question.lower()
         call_id = f"stub-{uuid.uuid4().hex[:8]}"
         if "what if" in q or "instead" in q:
-            return ToolCall(call_id, "run_scenario", self._scenario_args(q))
+            return ToolCall(call_id, "run_scenario", self._scenario_args(q, labels or []))
         if "alert" in q or "warning" in q or "why" in q:
             return ToolCall(call_id, "get_alerts", {})
         if any(w in q for w in ("bill", "payment", "due", "going out", "pay")):
             return ToolCall(call_id, "get_upcoming_outflows", {"weeks": 8})
-        if any(w in q for w in ("enough", "next month", "forecast", "weeks", "run out", "short")):
+        if "next month" in q:
+            return ToolCall(call_id, "get_forecast", {"until": end_of_next_month(self.today).isoformat()})
+        if any(w in q for w in ("enough", "forecast", "weeks", "run out", "short")):
             return ToolCall(call_id, "get_forecast", {"weeks": 8})
         if any(w in q for w in ("transaction", "spent", "sales")):
             return ToolCall(call_id, "get_transactions", {"limit": 10})
         return ToolCall(call_id, "get_cash_summary", {})
 
-    def _scenario_args(self, q: str) -> dict:
+    def _scenario_args(self, q: str, labels: list[str]) -> dict:
         amount = re.search(r"\$?\s?(\d[\d,]{2,})", q)
         if amount and any(w in q for w in ("buy", "spend", "purchase", "hire")) and "instead" not in q:
             return {
@@ -251,7 +254,9 @@ class StubClient:
                 "name": f"Sales {sign * int(percent.group(1)):+d}%",
                 "adjustments": [{"type": "revenue_change", "percent": sign * int(percent.group(1))}],
             }
-        label = "oven" if "oven" in q else q.split("buy")[-1].split()[1] if "buy" in q else "oven"
+        label = best_label(q, labels) or (
+            "oven" if "oven" in q else q.split("buy")[-1].split()[1] if "buy" in q else "oven"
+        )
         return {
             "name": f"Move {label} to next month",
             "adjustments": [
@@ -261,6 +266,35 @@ class StubClient:
 
 
 # -------------------------------------------------------------------------- factory
+SCHEDULED_PREFIX = "Scheduled items you can move or remove by label: "
+
+
+def scheduled_labels(messages: list[dict]) -> list[str]:
+    """The labels the system prompt lists, read the same way the real model reads them."""
+    for message in messages:
+        if message.get("role") != "system":
+            continue
+        for line in str(message.get("content", "")).splitlines():
+            if line.startswith(SCHEDULED_PREFIX):
+                text = line[len(SCHEDULED_PREFIX) :].strip().rstrip(".")
+                return [] if text == "none" else [part.strip() for part in text.split(",") if part.strip()]
+    return []
+
+
+def best_label(question: str, labels: list[str]) -> str | None:
+    """The scheduled item a question talks about: its whole name, or else most of its longer words."""
+    best, best_score = None, 0
+    for label in labels:
+        name = label.lower()
+        if name in question:
+            return label
+        words = {w for w in re.findall(r"[a-záéíóúñ]+", name) if len(w) > 3}
+        score = sum(1 for w in words if w in question)
+        if score > best_score:
+            best, best_score = label, score
+    return best
+
+
 def create_llm_client(settings: Settings):
     """Pick the provider from settings; fail fast if a real provider lacks its key."""
     settings.validate()

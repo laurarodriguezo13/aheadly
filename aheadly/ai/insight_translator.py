@@ -160,7 +160,7 @@ class InsightTranslator:
         """Deterministic answer: the data the model already fetched, or what the offline planner would fetch."""
         usable = [(name, data) for name, data in zip(tool_names, evidence) if "error" not in data]
         if not usable:  # nothing fetched yet, or only failed calls: let the offline planner choose
-            call = StubClient().plan(question)
+            call = StubClient().plan(question, self._tools.scheduled_labels())
             usable, tool_names = [
                 (call.name, self._tools.dispatch(call.name, call.arguments))
             ], tool_names + [call.name]

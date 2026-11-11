@@ -55,7 +55,16 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     {
         "name": "get_forecast",
         "description": "Weekly worst/base/best balances for the coming weeks and the lowest point.",
-        "parameters": {"type": "object", "properties": {"weeks": WEEKS_PARAM}},
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "weeks": WEEKS_PARAM,
+                "until": {
+                    "type": "string",
+                    "description": "Optional ISO date: only look up to this day (for 'next month' use the end of next month).",
+                },
+            },
+        },
     },
     {
         "name": "get_upcoming_outflows",
@@ -103,6 +112,10 @@ class ToolDispatcher:
     def schemas(self) -> list[dict]:
         return TOOL_SCHEMAS
 
+    def scheduled_labels(self) -> list[str]:
+        """Names of the business's scheduled items (the offline planner uses them when a provider is down)."""
+        return [item["description"] for item in self._core.planned_items()]
+
     def dispatch(self, name: str, arguments: dict) -> dict:
         """EAFP: run the tool, turn any failure into an error payload for the model."""
         try:
@@ -118,7 +131,7 @@ class ToolDispatcher:
         if name == "get_cash_summary":
             return core.cash_summary()
         if name == "get_forecast":
-            return core.forecast_summary(weeks=int(args.get("weeks", 8)))
+            return core.forecast_summary(weeks=int(args.get("weeks", 8)), until=args.get("until"))
         if name == "get_upcoming_outflows":
             return {"outflows": core.upcoming_outflows(weeks=int(args.get("weeks", 8)))}
         if name == "get_transactions":

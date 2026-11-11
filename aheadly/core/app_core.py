@@ -290,10 +290,14 @@ class AppCore:
             "currency": business.currency,
         }
 
-    def forecast_summary(self, weeks: int = 8) -> dict:
+    def forecast_summary(self, weeks: int = 8, until: str | None = None) -> dict:
+        """`until` (ISO date) limits the answer to a window, e.g. the end of next month."""
         weeks = max(1, min(8, weeks))
         forecast = self._baseline_forecast()
         points = forecast.points[: weeks * 7]
+        if until:
+            end = date.fromisoformat(until)
+            points = [p for p in forecast.points if p.date <= end] or points
         weekly = [
             {
                 "week": i + 1,
@@ -306,8 +310,11 @@ class AppCore:
             if (i + 1) % 7 == 0
         ]
         lowest = min(points, key=lambda p: p.balance_p50)
+        line = self._business().low_cash_line
+        window = ForecastResult(forecast.opening_balance, points, forecast.model)
         return {
             "weeks": weeks,
+            "until": until,
             "weekly_balances": weekly,
             "lowest_point": {
                 "date": lowest.date.isoformat(),
@@ -315,8 +322,32 @@ class AppCore:
                 "balance_worst_case": round(lowest.balance_p10),
                 "weeks_ahead": alert_rules.weeks_until(self.today, lowest.date),
             },
-            "low_cash_line": round(self._business().low_cash_line),
+            "lowest_worst_case": round(window.min_p10),
+            "risk_level": window.risk_level(line),
+            "low_cash_line": round(line),
         }
+
+    def biggest_upcoming_payment(self) -> str | None:
+        """Label of the largest payment going out before the end of next month (for suggested questions)."""
+        end = end_of_next_month(self.today)
+        upcoming = [
+            item
+            for item in self.repo.list_scheduled_items(self._business().id)
+            if item.amount < 0 and self.today <= item.due_date < end
+        ]
+        return min(upcoming, key=lambda item: item.amount).label if upcoming else None
+
+    def planned_items(self) -> list[dict]:
+        """What the forecast counts on beyond the statement: the owner's upcoming payments and income."""
+        return [
+            {
+                "date": item.due_date.isoformat(),
+                "description": item.label,
+                "amount": round(item.amount, 2),
+                "repeats": item.recurrence or "once",
+            }
+            for item in self.repo.list_scheduled_items(self._business().id)
+        ]
 
     def upcoming_outflows(self, weeks: int = 8) -> list[dict]:
         end = self.today + timedelta(days=7 * max(1, min(8, weeks)))

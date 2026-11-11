@@ -15,8 +15,15 @@ st.write("")
 # Scenario cards are kept per message index only for this session (the DB keeps the text).
 st.session_state.setdefault("scenario_cards", {})
 
-chips = st.columns(len(copy.CHAT_SUGGESTIONS))
-for col, suggestion in zip(chips, copy.CHAT_SUGGESTIONS):
+biggest = core.biggest_upcoming_payment()
+what_if = (
+    copy.MOVE_PAYMENT_QUESTION.format(name=biggest[:1].lower() + biggest[1:])
+    if biggest
+    else copy.SPEND_QUESTION
+)
+suggestions = [*copy.CHAT_SUGGESTIONS, what_if]
+chips = st.columns(len(suggestions))
+for col, suggestion in zip(chips, suggestions):
     if col.button(suggestion, width="stretch"):
         st.session_state["pending_question"] = suggestion
 
