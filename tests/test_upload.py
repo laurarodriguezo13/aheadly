@@ -62,3 +62,15 @@ def test_upload_with_upcoming_payments_reaches_the_forecast(core):
 
     assert core.status().business.name == "Test Bakery"
     assert "New oven" in [label for _, _, label in core.get_dashboard().forecast.scheduled]
+
+
+def test_owner_can_see_the_upcoming_payments_the_forecast_counts_on(core):
+    connector = CsvConnector(
+        _long_statement(), None, "statement.csv", upcoming=UPCOMING.encode(), upcoming_filename="upcoming.csv"
+    )
+    core.connect(connector)
+
+    assert core.planned_items() == [
+        {"date": "2026-11-20", "description": "New oven", "amount": -7500.0, "repeats": "once"},
+        {"date": "2026-12-17", "description": "Cafe Azul order", "amount": 5500.0, "repeats": "once"},
+    ]

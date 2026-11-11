@@ -327,6 +327,18 @@ class AppCore:
             "low_cash_line": round(line),
         }
 
+    def planned_items(self) -> list[dict]:
+        """What the forecast counts on beyond the statement: the owner's upcoming payments and income."""
+        return [
+            {
+                "date": item.due_date.isoformat(),
+                "description": item.label,
+                "amount": round(item.amount, 2),
+                "repeats": item.recurrence or "once",
+            }
+            for item in self.repo.list_scheduled_items(self._business().id)
+        ]
+
     def upcoming_outflows(self, weeks: int = 8) -> list[dict]:
         end = self.today + timedelta(days=7 * max(1, min(8, weeks)))
         events = expand_scheduled_items(self.repo.list_scheduled_items(self._business().id), self.today, end)

@@ -17,6 +17,7 @@ Short state file so a fresh session (or teammate) can continue.
 - Small fixes (2026-11-10): "Lowest projected" counts today's balance, "next month" questions answer up to the end of next month (`get_forecast` `until`), Ask button no longer cut off, no "every day" promise; 53 tests.
 - Upload-only onboarding (2026-11-10): bank statement + optional upcoming one-off payments file, balance read from the statement, no demo/Plaid/QuickBooks buttons; Maria's demo story verified from uploaded files with Prophet; 58 tests.
 - Latin American bank formats (2026-11-11): day/month dates, "1.250,00" amounts, unreadable rows skipped and reported instead of becoming $0; 64 tests.
+- "What we're counting on" (2026-11-11): Accounts lists the upcoming payments the forecast uses (`AppCore.planned_items`) and updates when a plan is saved; 65 tests.
 
 ## Next (for the final demonstration)
 1. Plaid sandbox: public token → access token → `/transactions/sync`, `/accounts/balance/get` (plaid-python).

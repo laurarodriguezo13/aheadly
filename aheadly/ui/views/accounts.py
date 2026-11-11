@@ -66,6 +66,22 @@ else:
     if st.session_state.get("skipped_rows"):
         st.warning(copy.SKIPPED_ROWS.format(n=st.session_state["skipped_rows"]))
     with st.container(border=True):
+        section_title(copy.PLANNED_TITLE)
+        planned = core.planned_items()
+        if planned:
+            st.dataframe(
+                planned,
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "date": "Date",
+                    "description": "What",
+                    "amount": st.column_config.NumberColumn("Amount", format="dollar"),
+                    "repeats": "Repeats",
+                },
+            )
+        st.caption(copy.PLANNED_HELP)
+    with st.container(border=True):
         section_title("Recent transactions")
         st.dataframe(
             core.repo.list_transactions(status.business.id, limit=20),

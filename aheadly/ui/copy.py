@@ -44,6 +44,11 @@ BALANCE_PLACEHOLDER = "Read from the statement"
 UPLOAD_BUTTON = "Upload and analyse"
 UPLOAD_SPINNER = "Reading your statement and building your forecast…"
 UPLOAD_FAILED = "We couldn't read that file: {error}"
+PLANNED_TITLE = "What we're counting on"
+PLANNED_HELP = (
+    "These upcoming payments and income come from your upcoming-payments file and any plan you save. "
+    "Regular payments like payroll and rent are learned from your statement, so they are not listed here."
+)
 SKIPPED_ROWS = "{n} row(s) of your statement had a date or amount we couldn't read, so we left them out. Check the file if that seems wrong."
 
 DASHBOARD_TITLE = "Dashboard"
