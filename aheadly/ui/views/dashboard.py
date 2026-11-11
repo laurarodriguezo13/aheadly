@@ -51,6 +51,10 @@ with left, st.container(border=True):
         st.markdown(alert_list_html(dash.alerts), unsafe_allow_html=True)
         if st.button("Open alerts"):
             go_to("alerts")
+    elif forecast and forecast.risk_level(business.low_cash_line) == "watch":
+        st.warning(
+            copy.WATCH_NO_ALERTS.format(worst=money(forecast.min_p10), line=money(business.low_cash_line))
+        )
     else:
         st.success(copy.NO_ALERTS)
 with right, st.container(border=True):

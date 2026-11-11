@@ -306,6 +306,8 @@ class AppCore:
             if (i + 1) % 7 == 0
         ]
         lowest = min(points, key=lambda p: p.balance_p50)
+        line = self._business().low_cash_line
+        window = ForecastResult(forecast.opening_balance, points, forecast.model)
         return {
             "weeks": weeks,
             "weekly_balances": weekly,
@@ -315,7 +317,9 @@ class AppCore:
                 "balance_worst_case": round(lowest.balance_p10),
                 "weeks_ahead": alert_rules.weeks_until(self.today, lowest.date),
             },
-            "low_cash_line": round(self._business().low_cash_line),
+            "lowest_worst_case": round(window.min_p10),
+            "risk_level": window.risk_level(line),
+            "low_cash_line": round(line),
         }
 
     def upcoming_outflows(self, weeks: int = 8) -> list[dict]:

@@ -21,11 +21,14 @@ def answer_from_tool(tool: str, data: dict) -> str:
         return f"I couldn't do that: {data['error']} Try asking in another way."
     if tool == "run_scenario":
         s = data["scenario"]
-        verdict = (
-            "That looks safe."
-            if data["stays_above_low_cash_line"]
-            else "That still looks tight, so I would wait or change something else first."
-        )
+        verdict = {
+            "safe": "That looks safe: even in a bad month you stay above your low cash line.",
+            "watch": (
+                "Your base case stays above your low cash line, but in a bad month you could dip below it, "
+                "so keep an eye on it."
+            ),
+            "act_now": "That still looks tight, so I would wait or change something else first.",
+        }[data["risk_level"]]
         return (
             f"If you do that, your lowest balance would be about {money(s['lowest_base_case'])} "
             f"around {s['lowest_date']} (worst case {money(s['lowest_worst_case'])}, best case "
@@ -33,11 +36,14 @@ def answer_from_tool(tool: str, data: dict) -> str:
         )
     if tool == "get_forecast":
         low = data["lowest_point"]
-        verdict = (
-            "you stay above your low cash line."
-            if low["balance_base_case"] >= data["low_cash_line"]
-            else "you would dip below your low cash line, so it is worth acting early."
-        )
+        verdict = {
+            "safe": "you stay above your low cash line, even in a bad month.",
+            "watch": (
+                "you stay above your low cash line in the base case, but in a bad month you could dip to "
+                f"about {money(data['lowest_worst_case'])}, so keep an eye on it."
+            ),
+            "act_now": "you would dip below your low cash line, so it is worth acting early.",
+        }[data["risk_level"]]
         return (
             f"Over the next {data['weeks']} weeks your lowest point is about {money(low['balance_base_case'])} "
             f"on {low['date']}, which means {verdict}"

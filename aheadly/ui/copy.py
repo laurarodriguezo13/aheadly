@@ -32,6 +32,9 @@ NEXT_PAYMENT = "Next big payment"
 CHART_TITLE = "Cash flow forecast, next 8 weeks"
 UPCOMING_ALERTS = "Upcoming alerts"
 NO_ALERTS = "No alerts. Your cash looks healthy for the next 8 weeks."
+WATCH_NO_ALERTS = (
+    "No alerts, but in a bad month your cash could dip to {worst}, below your {line} line. Keep an eye on it."
+)
 ASK_BOX = "Ask Aheadly"
 ASK_PLACEHOLDER = "Ask a question…"
 

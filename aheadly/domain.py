@@ -83,6 +83,14 @@ class ForecastResult:
     def horizon_end(self) -> date:
         return self.points[-1].date
 
+    def risk_level(self, low_cash_line: float) -> str:
+        """act_now: the base case drops below the line; watch: only the worst case does; safe: neither."""
+        if self.lowest.balance_p50 < low_cash_line:
+            return "act_now"
+        if self.min_p10 < low_cash_line:
+            return "watch"
+        return "safe"
+
     def top_outflows(self, until: date, limit: int = 3, window_days: int = 7) -> list[dict[str, Any]]:
         """Largest scheduled outflows in the week ending on `until` (what the alert explains)."""
         start = until - timedelta(days=window_days - 1)
@@ -166,6 +174,7 @@ class ScenarioResult:
             ],
             "change_in_lowest_base_case": round(scen.lowest.balance_p50 - base.lowest.balance_p50),
             "stays_above_low_cash_line": self.stays_above_line,
+            "risk_level": self.scenario.risk_level(self.low_cash_line),
         }
 
 
