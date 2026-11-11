@@ -45,6 +45,18 @@ MULTI_NO_BALANCE = (
     "One of your statements has no Balance column. When you upload several files, each needs one. "
     "Upload that statement on its own and type its current balance."
 )
+EXAMPLE_TITLE = "No files at hand? Try an example business"
+EXAMPLE_HELP = (
+    "Load Panadería La Esquina, a bakery in Bogotá: a year of bank statements plus the payments its owner "
+    "knows are coming (a new oven, a big flour order, two Christmas orders). Nothing of yours is uploaded. "
+    "To use your own files afterwards, go to Settings and click Start over."
+)
+EXAMPLE_BUTTON = "Try the example bakery"
+EXAMPLE_SPINNER = "Loading the example bakery and building its forecast…"
+EXAMPLE_NOTICE = (
+    "This is an example business, {name}. Its statement ends {end}, so Aheadly shows it as of {start}. "
+    "To use your own files, go to Settings and click Start over."
+)
 ACCOUNT_KIND = {"bank": "bank account", "card": "credit card"}
 CARD_OWED = "owed {amount}"
 CARD_NOT_CASH = "A credit card's balance is money you owe, so it isn't counted as cash."

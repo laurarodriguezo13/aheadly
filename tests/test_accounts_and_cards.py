@@ -51,9 +51,20 @@ def test_a_spanish_card_statement():
 def test_a_bank_statement_is_a_bank_account_named_after_its_file():
     payload = CsvConnector(BANK_A, None, "cuenta_corriente_5510.csv").sync()
     assert (payload.account_kind, payload.account_name) == ("bank", "Cuenta corriente 5510")
-    assert (
-        account_label("extracto_ahorros_4471_2026-05_2026-11.csv") == "Extracto ahorros 4471 2026-05 2026-11"
-    )
+
+
+@pytest.mark.parametrize(
+    "filename, name",
+    [
+        ("extracto_ahorros_4471_2026-05_2026-11.csv", "Ahorros 4471"),
+        ("statement_checking_1234_20261110.csv", "Checking 1234"),
+        ("visa_empresarial_9031.xlsx", "Visa empresarial 9031"),
+        ("Movimientos 10-11-2026.csv", "Movimientos 10-11-2026"),  # nothing else left: keep it all
+        ("2026-11.csv", "2026-11"),
+    ],
+)
+def test_account_names_leave_out_dates_and_export_words(filename, name):
+    assert account_label(filename) == name
 
 
 # ------------------------------------------------------------- several statements of one account

@@ -24,7 +24,7 @@ with st.spinner("Checking your money…"):
 dash = core.get_dashboard()
 forecast, business = dash.forecast, dash.business
 lag = core.statement_lag_days()
-statement_notice(core.statement_end(), core.today, lag)
+statement_notice(core.statement_end(), core.today, lag, business.name if core.example() else None)
 
 col1, col2, col3 = st.columns(3)
 with col1:

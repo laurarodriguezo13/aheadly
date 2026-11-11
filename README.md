@@ -13,7 +13,8 @@ cd Aheadly
 uv sync                      # or: python3.11 -m venv .venv && pip install -r requirements.txt
 cp .env.example .env         # defaults: DEMO_MODE=true, LLM_PROVIDER=stub
 uv run streamlit run app.py
-# Accounts → upload a bank statement (+ optional upcoming payments)
+# Accounts → upload a bank statement (+ optional upcoming payments),
+#            or click "Try the example bakery" to see it with no files of your own
 ```
 
 Optional, a real language model: set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY=...` in `.env` (or `anthropic` + `ANTHROPIC_API_KEY`). Keys never go anywhere else.
@@ -94,5 +95,7 @@ If Gemini answers 429 or 503 the client waits as long as Google asks and retries
 Accounts → upload a bank statement (CSV or Excel). Headers may be the app's (`date, description, amount[, category]`) or a bank's (`Date, Description, Debit, Credit, Balance`, or Spanish: `Fecha, Descripción, Valor, Saldo`, `Fecha Movimiento`, `Monto`, `Saldo Disponible`…). Real bank exports are fine: comma, semicolon or tab separated, UTF-8 or Windows-1252, bank lines above the header, newest line first, dates like `10/11/2026` (day first), `11-nov-2026` or `2026-11-10`, amounts like `1.250,00`, `1,250.00`, `$ 2.000` or `(900,50)`. If the file has a Balance column, the current balance is read from its newest line and checked line by line; otherwise type it in. Lines that can't be read are left out and counted, never turned into $0. If the statement ends before yesterday, the forecast starts the day after it ends, and the app says so.
 
 Optionally upload a second file with upcoming **one-off** payments and expected income (`Date, Description, Amount`, minus = money going out, same formats as above), for example a planned purchase, a big supplier order or a customer order. Regular payments (payroll, rent, suppliers) are learned from the statement, so don't list them again: they would be counted twice.
+
+No files at hand? On Accounts, **Try the example bakery** loads Panadería La Esquina (`aheadly/examples/`): a year of statements from the test businesses plus the one-off payments its owner knows about. It is always shown as of the day after its statement ends (Nov 11, 2026). Settings → Start over goes back to your own upload.
 
 A sample bank export of the demo bakery is still in `data/samples/` for testing the import (regenerate it with `uv run python -m scripts.make_sample_export`). For realistic files, use the statements in `tests/businesses/<business>/statements/`: six test businesses made separately from the code, each with an answer key (DECISIONS #25).

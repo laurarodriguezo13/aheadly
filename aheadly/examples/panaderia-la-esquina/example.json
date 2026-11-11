@@ -1,0 +1,53 @@
+{
+  "_about": "Roadmap 1.5 example business. Statements are copies of tests/businesses/panaderia-la-esquina/statements (a test checks they stay identical); upcoming items are the one-offs its owner knows about, from that business's answer key.",
+  "profile": {
+    "name": "Panadería La Esquina",
+    "owner_name": "Maria",
+    "city": "Bogotá",
+    "low_cash_line": 2000.0
+  },
+  "upcoming": [
+    {
+      "label": "Corporate hamper order",
+      "amount": 3883.34,
+      "date": "2026-11-12",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "New oven",
+      "amount": -7500.0,
+      "date": "2026-11-14",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Overdue invoice Colegio Muestra",
+      "amount": 240.0,
+      "date": "2026-11-24",
+      "certainty": "maybe"
+    },
+    {
+      "label": "Christmas ingredients",
+      "amount": -2640.0,
+      "date": "2026-12-10",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Quarterly flour order",
+      "amount": -4000.0,
+      "date": "2026-12-15",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Christmas order Café El Tinto Feliz",
+      "amount": 5500.0,
+      "date": "2026-12-16",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Christmas order Café La Molienda Azul",
+      "amount": 5500.0,
+      "date": "2026-12-17",
+      "certainty": "confirmed"
+    }
+  ]
+}

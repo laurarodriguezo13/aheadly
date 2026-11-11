@@ -147,10 +147,20 @@ class CsvConnector:
         )
 
 
+# file-name words that describe the export, not the account
+EXPORT_WORDS = {"extracto", "statement", "estado", "movimientos", "export", "descarga", "download"}
+DATE_IN_NAME = re.compile(r"^(\d{4}[-.]?\d{2}([-.]?\d{2})?|\d{2}[-.]\d{2}[-.]\d{4}|\d{6}|\d{8})$")
+
+
 def account_label(filename: str) -> str:
-    """'cuenta_corriente_5510.csv' → 'Cuenta corriente 5510'."""
-    stem = filename.replace("\\", "/").rsplit("/", 1)[-1].rsplit(".", 1)[0].replace("_", " ").strip()
-    return (stem[:1].upper() + stem[1:]) if stem else "Imported file"
+    """'cuenta_corriente_5510.csv' → 'Cuenta corriente 5510'; dates and words like 'extracto' in the
+    file name are left out, so every period of one account gets the same name:
+    'extracto_ahorros_4471_2026-05_2026-11.csv' → 'Ahorros 4471'."""
+    stem = filename.replace("\\", "/").rsplit("/", 1)[-1].rsplit(".", 1)[0]
+    words = stem.replace("_", " ").split()
+    kept = [w for w in words if plain(w) not in EXPORT_WORDS and not DATE_IN_NAME.match(w)]
+    text = " ".join(kept or words)
+    return (text[:1].upper() + text[1:]) if text else "Imported file"
 
 
 def is_card_statement(headers) -> bool:

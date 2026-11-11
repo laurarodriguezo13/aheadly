@@ -21,8 +21,10 @@ from aheadly.ai.scenarios import apply_adjustments, parse_adjustment
 from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
 from aheadly.core import alert_rules
+from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
+from aheadly.data.connectors.csv_connector import CsvConnector
 from aheadly.data.repository import Repository
 from aheadly.domain import (
     SCHEDULED_CATEGORIES,
@@ -182,6 +184,26 @@ class AppCore:
         logger.info("connected %s file(s): %s transactions", len(connectors), added)
         self.run_daily_check(force=True)
         return added
+
+    def load_example(self, slug: str = DEFAULT_EXAMPLE) -> int:
+        """Roadmap 1.5: replace whatever is here with an example business, read exactly like an
+        owner's upload (its statements) plus the upcoming payments its owner knows about."""
+        example = load_example(slug)
+        self.reset()
+        business = self.repo.create_business(**example.profile)
+        self.repo.save_profile(business.id, {"example": example.slug})
+        self.repo.add_scheduled_items(business.id, example.upcoming)
+        return self.connect_files(
+            [
+                CsvConnector(content, None, name, business_profile=example.profile)
+                for name, content in example.statements
+            ]
+        )
+
+    def example(self) -> str | None:
+        """The example business being shown, or None for the owner's own data."""
+        business = self.repo.get_business()
+        return self.repo.get_profile(business.id).get("example") if business else None
 
     def internal_transfer_counts(self) -> dict[str, int]:
         business = self.repo.get_business()

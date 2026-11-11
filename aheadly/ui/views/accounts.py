@@ -69,6 +69,19 @@ if not status.connected:
                     if c.balance_breaks
                 ]
                 st.rerun()
+    st.write("")
+    with st.container(border=True):
+        section_title(copy.EXAMPLE_TITLE)
+        st.caption(copy.EXAMPLE_HELP)
+        if st.button(copy.EXAMPLE_BUTTON):
+            try:
+                with st.spinner(copy.EXAMPLE_SPINNER):
+                    core.load_example()
+            except Exception as exc:  # never leave a half-loaded example behind
+                core.reset()
+                st.error(copy.UPLOAD_FAILED.format(error=exc))
+            else:
+                go_to("dashboard")
 else:
 
     def _account_row(a: dict) -> str:
@@ -84,7 +97,12 @@ else:
     card(f'<div class="ah-card-title">✓ {html.escape(copy.ALL_SET)}</div>{rows}', "mint")
     if core.statement_end():
         st.caption(copy.STATEMENT_UP_TO.format(end=day(core.statement_end())))
-    statement_notice(core.statement_end(), core.today, core.statement_lag_days())
+    statement_notice(
+        core.statement_end(),
+        core.today,
+        core.statement_lag_days(),
+        status.business.name if core.example() else None,
+    )
     if st.session_state.get("skipped_rows"):
         st.warning(copy.SKIPPED_ROWS.format(n=st.session_state["skipped_rows"]))
     if st.session_state.get("skipped_upcoming"):

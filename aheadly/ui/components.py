@@ -33,9 +33,12 @@ def local_time(value) -> str:
     return format_local(value, browser_time_zone())
 
 
-def statement_notice(end, start, lag_days: int) -> None:
-    """Say when the statement stops before yesterday, so the forecast can't start today."""
-    if lag_days >= 7:
+def statement_notice(end, start, lag_days: int, example_name: str | None = None) -> None:
+    """Say when the statement stops before yesterday, so the forecast can't start today.
+    The example business always says it is an example instead (its statement is fixed)."""
+    if example_name:
+        st.info(copy.EXAMPLE_NOTICE.format(name=example_name, end=day(end), start=day(start)))
+    elif lag_days >= 7:
         st.warning(copy.STATEMENT_OLD.format(end=day(end), start=day(start), days=lag_days + 1))
     elif lag_days > 0:
         st.info(copy.STATEMENT_BEHIND.format(end=day(end), start=day(start)))

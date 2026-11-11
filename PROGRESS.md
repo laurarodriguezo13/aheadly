@@ -25,11 +25,12 @@ Short state file so a fresh session (or teammate) can continue.
 - Test businesses, roadmap 1.1 and 1.2 (2026-11-11): six businesses with answer keys made separately from the code (`tests/businesses/`), checked by `tests/test_businesses.py` with a scorecard; the reading bugs they found are fixed (DECISIONS #26). 126 tests pass, 48 checks wait for roadmap items (PENDING). Next: 2.1 (several accounts, credit cards), then 2.2 and 2.3.
 - Check-up (2026-11-11): the upcoming-payments file now reads the same bank formats as statements and reports lines it can't read (it used to drop Latin American dates and amounts silently); README updated; 128 tests.
 - Several accounts and credit cards, roadmap 2.1 (2026-11-11): upload several statements at once; overlapping statements of one account merge; credit card statements (debt, not cash); transfers between the owner's own accounts and card payments are left out of income, spending and the forecast's history. Bakery and hardware store go from 2 to 6 and 7 checks passing; 146 tests pass, 38 checks wait (PENDING).
+- Try an example business, roadmap 1.5 (2026-11-11): one click on Accounts loads the bakery (Panadería La Esquina) with its statements and known upcoming payments, shown as of Nov 11, 2026 and marked as an example; account names leave out dates and words like "extracto" from the file name ("Ahorros 4471"). Phase 1 is complete. 159 tests pass, 38 checks wait (PENDING).
 
 ## Next (for the final demonstration)
 Follow `docs/ROADMAP.md` (one builder, about four weeks; Must / Should / Nice, sizes, dependencies, cut order). In short:
-1. Phase 1, foundation and proof: done (1.1 to 1.4, 2026-11-11), except 1.5 "Try an example business", next now that 2.1 is in (the example will be Maria's bakery from the test businesses).
-2. Phase 2, understand the business: multiple accounts + credit cards; categorizer; recurring detection on real dates (weekly to yearly) without double counting; "just say it"; any Excel file (receivables, bills, employee list, ledger, inventory); "How we built your forecast" page; onboarding questions; forecast confidence.
+1. Phase 1, foundation and proof: done (1.1 to 1.5, 2026-11-11).
+2. Phase 2, understand the business: multiple accounts + credit cards (done, 2.1); next the categorizer (2.2); recurring detection on real dates (weekly to yearly) without double counting; "just say it"; any Excel file (receivables, bills, employee list, ledger, inventory); "How we built your forecast" page; onboarding questions; forecast confidence.
 3. Phase 3, solve, not just warn: chance below the line; actions with computed impact, Test this, how-to steps and drafted messages; suggested fixes; safe to spend / safe owner's pay; stress tests; financing helper.
 4. Phase 4, insights: pattern rules, chart summaries, Insights page.
 5. Phase 5, finish: Download / Load my data, privacy page, glossary, chatbot eval set, final demo with two test businesses.
