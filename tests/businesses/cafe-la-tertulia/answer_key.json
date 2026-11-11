@@ -1,0 +1,772 @@
+{
+  "schema_version": 1,
+  "business": {
+    "slug": "cafe-la-tertulia",
+    "name": "Café La Tertulia",
+    "type": "café",
+    "city": "Cali",
+    "employees": 4,
+    "low_cash_line": 1500.0,
+    "story": "Cali café whose costs have outrun flat sales since August, so cash slides toward its $1,500 minimum: a structural problem a loan won't fix."
+  },
+  "files": [
+    {
+      "path": "statements/movimientos_ahorros_2208.csv",
+      "kind": "bank_statement",
+      "account": "Ahorros 2208",
+      "date_format": "DD-mon-YYYY (Spanish month abbreviations, as text)",
+      "decimal": ",",
+      "newest_first": false,
+      "has_balance": false,
+      "first_date": "2025-11-11",
+      "last_date": "2026-11-10",
+      "lines": 1173,
+      "unreadable_lines": 0,
+      "notes": "No balance column: the owner types the 2026-11-10 balance. Minus in parentheses; decimal comma inside a comma-delimited file (quoted)."
+    }
+  ],
+  "import": {
+    "statement_end": "2026-11-10",
+    "closing_balance_by_account": {
+      "Ahorros 2208": 3568.29
+    },
+    "balance_to_type_if_no_column": 3568.29,
+    "total_cash": 3568.29,
+    "transactions_after_dedup": 1173,
+    "duplicates_across_files": 0,
+    "balance_breaks": [],
+    "internal_transfers": [],
+    "notes": "Card accounts show a negative closing balance (= amount owed) and are not part of total_cash. transactions_after_dedup counts distinct real lines readable in at least one file (unreadable and missing lines excluded; genuine same-day duplicates kept)."
+  },
+  "categories": {
+    "monthly_totals": {
+      "2025-12": {
+        "sales": 11528.4,
+        "payroll": -3986.11,
+        "owner_pay": -850.0,
+        "rent": -1275.0,
+        "utilities": -307.91,
+        "suppliers": -3208.32,
+        "taxes": -356.75,
+        "bank_fees": -45.15,
+        "other": -75.58
+      },
+      "2026-01": {
+        "sales": 8566.54,
+        "payroll": -3075.0,
+        "owner_pay": -850.0,
+        "rent": -1275.0,
+        "utilities": -316.91,
+        "suppliers": -3149.81,
+        "bank_fees": -44.12
+      },
+      "2026-02": {
+        "sales": 8726.34,
+        "payroll": -3075.0,
+        "owner_pay": -850.0,
+        "rent": -1275.0,
+        "utilities": -329.96,
+        "suppliers": -2797.99,
+        "taxes": -350.91,
+        "bank_fees": -41.71,
+        "equipment": -420.0,
+        "other": -105.11
+      },
+      "2026-03": {
+        "sales": 9827.91,
+        "payroll": -3075.0,
+        "owner_pay": -850.0,
+        "rent": -1275.0,
+        "utilities": -339.45,
+        "suppliers": -3406.38,
+        "bank_fees": -42.22
+      },
+      "2026-04": {
+        "sales": 9033.98,
+        "payroll": -3075.0,
+        "owner_pay": -850.0,
+        "rent": -1275.0,
+        "utilities": -342.52,
+        "suppliers": -3257.52,
+        "taxes": -350.75,
+        "bank_fees": -44.37
+      },
+      "2026-05": {
+        "sales": 9299.69,
+        "payroll": -3075.0,
+        "owner_pay": -850.0,
+        "rent": -1275.0,
+        "utilities": -339.51,
+        "suppliers": -3174.81,
+        "bank_fees": -40.26,
+        "other": -117.22
+      },
+      "2026-06": {
+        "sales": 9536.35,
+        "payroll": -4305.0,
+        "owner_pay": -850.0,
+        "rent": -1275.0,
+        "utilities": -361.99,
+        "suppliers": -3445.58,
+        "taxes": -372.89,
+        "bank_fees": -47.67,
+        "other": -77.89
+      },
+      "2026-07": {
+        "sales": 9530.98,
+        "payroll": -3075.0,
+        "owner_pay": -850.0,
+        "rent": -1385.0,
+        "utilities": -346.29,
+        "suppliers": -3385.77,
+        "bank_fees": -41.31,
+        "other": -58.33
+      },
+      "2026-08": {
+        "sales": 9507.44,
+        "payroll": -3450.0,
+        "owner_pay": -850.0,
+        "rent": -1385.0,
+        "utilities": -359.67,
+        "suppliers": -4072.17,
+        "other": -73.19,
+        "taxes": -389.2,
+        "bank_fees": -49.35
+      },
+      "2026-09": {
+        "sales": 9520.21,
+        "payroll": -3450.0,
+        "owner_pay": -850.0,
+        "rent": -1385.0,
+        "utilities": -365.74,
+        "suppliers": -3986.87,
+        "other": -67.29,
+        "bank_fees": -45.31
+      },
+      "2026-10": {
+        "sales": 9454.77,
+        "payroll": -3450.0,
+        "owner_pay": -850.0,
+        "rent": -1385.0,
+        "utilities": -370.7,
+        "suppliers": -4322.79,
+        "other": -34.9,
+        "taxes": -381.69,
+        "bank_fees": -50.71
+      }
+    },
+    "tolerance_pct": 5,
+    "notes": "Signed sums (money in +, money out -), complete months only, all accounts. For transfer_internal and card_payment only the sending side is counted; card purchases are counted in their own categories."
+  },
+  "recurring": [
+    {
+      "label": "Card sales",
+      "category": "sales",
+      "direction": "in",
+      "amount": 268.94,
+      "amount_varies": true,
+      "cadence": "daily",
+      "day_rule": "Monday to Saturday (closed Sundays)",
+      "next_date": "2026-11-11",
+      "match_hint": "ABONO VENTAS DATAFONO",
+      "confirmed_by_owner": false,
+      "tolerance": 54.73
+    },
+    {
+      "label": "Cash deposits",
+      "category": "sales",
+      "direction": "in",
+      "amount": 414.8,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Monday",
+      "next_date": "2026-11-17",
+      "match_hint": "CONSIGNACION EFECTIVO",
+      "confirmed_by_owner": false,
+      "tolerance": 62.22
+    },
+    {
+      "label": "Delivery app payouts (Rappi)",
+      "category": "sales",
+      "direction": "in",
+      "amount": 164.44,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Tuesday",
+      "next_date": "2026-11-17",
+      "match_hint": "ABONO RAPPI",
+      "confirmed_by_owner": false,
+      "tolerance": 24.98
+    },
+    {
+      "label": "Payroll (twice a month)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 1380.0,
+      "amount_varies": false,
+      "cadence": "twice a month",
+      "day_rule": "15th and last business day (earlier business day)",
+      "next_date": "2026-11-13",
+      "match_hint": "PAGO NOMINA",
+      "confirmed_by_owner": true,
+      "notes": "up $150 per half-month since August (part-time helper)"
+    },
+    {
+      "label": "Social security (PILA)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 690.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "9th",
+      "next_date": "2026-12-09",
+      "match_hint": "PAGO PILA APORTES",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Prima (June and December bonus)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 1184.44,
+      "amount_varies": true,
+      "cadence": "twice a year",
+      "day_rule": "last Friday on or before Jun 30 and Dec 20",
+      "next_date": "2026-12-18",
+      "match_hint": "PAGO NOMINA PRIMA",
+      "confirmed_by_owner": true,
+      "tolerance": 177.67
+    },
+    {
+      "label": "Owner pay",
+      "category": "owner_pay",
+      "direction": "out",
+      "amount": 850.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "1st (next business day)",
+      "next_date": "2026-12-01",
+      "match_hint": "TRANSF A CTA AHORROS J MUESTRA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Rent",
+      "category": "rent",
+      "direction": "out",
+      "amount": 1290.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "5th (next business day)",
+      "next_date": "2026-12-07",
+      "match_hint": "PAGO ARRIENDO",
+      "confirmed_by_owner": true,
+      "notes": "$1,180 until June 2026, $1,290 since July"
+    },
+    {
+      "label": "Building admin fee",
+      "category": "rent",
+      "direction": "out",
+      "amount": 95.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "25th",
+      "next_date": "2026-11-25",
+      "match_hint": "TRANSF 0211 REF 30774",
+      "confirmed_by_owner": false,
+      "notes": "cryptic description; the owner explains it"
+    },
+    {
+      "label": "Water & power (Emcali)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 252.32,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "10th",
+      "next_date": "2026-12-10",
+      "match_hint": "PAGO EMCALI",
+      "confirmed_by_owner": false,
+      "tolerance": 37.85
+    },
+    {
+      "label": "Gas (Gases de Occidente)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 71.03,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "14th",
+      "next_date": "2026-11-17",
+      "match_hint": "PAGO GASES DE OCCIDENTE",
+      "confirmed_by_owner": false,
+      "tolerance": 10.65
+    },
+    {
+      "label": "Internet (Claro)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 39.9,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "3rd",
+      "next_date": "2026-12-03",
+      "match_hint": "PAGO CLARO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Coffee roaster (weekly)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 301.05,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Monday",
+      "next_date": "2026-11-17",
+      "match_hint": "PAGO PSE TOSTADORA DEL PACIFICO",
+      "confirmed_by_owner": false,
+      "tolerance": 45.16,
+      "notes": "price up ~8% in March and ~24% in August 2026"
+    },
+    {
+      "label": "Milk supplier (twice a week)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 185.92,
+      "amount_varies": true,
+      "cadence": "twice a week",
+      "day_rule": "Tuesday and Friday",
+      "next_date": "2026-11-13",
+      "match_hint": "PAGO PSE LACTEOS DEL VALLE",
+      "confirmed_by_owner": false,
+      "tolerance": 27.89
+    },
+    {
+      "label": "Pastry supplier (weekly)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 211.86,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Thursday",
+      "next_date": "2026-11-12",
+      "match_hint": "PAGO PSE PANIFICADORA EL TRIGO",
+      "confirmed_by_owner": false,
+      "tolerance": 31.78
+    },
+    {
+      "label": "Disposables (Makro)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 122.13,
+      "amount_varies": true,
+      "cadence": "twice a month",
+      "day_rule": "8th and 22nd",
+      "next_date": "2026-11-22",
+      "match_hint": "COMPRA MAKRO CALI",
+      "confirmed_by_owner": false,
+      "tolerance": 18.32
+    },
+    {
+      "label": "POS software (new since Aug 2026)",
+      "category": "other",
+      "direction": "out",
+      "amount": 34.9,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "18th",
+      "next_date": "2026-11-18",
+      "match_hint": "PAGO PSE LOGGRO POS SAS",
+      "confirmed_by_owner": false,
+      "notes": "started in August 2026"
+    },
+    {
+      "label": "Consumption tax (INC, bimonthly)",
+      "category": "taxes",
+      "direction": "out",
+      "amount": 367.03,
+      "amount_varies": true,
+      "cadence": "every 2 months",
+      "day_rule": "12th of even months",
+      "next_date": "2026-12-14",
+      "match_hint": "PAGO DIAN IMPUESTO AL CONSUMO",
+      "confirmed_by_owner": false,
+      "tolerance": 55.05
+    },
+    {
+      "label": "Account fee",
+      "category": "bank_fees",
+      "direction": "out",
+      "amount": 4.9,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "last business day",
+      "next_date": "2026-11-30",
+      "match_hint": "CUOTA MANEJO",
+      "confirmed_by_owner": false
+    }
+  ],
+  "one_offs_known": [],
+  "owner_files": [
+    {
+      "path": "files/staff.csv",
+      "kind": "employees",
+      "rows": 4,
+      "total": 2760.0,
+      "overdue_rows": 0,
+      "notes": "total = monthly payroll since Aug 2026, paid in two halves (15th and month end) as PAGO NOMINA"
+    }
+  ],
+  "onboarding_answers": {
+    "business_type": "café",
+    "low_cash_line": 1500.0,
+    "customers_pay": "walk-in customers by card and cash, plus a weekly Rappi payout",
+    "busy_months": [
+      "2026-12"
+    ],
+    "slow_months": [
+      "2027-01"
+    ],
+    "owner_pay": {
+      "match_hint": "TRANSF A CTA AHORROS J MUESTRA",
+      "is_owner_pay": true
+    },
+    "upcoming_in_own_words": [
+      "The staff's December bonus (prima) before Dec 20"
+    ],
+    "mystery_answers": {
+      "TRANSF 0211 REF 30774": "the building's monthly administration fee"
+    }
+  },
+  "hidden_future": {
+    "notes": "End-of-day total of the bank accounts (card debt not included) for the 8 weeks after the statement, from the same simulation. It includes day-to-day noise the app cannot know: compare level and timing with tolerance.",
+    "daily_balance": [
+      {
+        "date": "2026-11-11",
+        "balance": 3801.44
+      },
+      {
+        "date": "2026-11-12",
+        "balance": 3825.65
+      },
+      {
+        "date": "2026-11-13",
+        "balance": 2569.9
+      },
+      {
+        "date": "2026-11-14",
+        "balance": 2861.71
+      },
+      {
+        "date": "2026-11-15",
+        "balance": 2861.71
+      },
+      {
+        "date": "2026-11-16",
+        "balance": 3048.78
+      },
+      {
+        "date": "2026-11-17",
+        "balance": 3349.29
+      },
+      {
+        "date": "2026-11-18",
+        "balance": 3544.09
+      },
+      {
+        "date": "2026-11-19",
+        "balance": 3607.82
+      },
+      {
+        "date": "2026-11-20",
+        "balance": 3744.48
+      },
+      {
+        "date": "2026-11-21",
+        "balance": 4058.78
+      },
+      {
+        "date": "2026-11-22",
+        "balance": 3929.56
+      },
+      {
+        "date": "2026-11-23",
+        "balance": 4236.16
+      },
+      {
+        "date": "2026-11-24",
+        "balance": 4463.47
+      },
+      {
+        "date": "2026-11-25",
+        "balance": 4630.21
+      },
+      {
+        "date": "2026-11-26",
+        "balance": 4655.48
+      },
+      {
+        "date": "2026-11-27",
+        "balance": 4750.83
+      },
+      {
+        "date": "2026-11-28",
+        "balance": 5048.33
+      },
+      {
+        "date": "2026-11-29",
+        "balance": 5048.33
+      },
+      {
+        "date": "2026-11-30",
+        "balance": 3979.89
+      },
+      {
+        "date": "2026-12-01",
+        "balance": 3395.87
+      },
+      {
+        "date": "2026-12-02",
+        "balance": 3678.46
+      },
+      {
+        "date": "2026-12-03",
+        "balance": 3731.72
+      },
+      {
+        "date": "2026-12-04",
+        "balance": 3861.14
+      },
+      {
+        "date": "2026-12-05",
+        "balance": 4268.41
+      },
+      {
+        "date": "2026-12-06",
+        "balance": 4268.41
+      },
+      {
+        "date": "2026-12-07",
+        "balance": 3388.98
+      },
+      {
+        "date": "2026-12-08",
+        "balance": 3488.69
+      },
+      {
+        "date": "2026-12-09",
+        "balance": 3058.69
+      },
+      {
+        "date": "2026-12-10",
+        "balance": 2880.38
+      },
+      {
+        "date": "2026-12-11",
+        "balance": 3065.2
+      },
+      {
+        "date": "2026-12-12",
+        "balance": 3446.1
+      },
+      {
+        "date": "2026-12-13",
+        "balance": 3446.1
+      },
+      {
+        "date": "2026-12-14",
+        "balance": 3478.08
+      },
+      {
+        "date": "2026-12-15",
+        "balance": 2318.64
+      },
+      {
+        "date": "2026-12-16",
+        "balance": 2584.98
+      },
+      {
+        "date": "2026-12-17",
+        "balance": 2670.21
+      },
+      {
+        "date": "2026-12-18",
+        "balance": 1351.21
+      },
+      {
+        "date": "2026-12-19",
+        "balance": 1707.81
+      },
+      {
+        "date": "2026-12-20",
+        "balance": 1707.81
+      },
+      {
+        "date": "2026-12-21",
+        "balance": 2185.68
+      },
+      {
+        "date": "2026-12-22",
+        "balance": 2324.14
+      },
+      {
+        "date": "2026-12-23",
+        "balance": 2614.8
+      },
+      {
+        "date": "2026-12-24",
+        "balance": 2652.06
+      },
+      {
+        "date": "2026-12-25",
+        "balance": 2899.02
+      },
+      {
+        "date": "2026-12-26",
+        "balance": 3298.69
+      },
+      {
+        "date": "2026-12-27",
+        "balance": 3298.69
+      },
+      {
+        "date": "2026-12-28",
+        "balance": 3483.35
+      },
+      {
+        "date": "2026-12-29",
+        "balance": 3770.83
+      },
+      {
+        "date": "2026-12-30",
+        "balance": 4023.81
+      },
+      {
+        "date": "2026-12-31",
+        "balance": 2684.81
+      },
+      {
+        "date": "2027-01-01",
+        "balance": 2917.31
+      },
+      {
+        "date": "2027-01-02",
+        "balance": 3210.45
+      },
+      {
+        "date": "2027-01-03",
+        "balance": 3210.45
+      },
+      {
+        "date": "2027-01-04",
+        "balance": 2389.85
+      },
+      {
+        "date": "2027-01-05",
+        "balance": 1280.0
+      }
+    ],
+    "lowest": {
+      "date": "2027-01-05",
+      "balance": 1280.0
+    }
+  },
+  "expected": {
+    "risk_level": [
+      "act_now"
+    ],
+    "alerts_must": [
+      {
+        "type": "shortfall",
+        "around": "2026-12-18",
+        "cause_labels": [
+          "Coffee roaster (weekly)",
+          "Milk supplier (twice a week)",
+          "Payroll (twice a month)",
+          "Prima (June and December bonus)"
+        ],
+        "notes": "'around' = first day the true end-of-day cash is below the line; accept +/- 7 days. The explanation should name at least one of cause_labels."
+      }
+    ],
+    "alerts_must_not": [],
+    "insights_must": [
+      "thin_cushion",
+      "cost_creeping_up",
+      "costs_faster_than_sales",
+      "duplicate_charge",
+      "new_recurring_charge",
+      "owner_pay_high",
+      "net_flow_shrinking"
+    ],
+    "insights_must_not": [
+      "sales_slowing",
+      "few_customers",
+      "customers_paying_later",
+      "idle_cash"
+    ],
+    "fixes_that_work": [
+      {
+        "what": "raise prices 8% from 2026-11-16",
+        "result": "stays above the minimum (lowest $2,235.77 on 2026-12-18)"
+      },
+      {
+        "what": "stop owner pay on 2026-12-01 and 2027-01-04",
+        "result": "stays above the minimum (lowest $2,204.61 on 2026-12-18)"
+      },
+      {
+        "what": "let the part-time helper go from 2026-12-01",
+        "result": "stays above the minimum (lowest $1,501.21 on 2026-12-18)"
+      }
+    ],
+    "what_ifs": [
+      {
+        "question": "What if I take a $3,000 loan now to get through December?",
+        "change": "+$3,000 on 2026-11-17, first $280 repayment on 2026-12-17",
+        "lowest_balance_direction": "up",
+        "approx_change": 1289.9,
+        "tolerance": 257.98,
+        "notes": "lowest $2,569.90 on 2026-11-13 (base case $1,280.00 on 2027-01-05)"
+      },
+      {
+        "question": "What if I raise prices 8%?",
+        "change": "card, cash and Rappi income x1.08 from 2026-11-16",
+        "lowest_balance_direction": "up",
+        "approx_change": 955.77,
+        "tolerance": 250.0,
+        "notes": "lowest $2,235.77 on 2026-12-18 (base case $1,280.00 on 2027-01-05)"
+      },
+      {
+        "question": "What if coffee goes up another 10% in December?",
+        "change": "Coffee roaster x1.10 from 2026-12-01",
+        "lowest_balance_direction": "down",
+        "approx_change": -150.79,
+        "tolerance": 250.0,
+        "notes": "lowest $1,129.21 on 2027-01-05 (base case $1,280.00 on 2027-01-05)"
+      }
+    ],
+    "chat_questions": [
+      {
+        "question": "Should I take a loan to get through December?",
+        "answer_must_reflect": [
+          "money out has exceeded money in every month since August (about $1,047.38 a month)",
+          "a loan only buys time and adds repayments; it does not fix the monthly loss",
+          "the fix is prices, supplier costs or owner pay"
+        ]
+      },
+      {
+        "question": "Why is my cash going down?",
+        "answer_must_reflect": [
+          "supplier costs up about 24% (Aug-Oct vs May-Jul)",
+          "sales are flat",
+          "a part-time helper was added in August"
+        ]
+      },
+      {
+        "question": "Did anything strange happen in October?",
+        "answer_must_reflect": [
+          "Lácteos del Valle was paid twice on 2026-10-20 ($172.23 each)"
+        ]
+      }
+    ],
+    "timing_or_structural": "structural",
+    "notes": "Insight metrics: {\"weeks_of_cover\": 1.47, \"cost_creep_max\": 0.237, \"cost_creep_category\": \"suppliers\", \"sales_change\": 0.004, \"cost_change\": 0.11, \"cost_vs_sales_gap\": 0.106, \"top_customers\": [], \"top2_customer_share\": 0.0, \"days_late_prior3\": null, \"days_late_recent3\": null, \"days_late_change\": null, \"owner_pay_recent3\": 2550.0, \"surplus_before_owner_pay_recent3\": -592.16, \"owner_pay_share_of_surplus\": 99.0, \"operating_net_per_month_prior3\": 722.5, \"operating_net_per_month_recent3\": -197.38, \"net_flow_change_vs_income\": -0.097, \"exact_duplicate_lines\": [\"2026-10-20 PAGO PSE LACTEOS DEL VALLE -$172.23 x2\"]} | Windows: prior3 = 2026-05..07, recent3 = 2026-08..10 (complete months). weeks_of_cover = cash on 2026-11-10 / average weekly money out in the last 91 days (own-account transfers and card payments excluded; card purchases included). thin_cushion must <1.5, must_not >3; idle_cash must >16, must_not <8. cost_creeping_up: largest recent3/prior3 change of a cost category worth >=5% of costs; must >=20%, must_not <=10%. costs_faster_than_sales: cost change minus sales change; must >=8 pts, must_not <=2 pts. few_customers: share of income (May-Oct) from the two largest named payers (card/cash deposits are anonymous); must >=25%, must_not <=16%. customers_paying_later: change in amount-weighted days late of invoice payments; must >=7 days, must_not <=2 or no invoiced customers. owner_pay_high: owner pay / surplus before owner pay in recent3; must >=0.8, must_not <=0.5. sales_slowing: must <=-10%, must_not >=-3%. net_flow_shrinking: change in monthly operating net (excl. owner pay, loans, equipment, own transfers) as a share of monthly income; must <=-5%, must_not >=-1%. duplicate_charge: must_not when no identical (date, description, amount) lines exist. Values between the two thresholds are judgement calls and appear in neither list. | 'get the duplicate milk charge refunded ($172.23) on 2026-11-20' is not enough: still dips to $1,452.23 on 2027-01-05 | risk_level rule: true lowest < 90% of the line -> act_now; 90-110% -> watch or act_now; 110-140% -> safe or watch; above -> safe."
+  }
+}
