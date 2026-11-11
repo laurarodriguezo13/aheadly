@@ -112,19 +112,19 @@ Success metric from the storyboard: from opening the alert to a saved decision i
 
 **Done since the first draft of this check-in (2026-11-10).** Every visitor starts with an empty app (no shared data); upload-only onboarding (bank statement + optional upcoming payments, balance read from the file, no demo or Plaid/QuickBooks buttons, no bakery defaults); honest verdicts with three risk levels (act now / keep an eye on it / safe) using the worst case; "next month" questions answered for next month; wording that works for any business. On 2026-11-11: Latin American bank formats (day/month dates, "1.250,00" amounts, unreadable rows reported instead of becoming $0), a "What we're counting on" list on Accounts, and suggested questions that name the business's own biggest upcoming payment. 69 tests.
 
-| Priority | Task | Notes |
-|---|---|---|
-| 1 | Finish reading real bank files | Day/month dates and "1.250,00" amounts are done; still to do: forecast from the statement's last date, check that the balance adds up |
-| 1 | Test businesses with answer keys + automated tests | Fake statements for several different businesses, made separately from the code |
-| 1 | Categories and recurring payments from bank statements | Rules + Hugging Face zero-shot categoriser; recurring detection without double counting |
-| 1 | Money plan page + onboarding questions | One editable list of everything the forecast expects; "detect first, then ask" |
-| 2 | Actions with "Test this" + suggested fixes | Every warning comes with concrete actions the app has already tested |
-| 2 | Financing helper | Compares the owner's existing options (credit line, card, supplier terms) by cost; never offers credit |
-| 2 | Insights page | "Things we noticed" patterns, with a short summary under every chart |
-| 3 | Download / Load my data, privacy page, glossary, chatbot test set | |
-| 3 | Final demo with the test businesses, deck, rehearsal | |
+**Plan to the final version** (one builder, about four weeks; the full plan with every item is in [`docs/ROADMAP.md`](ROADMAP.md)):
 
-Risks: Gemini free-tier rate limits during a live demo (the offline fallback covers it); Prophet install time on Streamlit Cloud (naive model fallback behind the same interface); real bank files are messy (the test businesses are how we catch it).
+| Phase | When | What | Priority |
+|---|---|---|---|
+| 1. Foundation and proof | Week 1 | Test businesses with answer keys + automatic checks against them; finish reading bank files (start from the statement's last date, check the balance adds up, no duplicate imports); groundwork (business profile, settings that reload after a deploy, local time); "Try an example business" | Must |
+| 2. Understand the business | Weeks 2–3 | Several bank accounts and credit cards; automatic categories; recurring payments on their real dates (weekly to yearly); "just say it" (tell the app a plan in plain words); upload any Excel file the owner keeps (money owed, bills, employee list…); a "How we built your forecast" page with every assumption, editable; onboarding questions (detect first, then ask); forecast confidence | Must (credit cards, employee list: Should) |
+| 3. Solve, not just warn | Weeks 3–4 | Chance of dipping below the line; actions with their computed effect on cash, a "Test this" button, how-to steps and a drafted message; suggested fixes the app has already tested; how much you can safely spend / pay yourself; stress tests; financing helper (compares options the owner already has, never offers credit) | Must (stress tests, financing helper: Should) |
+| 4. Insights | Week 4 | "Things we noticed" patterns even when cash is fine, a plain-words summary under every chart, an Insights page | Small version Must |
+| 5. Finish | Week 4 | Download / Load my data, privacy page and "delete my data", glossary, chatbot test set, final demo with two different test businesses | Must (glossary, test set: Should) |
+
+If time runs short, cut in this order: nice-to-haves → financing helper → full insights → stress tests → credit cards and employee list. Nice to have: cash calendar, "your week in 30 seconds", what changed since your last visit, mobile layout, PDF report, Spanish and local currencies, PDF bank statements. Long term: a subscription with saved accounts, automatic updates, notifications (including a WhatsApp check-in) and accountant access.
+
+Risks: scope (about 20 working days of Must items for one builder; the cut order above protects the core); Gemini free-tier rate limits during a live demo (the offline fallback covers it); Prophet install time on Streamlit Cloud (naive model fallback behind the same interface); real bank files are messy (the test businesses are how we catch it).
 
 ---
 
