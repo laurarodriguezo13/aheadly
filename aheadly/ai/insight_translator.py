@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any
 
@@ -30,6 +31,9 @@ from aheadly.domain import ChatAnswer
 SUGGESTABLE = tuple(c for c in CATEGORIES if c not in ("other", "card_payment"))
 
 logger = logging.getLogger(__name__)
+
+# "$-748" → "-$748" in alert text written by the model
+_MINUS_AFTER_DOLLAR = re.compile(r"\$-(\d)")
 
 
 @dataclass
@@ -59,7 +63,9 @@ class InsightTranslator:
         try:
             reply = self._llm.chat(messages)
             parsed = json.loads(_strip_code_fence(reply.content or ""))
-            text = AlertText(parsed["title"], parsed["body"], parsed.get("actions", [])[:3])
+            # the title says how serious it is, so it follows the numbers (live check, 2026-11-12)
+            body = _MINUS_AFTER_DOLLAR.sub(r"-$\1", parsed["body"])
+            text = AlertText(templates.alert_title(facts), body, parsed.get("actions", [])[:3])
             if not check_numbers(f"{text.title} {text.body}", [facts]).passed:
                 raise ValueError("alert used a number that is not in the facts")
             return text

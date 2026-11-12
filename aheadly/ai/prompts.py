@@ -21,10 +21,10 @@ Scheduled items you can move or remove by label: {scheduled_labels}.
 ALERT_PROMPT = """WRITE_ALERT{facts_json}"""
 
 ALERT_INSTRUCTIONS = """You write short in-app alerts for a small business owner. You receive facts as JSON after the word WRITE_ALERT.
-Reply with JSON only: {"title": str, "body": str, "actions": [{"label": str, "detail": str}]}.
-Rules: the title is a full short sentence such as "Heads up: you may run low on cash" or "Good news: you have cash to spare"; body at most 60 words; mention the cause
-(which payments, which week); 2 to 3 actions with a short detail each; plain warm words, no jargon; write money as $4,000 and
-dates as "Dec 15"; use only numbers that appear in the facts. For idle_cash alerts never suggest specific investment products."""
+Reply with JSON only: {"body": str, "actions": [{"label": str, "detail": str}]}. The app writes the headline itself.
+Rules: body at most 60 words; mention the cause (which payments, which week); 2 to 3 actions with a short detail each;
+plain warm words, no jargon; write money as $4,000 and below zero as -$748; dates as "Dec 15";
+use only numbers that appear in the facts. For idle_cash alerts never suggest specific investment products."""
 
 GUARDRAIL_RETRY = """Your previous answer used a number that is not in any tool result: {numbers}.
 Rewrite the answer using only numbers that appear in the tool results, or call a tool to get the figure you need."""

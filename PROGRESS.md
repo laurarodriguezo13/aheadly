@@ -34,6 +34,7 @@ Short state file so a fresh session (or teammate) can continue.
 - Onboarding questions, roadmap 2.7 (2026-11-11): a "Questions" page after the upload asks only what the statement can't show (what the business does, busy and slow months, whether a regular transfer is the owner's pay, what unplaced payees are, anything coming up), one at a time with why it matters, skippable and resumable; the connected model suggests categories from payee names only; busy and slow months feed the forecast (a slow month lowers every case, a busy month's extra money mostly the best case) and are editable on How we built it; the example bakery comes with its owner's answers; 360 tests (DECISIONS #34).
 - Forecast confidence, roadmap 2.8 (2026-11-11): high / medium / low on the dashboard with the two biggest reasons (history, unclear lines, statement adds up, a backtest on the owner's last 4 weeks, questions answered); a "nothing big planned" note when no one-off is known; payments that vary get their own spread of amount and date in the forecast; new harness check: the real balance stays inside the range on at least 80% of days (all six pass); 373 tests (DECISIONS #35).
 - Review after Phase 2 (2026-11-12): code, repository and every page checked; small fixes made (unused code, pages calling App Core only, CI on Migue, alert title and wording, readable dates); bigger items listed in the roadmap (known issues 14–17).
+- Merged into `main` after the Milestone 2 presentation (2026-11-12); live site rebooted and checked with Gemini (roadmap known issues 18–22). Fixed right after: the alert's title now comes from the numbers in code ("Warning: your cash could run out" below zero), the model writes only the body, and "$-748" is written "-$748".
 
 ## Next (for the final demonstration)
 Follow `docs/ROADMAP.md` (one builder, about four weeks; Must / Should / Nice, sizes, dependencies, cut order). In short:
@@ -43,7 +44,7 @@ Follow `docs/ROADMAP.md` (one builder, about four weeks; Must / Should / Nice, s
 4. Phase 4, insights: pattern rules, chart summaries, Insights page.
 5. Phase 5, finish: Download / Load my data, privacy page, glossary, chatbot eval set, final demo with two test businesses.
 
-Demo day: regenerate Maria's files the same day (`uv run python ../aheadly-test-data/make_maria_files.py`) and rehearse at most twice on the Gemini key. After a merge to `main`, check the live site; reboot it on Streamlit Cloud if it shows `AttributeError` (cached settings, fixed in Phase 1).
+Demo day: regenerate Maria's files the same day (`uv run python ../aheadly-test-data/make_maria_files.py`) and rehearse at most twice on the Gemini key. After a merge to `main`, check the live site; reboot it on Streamlit Cloud (Laura) if it shows an error such as `KeyError: PAGES[...]`: the app can keep old modules after an update.
 
 ## Open decisions
 - Whether idle-cash alerts should be shown on the dashboard or only in Alerts.

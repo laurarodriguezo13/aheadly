@@ -103,10 +103,19 @@ def _short_date(iso: str) -> str:
     return f"{d:%b} {d.day}"
 
 
+def alert_title(facts: dict) -> str:
+    """How serious it is, from the numbers: code picks the title, the model only writes the body."""
+    if facts["type"] == "idle_cash":
+        return "Good news: you have cash to spare"
+    if facts["lowest_balance"] < 0:
+        return "Warning: your cash could run out"
+    return "Heads up: you may run low on cash"
+
+
 def alert_text(facts: dict) -> dict:
     if facts["type"] == "idle_cash":
         return {
-            "title": "Good news: you have cash to spare",
+            "title": alert_title(facts),
             "body": (
                 f"Even in a bad case your balance stays above {money(facts['lowest_worst_case'])} for the next "
                 f"8 weeks. That money could work harder for you."
@@ -120,11 +129,7 @@ def alert_text(facts: dict) -> dict:
     # payment names as written (lowercasing them broke names like "Christmas ingredients")
     cause = " and ".join(f"{o['label']} ({money(o['amount'])})" for o in outflows[:2])
     return {
-        "title": (
-            "Warning: your cash could run out"
-            if facts["lowest_balance"] < 0
-            else "Heads up: you may run low on cash"
-        ),
+        "title": alert_title(facts),
         "body": (
             f"Your balance could drop to about {money(facts['lowest_balance'])} in {weeks(facts['weeks_ahead'])}, "
             f"below your {money(facts['low_cash_line'])} line, because {cause} land close together."
