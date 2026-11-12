@@ -74,13 +74,6 @@ ROLE_NAMES = {
     "name": "name", "pay": "pay", "position": "position", "account": "account code", "item": "item",
     "quantity": "quantity", "unit_cost": "unit cost", "reorder": "reorder level",
 }  # fmt: skip
-KIND_NAMES = {
-    "upcoming_payments": "Upcoming payments",
-    "receivables": "Money customers owe you",
-    "employees": "Employee list",
-    "ledger": "Accounting ledger",
-    "inventory": "Inventory",
-}
 IN_TYPES = ("ingreso", "income", "in", "cobro", "entrada", "credito", "abono", "recibo")
 DOUBTFUL_DAYS = 60  # an invoice this late is listed but not counted on
 LATE_PAYMENT_DAYS = 14  # an overdue invoice is expected this long from today, as a maybe
@@ -99,10 +92,6 @@ class OwnerFile:
     items: list[ScheduledItem] = field(default_factory=list)  # what it adds to the forecast
     details: dict = field(default_factory=dict)
     problem: str | None = None
-
-    @property
-    def kind_name(self) -> str:
-        return KIND_NAMES.get(self.kind or "", "Not sure what this is")
 
 
 # ------------------------------------------------------------- the table

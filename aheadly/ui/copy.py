@@ -58,13 +58,6 @@ EXAMPLE_NOTICE = (
     "This is an example business, {name}. Its statement ends {end}, so Aheadly shows it as of {start}. "
     "To use your own files, go to Settings and click Start over."
 )
-RECURRING_TITLE = "Regular payments and income we found ({n})"
-RECURRING_HELP = (
-    'Found in your statement. "On its dates": the forecast puts it on the day it\'s due (rent on the '
-    '15th, payroll on Fridays). "In the daily pattern": it changes too much from one time to the next '
-    "(card sales, weekly supplier orders), so the forecast learns it with the rest of your daily ups and downs. "
-    "≈ means the amount varies; we use a typical recent amount."
-)
 OWNER_FILES_TITLE = "Files you keep"
 OWNER_FILES_HELP = (
     "Upcoming payments, money customers owe you, your employee list, a ledger or your inventory. Any layout: "
@@ -178,11 +171,6 @@ PLANNED_MOVED = (
     "Your regular payments, one-offs and anything you tell us now live on one page, where you can change "
     "them and see what each change does."
 )
-PLANNED_HELP = (
-    "These upcoming payments and income come from your upcoming-payments file, what you tell us below, "
-    "and any plan you save. "
-    "Regular payments like payroll and rent are learned from your statement, so they are not listed here."
-)
 STATEMENT_UP_TO = "Based on your statement up to {end}."
 STATEMENT_BEHIND = (
     "Your statement ends on {end}, so the forecast starts on {start}. "
@@ -264,7 +252,7 @@ BASIS_INTRO = (
 BASIS_LINK = "How we built this forecast"
 BASIS_START = "Where it starts"
 BASIS_START_ROWS = {
-    "balance": "Cash today",
+    "balance": "Cash on the statement's last day",
     "statement": "Statement up to",
     "history": "History we learned from",
     "lines": "Transactions read",
@@ -308,7 +296,7 @@ BASIS_PICK = "Which one?"
 BASIS_AMOUNT = "Amount"
 BASIS_NEXT_DATE = "Date"
 BASIS_HAS_END = "It stops on a date"
-BASIS_END_DATE = "Last date"
+BASIS_END_DATE = "Last date (used only if it stops)"
 BASIS_SAVE = "Save changes"
 BASIS_PAUSE = "Pause"
 BASIS_RESUME = "Resume"

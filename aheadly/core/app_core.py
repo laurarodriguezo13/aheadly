@@ -782,28 +782,6 @@ class AppCore:
         ]
         return recurring.detect(lines, self.today)
 
-    def recurring_table(self) -> list[dict]:
-        """What the Accounts page lists: each regular payment and income, how often, and how the
-        forecast uses it."""
-        rows = []
-        for r in self.detected_recurring():
-            if r.internal:
-                continue
-            rows.append(
-                {
-                    "description": r.label,
-                    "how_often": r.cadence,
-                    "amount": r.amount,
-                    "varies": r.amount_varies,
-                    "next": r.next_due.isoformat() if r.next_due else "",
-                    "in_forecast": "on its dates" if r.scheduled else "in the daily pattern",
-                    "category": r.category,
-                }
-            )
-        return sorted(
-            rows, key=lambda row: (-abs(row["amount"]) if row["in_forecast"] == "on its dates" else 0)
-        )
-
     def _detect_recurring(self, business_id: int) -> None:
         """Put each recurring payment on its real dates (as scheduled items) and take its past lines
         out of what the model learns from, so nothing is counted twice."""
@@ -1233,6 +1211,15 @@ class AppCore:
     def _avg_monthly_outflow(self) -> float:
         totals = self.repo.flow_totals(self._business().id, self.today - timedelta(days=90))
         return totals["money_out"] / 3
+
+    def latest_lines(self, limit: int = 20) -> pd.DataFrame:
+        """The latest statement lines, for the Accounts page."""
+        return self.repo.list_transactions(self._business().id, limit=limit)
+
+    @staticmethod
+    def answer_categories() -> list[str]:
+        """Categories an owner can pick for a payee (not "other"; card payments are found by rule)."""
+        return [c for c in categorizer.CATEGORIES if c not in ("other", "card_payment")]
 
     def scheduled_labels(self) -> list[str]:
         """Names of every payment the forecast counts on (the owner's and the ones found in the

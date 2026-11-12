@@ -14,6 +14,14 @@ def money(value: float) -> str:
     return f"-${-value:,}" if value < 0 else f"${value:,}"
 
 
+def day(iso: str) -> str:
+    """'2026-12-15' → 'Dec 15, 2026' (anything else is returned as it is)."""
+    try:
+        return date.fromisoformat(str(iso)[:10]).strftime("%b %d, %Y").replace(" 0", " ")
+    except ValueError:
+        return str(iso)
+
+
 def weeks(n: int) -> str:
     return "1 week" if n == 1 else f"{n} weeks"
 
@@ -33,7 +41,7 @@ def answer_from_tool(tool: str, data: dict) -> str:
         }[data["risk_level"]]
         return (
             f"If you do that, your lowest balance would be about {money(s['lowest_base_case'])} "
-            f"around {s['lowest_date']} (worst case {money(s['lowest_worst_case'])}, best case "
+            f"around {day(s['lowest_date'])} (worst case {money(s['lowest_worst_case'])}, best case "
             f"{money(s['lowest_best_case'])}). Your low cash line is {money(data['low_cash_line'])}. {verdict}"
         )
     if tool == "get_forecast":
@@ -47,13 +55,13 @@ def answer_from_tool(tool: str, data: dict) -> str:
             "act_now": "you would dip below your low cash line, so it is worth acting early.",
         }[data["risk_level"]]
         period = (
-            f"Between now and {data['until']}"
+            f"Between now and {day(data['until'])}"
             if data.get("until")
             else f"Over the next {data['weeks']} weeks"
         )
         return (
             f"{period} your lowest point is about {money(low['balance_base_case'])} "
-            f"on {low['date']}, which means {verdict}"
+            f"on {day(low['date'])}, which means {verdict}"
         )
     if tool == "get_cash_summary":
         return (
@@ -61,7 +69,9 @@ def answer_from_tool(tool: str, data: dict) -> str:
             f"came in and {money(data['money_out_30d'])} went out. Your low cash line is {money(data['low_cash_line'])}."
         )
     if tool == "get_upcoming_outflows":
-        lines = ", ".join(f"{o['label']} {money(o['amount'])} on {o['date']}" for o in data["outflows"][:3])
+        lines = ", ".join(
+            f"{o['label']} {money(o['amount'])} on {day(o['date'])}" for o in data["outflows"][:3]
+        )
         return f"The biggest payments coming up are: {lines}. Plan for those first."
     if tool == "get_alerts":
         if not data["alerts"]:
@@ -107,11 +117,14 @@ def alert_text(facts: dict) -> dict:
             ],
         }
     outflows = facts["top_outflows"]
-    cause = " and ".join(
-        f"{o['label'][:1].lower()}{o['label'][1:]} ({money(o['amount'])})" for o in outflows[:2]
-    )
+    # payment names as written (lowercasing them broke names like "Christmas ingredients")
+    cause = " and ".join(f"{o['label']} ({money(o['amount'])})" for o in outflows[:2])
     return {
-        "title": "Heads up: you may run low on cash",
+        "title": (
+            "Warning: your cash could run out"
+            if facts["lowest_balance"] < 0
+            else "Heads up: you may run low on cash"
+        ),
         "body": (
             f"Your balance could drop to about {money(facts['lowest_balance'])} in {weeks(facts['weeks_ahead'])}, "
             f"below your {money(facts['low_cash_line'])} line, because {cause} land close together."

@@ -3,7 +3,6 @@ saying why it matters, all skippable; answers are kept, so the owner can stop an
 
 import streamlit as st
 
-from aheadly.ai.categorizer import CATEGORIES
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.components import proposal_card, seasons_editor
@@ -90,7 +89,7 @@ with st.container(border=True):
                     reason=question.reason,
                 )
             )
-        choices = [None] + [c for c in CATEGORIES if c not in ("other", "card_payment")]
+        choices = [None] + core.answer_categories()
         words = example.get("mystery", {}).get(question.payee, "")
         picked = st.selectbox(
             copy.MYSTERY_PICK,

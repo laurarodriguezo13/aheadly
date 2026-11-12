@@ -172,7 +172,7 @@ else:
                 st.rerun()
     with st.container(border=True):
         section_title("Recent transactions")
-        recent = core.repo.list_transactions(status.business.id, limit=20)
+        recent = core.latest_lines(20)
         recent["category"] = recent["category"].map(lambda c: copy.CATEGORY_NAMES.get(c, c))
         st.dataframe(
             recent,

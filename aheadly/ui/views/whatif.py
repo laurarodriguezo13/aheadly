@@ -14,7 +14,7 @@ core = start_page(copy.WHATIF_TITLE)
 require_data(core)
 st.caption(copy.WHATIF_INTRO)
 
-labels = sorted({item.label for item in core.repo.list_scheduled_items(core.status().business.id)})
+labels = core.scheduled_labels()
 
 # outside the form, so the boxes below change as soon as the owner picks another kind
 kind_label = st.selectbox("What do you want to test?", list(copy.WHATIF_TYPES))
@@ -24,18 +24,18 @@ with st.form("whatif"):
     c1, c2 = st.columns(2)
     if kind == "one_time_expense":
         amount = c1.number_input("Amount ($)", min_value=1.0, value=2000.0, step=100.0, format="%.0f")
-        day = c2.date_input("When?", value=core.today + timedelta(days=7))
+        day = c2.date_input("When?", value=core.today + timedelta(days=7), format="MM/DD/YYYY")
         label = st.text_input("What is it?", value="New purchase")
         adjustment = {"type": kind, "amount": amount, "date": day.isoformat(), "label": label}
         name = f"Buy {label} ({amount:,.0f})"
     elif kind == "move_item":
         label = c1.selectbox("Which payment?", labels)
-        day = c2.date_input("New date", value=core.today + timedelta(days=49))
+        day = c2.date_input("New date", value=core.today + timedelta(days=49), format="MM/DD/YYYY")
         adjustment = {"type": kind, "label": label, "new_date": day.isoformat()}
         name = f"Move {label} to {day:%b %d}"
     else:
         percent = c1.slider("Sales change (%)", -30, 30, -10)
-        day = c2.date_input("Starting", value=core.today)
+        day = c2.date_input("Starting", value=core.today, format="MM/DD/YYYY")
         adjustment = {"type": kind, "percent": percent, "start_date": day.isoformat()}
         name = f"Sales {percent:+d}%"
     submitted = st.form_submit_button(copy.RUN_SCENARIO, type="primary")

@@ -71,12 +71,6 @@ class Recurring:
     seasonal: bool = False  # only some months of the year (temporary staff for Halloween)
 
     @property
-    def next_due(self) -> date | None:
-        """The next date it's expected, on a business day."""
-        due = [_shifted(rule, nominal) for rule, nominal in zip(self.rules, self.next_dates)]
-        return min(due) if due else None
-
-    @property
     def scheduled(self) -> bool:
         """Goes into the forecast as dated items (else it stays in the model's history)."""
         if self.internal or self.seasonal:

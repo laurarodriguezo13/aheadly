@@ -4,7 +4,6 @@ connected model's category suggestions for payees the rules couldn't place."""
 import json
 from datetime import date, timedelta
 
-import numpy as np
 import pandas as pd
 import pytest
 
