@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-11 after 2.6** (branch `Migue`, 341 tests: 322 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-11 after 2.7** (branch `Migue`, 360 tests: 341 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#34**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#35**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -29,15 +29,16 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (branch `Migue`; `main` is frozen at the Milestone 2 version until after the presentation):** Phase 1 done (1.1–1.5); 2.1–2.6 done. Next: 2.7. Test-business scorecard: 55 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (branch `Migue`; `main` is frozen at the Milestone 2 version until after the presentation):** Phase 1 done (1.1–1.5); 2.1–2.7 done. Next: 2.8. Test-business scorecard: 55 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`. The owner's own files: `aheadly/data/connectors/owner_files.py` (`read_owner_file`: five kinds from the column titles), `AppCore.read_owner_file` / `use_owner_file` / `uploaded_files`.
+- **Onboarding:** `aheadly/core/onboarding.py` (questions built from the data), `aheadly/ai/seasons.py` (busy and slow months from money in), `AppCore.onboarding` / `answer_business` / `answer_seasons` / `answer_owner_pay` / `answer_mystery` / `skip_question` / `seasons` / `set_seasons`, `InsightTranslator.suggest_categories` (payee names only); the engine's `month_shift`.
 - **Understanding the business:** `aheadly/core/transfers.py` (moves between own accounts, card payments), `aheadly/ai/categorizer.py` (owner answers → own-account moves → file category → keyword rules → defaults; `set_payee_rule`, `answer_payee`), `aheadly/ai/recurring.py` (calendar rules per payee, `drop_duplicates`), `aheadly/ai/plan_text.py` ("just say it": `read_by_rules`, `check_item`, the `propose_plan_items` tool), `aheadly/core/examples.py` + `aheadly/examples/` (the example bakery).
 - **Forecast:** `aheadly/ai/forecast_engine.py` (Prophet with weekly seasonality on the residual daily flow, 500 paths, p10/p50/p90; `SeasonalNaiveModel` fallback; `month_day:` and `every:` recurrence rules). `_model_history` leaves out lines linked to a scheduled item (`transactions.scheduled_item_id`) and own-account moves; detected items land on their real dates; known one-offs replace matching detected occurrences.
 - **Core:** `aheadly/core/app_core.py`: `today` (day after the statement's end when it's older), `forecast_basis` and `update_plan_item` / `pause_plan_item` / `end_plan_item` / `delete_plan_item` / `confirm_plan_item` (each returns the lowest balance before and after), `detected_recurring`, `recurring_table`, `monthly_category_totals`, `weekly_sales`, `load_example`, `parse_plan_text` / `add_plan_items`, `scheduled_labels`, `forecast_summary`, `planned_items` (owner's items only), `save_plan` (keeps removed detected items switched off). Database migrations in `Repository.MIGRATIONS` (`PRAGMA user_version`).
 - **AI:** `aheadly/ai/tools.py` (seven tools incl. `propose_plan_items`; `get_transactions` category enum), `insight_translator.extract_plan_items`, `llm_client.py` (stub, Gemini, Anthropic), `prompts.py`, `templates.py` (generic alert actions still), `insight_translator.py`, `guardrails.py`.
-- **UI:** `aheadly/ui/views/` dashboard (statement / example notice, "Next big payment" = soonest payment at least a quarter of the biggest, link to how the forecast was built), alerts, basis ("How we built it": starting point, normal week, regular and one-off payments with badges, change / pause / end / remove / confirm with the effect shown, past-due one-offs, suggestions, "Just say it", what's left out, next month at a glance), ask, whatif (kind picker outside the form), accounts (multi-file upload, "Try the example bakery", accounts and cards, link to the basis page, "Files you keep" (preview, change kind, Use / Skip), recent transactions with category names), settings.
+- **UI:** `aheadly/ui/views/` questions (one at a time, progress bar, why it matters, Skip; badge with the number left), dashboard (questions banner, statement / example notice, "Next big payment" = soonest payment at least a quarter of the biggest, link to how the forecast was built), alerts, basis ("How we built it": starting point, normal week, regular and one-off payments with badges, change / pause / end / remove / confirm with the effect shown, past-due one-offs, suggestions, "Just say it", what's left out, next month at a glance), ask, whatif (kind picker outside the form), accounts (multi-file upload, "Try the example bakery", accounts and cards, link to the basis page, "Files you keep" (preview, change kind, Use / Skip), recent transactions with category names), settings.
 - **Demo data:** Maria's files are generated outside the repo by `../aheadly-test-data/make_maria_files.py` (statement ends yesterday; regenerate on demo day). The test businesses' generator is outside the repo too (`../aheadly-test-data/test_businesses/`).
 
 **Known issues** (from the Milestone 2 check-in; status):
@@ -53,9 +54,9 @@
 
 **New since the check-in** (each assigned below):
 10. The forecast's best/worst band is too narrow since 2.3: detected items are treated as certain (fixed amount, fixed date) → 2.8.
-11. Busy months: the forecast doesn't know December sales are far above November's (bakery's hidden-future check waits) → 2.7 asks busy/slow months and the forecast uses the answer.
+11. ~~Busy months unknown to the forecast~~ 2.7 asks busy/slow months: slow months lower every case, busy months lift mostly the best case (cautious, DECISIONS #34). The bakery's December check still waits: its real December beat last year's → 2.8 band width.
 12. Unreadable amounts (`#¡VALOR!`) are left out; with a Balance column the amount could be recovered from the balance before and after → nice to have (the auto shop's categories check waits on it).
-13. Lines the rules can't categorize end up as "other" ("Flour and dairy" in English files) → 2.7 AI category suggestions.
+13. ~~Lines the rules can't categorize end up as "other"~~ 2.7 asks about them, with the connected model's suggestion pre-filled (names only; offline, a plain question).
 
 ---
 
@@ -74,8 +75,8 @@
 | 2.4 | "Just say it": free text → plan item, confirmed | Must | S | 1.4 | Done |
 | 2.5 | Any Excel file: receivables + bills (Must), employee list (Should), ledger + inventory (Nice) | Must / Should | M + S | 1.4, 2.2 | Done |
 | 2.6 | "How we built your forecast" page (replaces Money plan + "What we're counting on") | Must | L | 2.3, 2.4, 2.5 | Done |
-| 2.7 | Onboarding questions (detect first, then ask), with AI category suggestions for leftover payees | Must | L | 2.2, 2.3, 2.4 | **Next** |
-| 2.8 | Forecast confidence + "no big purchases known" note | Must | S | 1.3, 2.2 |  |
+| 2.7 | Onboarding questions (detect first, then ask), with AI category suggestions for leftover payees | Must | L | 2.2, 2.3, 2.4 | Done |
+| 2.8 | Forecast confidence + "no big purchases known" note (+ band width) | Must | S | 1.3, 2.2 | **Next** |
 | 3.1 | Chance of dipping below the line | Must | S | 1.4 |  |
 | 3.2 | Actions framework: computed impact, Test this, how-to steps, drafted message | Must | M | 3.1 |  |
 | 3.3 | Suggested fixes (auto-tested what-ifs) | Must | M | 3.2, 2.3 |  |
@@ -138,7 +139,7 @@ tests/businesses/<slug>/
 #### 1.5 Try an example business · Must · S
 A button on Accounts loads one of the 1.1 businesses (files bundled read-only in the app package or `data/examples/`), runs the same upload path, and pre-fills onboarding answers from its key. Label it clearly ("Example: Panadería La Esquina, a bakery in Bogotá"). `DECISIONS.md` #22: example business replaces the old demo button.
 
-**Built (2026-11-11):** loads Panadería La Esquina from `aheadly/examples/` (copies of the test business's statements, a test keeps them identical) plus the one-offs its owner knows. Dates are not shifted to today: it always shows as of Nov 11, 2026, and says it's an example (DECISIONS #28). Onboarding answers will be pre-filled when 2.7 exists.
+**Built (2026-11-11):** loads Panadería La Esquina from `aheadly/examples/` (copies of the test business's statements, a test keeps them identical) plus the one-offs its owner knows. Dates are not shifted to today: it always shows as of Nov 11, 2026, and says it's an example (DECISIONS #28). Its owner's onboarding answers pre-fill the questions (2.7).
 
 ### Phase 2: understand the business (weeks 2–3)
 
@@ -197,10 +198,11 @@ After upload; resumable; skippable; progress bar; each question says why it matt
 **Busy and slow months feed the forecast (added 2026-11-11 after 2.3):** for a month the owner calls busy or slow, the daily pattern of that month is scaled by how that month compared with the rest of the year in their own history (or by the owner's own estimate, "about 50% more in December"), shown on the 2.6 page as an assumption they can change. Without the owner's answer, no seasonal change (one year of data is too noisy on its own, DECISIONS #30). Check: the bakery's hidden-future check (December) passes.
 Free-text "Tell us about your business" → LLM extracts into the profile schema → "Here's what I understood" → nothing saved without confirmation. The profile summary goes to prompts as data and to pattern rules (a busy December isn't "unusual").
 **Done when:** functional test per 1.1 business: upload → key's answers → items + profile exist → expected warnings; AI suggestions tested with a mocked LLM (only payee names in the request; nothing saved before confirming; an invalid category from the LLM is dropped).
+**Built (2026-11-11, DECISIONS #34):** a "Questions" page (sidebar badge with the number left, banner on the dashboard and Accounts, opened after loading the example): what the business does and how customers pay; busy and slow months; "Is TRANSF A CTA AHORROS M GOMEZ your own pay?" (regular transfers to a savings account in a person's name; found the owner's pay in all six businesses); what each payee still in "other" is (repeating ones, or one-offs above 1% of money out: found every mystery payee in the keys that the app hadn't already placed), with how often and how much; anything coming up ("just say it"). One at a time, why it matters, Skip, remembered. AI suggestions: one call, payee names only, invalid ones dropped, kept so reruns don't ask again, pre-filled; nothing applied before Save. Busy/slow months measured on money in (net flow is distorted by last year's one-off purchases); the owner's word wins when the statement disagrees; slow months lower every case, busy months lift mostly the best case, the base case only by about a quarter as much (counting on last year's lift hid the café's real shortfall; the bakery's December beat last year's, so its check moved to 2.8). The harness now answers each business's questions through the same calls (`answer_onboarding`); scorecard unchanged at 55 pass, 0 fail. The example bakery's questions come pre-filled. Not built: free-text "Tell us about your business" read by the model into the profile (the two plain text answers are kept as typed), confirming detected recurring items one by one (done on How we built it with "Looks right"), "the rest later as small cards" (there are at most ten, all on one page).
 
 #### 2.8 Forecast confidence + "nothing big planned" note · Must · S
 Score from history length, unidentified share, reconciliation, backtest error on the business's own past (`ForecastEngine.backtest`), detected-vs-confirmed share → high/medium/low + the two biggest reasons. If no one-off items exist: dashboard note "This forecast assumes no big one-off purchases. Planning any?" opening 2.4.
-**Band width (added 2026-11-11 after 2.3):** detected items whose amount varies get their own spread in the paths (sampled from their past amounts), and items that come a few days early or late get their date jittered within their usual range, so the best/worst band reflects them instead of only the daily pattern. Check: on the test businesses, the true balance falls inside the band on most days (`hidden_future.daily_balance`).
+**Band width (added 2026-11-11 after 2.3; the bakery's December check waits here since 2.7):** detected items whose amount varies get their own spread in the paths (sampled from their past amounts), and items that come a few days early or late get their date jittered within their usual range, so the best/worst band reflects them instead of only the daily pattern. Check: on the test businesses, the true balance falls inside the band on most days (`hidden_future.daily_balance`).
 
 ### Phase 3: solve, not just warn (weeks 3–4)
 

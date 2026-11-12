@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from aheadly.ai import prompts, templates
+from aheadly.ai.categorizer import CATEGORIES
 from aheadly.ai.guardrails import check_numbers
 from aheadly.ai.llm_client import LLMError, LLMReply, StubClient
 from aheadly.ai.plan_text import PROPOSE_TOOL, ProposedItem, read_by_rules, read_tool_call
@@ -24,6 +25,9 @@ from aheadly.data.connectors.owner_files import KINDS as FILE_KINDS
 from aheadly.data.connectors.owner_files import ROLES as FILE_ROLES
 from aheadly.ai.tools import ToolDispatcher
 from aheadly.domain import ChatAnswer
+
+# categories the model may suggest (never "other", and card payments are found by the transfers rule)
+SUGGESTABLE = tuple(c for c in CATEGORIES if c not in ("other", "card_payment"))
 
 logger = logging.getLogger(__name__)
 
@@ -129,6 +133,54 @@ class InsightTranslator:
                 columns = {r: h for r, h in given.items() if r in FILE_ROLES and h in headers}
                 return args["kind"], columns
         return None
+
+    # ------------------------------------------------------ category suggestions (roadmap 2.7)
+    def suggest_categories(self, payees: list[str]) -> dict[str, tuple[str, str]]:
+        """The model's guess for payees the rules left in "other": payee → (category, reason). It
+        sees the names only. A category not on the list, or a payee it wasn't asked about, is
+        dropped; nothing is applied until the owner confirms. Offline: no suggestions."""
+        if isinstance(self._llm, StubClient) or not payees:
+            return {}
+        tool = {
+            "name": "suggest_categories",
+            "description": "Suggest a category for each payee you can reasonably place.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "suggestions": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "payee": {"type": "string", "enum": payees},
+                                "category": {"type": "string", "enum": list(SUGGESTABLE)},
+                                "reason": {"type": "string"},
+                            },
+                            "required": ["payee", "category"],
+                        },
+                    }
+                },
+                "required": ["suggestions"],
+            },
+        }
+        messages = [
+            {"role": "system", "content": prompts.CATEGORY_SUGGESTION_INSTRUCTIONS},
+            {"role": "user", "content": json.dumps({"payees": payees}, ensure_ascii=False)},
+        ]
+        try:
+            reply = self._llm.chat(messages, [tool])
+        except LLMError as exc:
+            logger.warning("category suggestions: model failed: %s", exc)
+            return {}
+        out: dict[str, tuple[str, str]] = {}
+        for call in reply.tool_calls:
+            args = call.arguments if isinstance(call.arguments, dict) else {}
+            if call.name != "suggest_categories" or not isinstance(args.get("suggestions"), list):
+                continue
+            for s in args["suggestions"]:
+                if isinstance(s, dict) and s.get("payee") in payees and s.get("category") in SUGGESTABLE:
+                    out[s["payee"]] = (s["category"], str(s.get("reason", ""))[:120])
+        return out
 
     # ------------------------------------------------------ job C: just say it
     def extract_plan_items(self, text: str, today) -> tuple[list[ProposedItem], bool]:

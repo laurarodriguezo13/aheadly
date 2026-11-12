@@ -531,6 +531,19 @@ class Repository:
             parse_dates=["date"],
         )
 
+    def uncategorized_payees(self, business_id: int, since: date) -> list[dict]:
+        """Payees still in "other" since `since` (not moves between own accounts), biggest first:
+        what the onboarding questions ask about (roadmap 2.7)."""
+        rows = self._conn.execute(
+            "SELECT description, COUNT(*) AS n, SUM(amount) AS total FROM transactions "
+            "WHERE business_id=? AND COALESCE(is_internal_transfer, 0)=0 AND category='other' AND date>=? "
+            "GROUP BY description ORDER BY ABS(SUM(amount)) DESC",
+            (business_id, since.isoformat()),
+        ).fetchall()
+        return [
+            {"description": r["description"], "count": r["n"], "total": round(r["total"], 2)} for r in rows
+        ]
+
     # ------------------------------------------------------- recurring (roadmap 2.3)
     def recurring_lines(self, business_id: int) -> list[tuple]:
         """(id, date, amount, description, category, is_internal) of the owner's own statements."""

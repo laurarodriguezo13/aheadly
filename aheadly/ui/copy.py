@@ -5,6 +5,7 @@ TAGLINE = "Clarity today. A brighter tomorrow."
 
 NAV = {
     "dashboard": "Dashboard",
+    "questions": "Questions",
     "alerts": "Alerts",
     "ask": "Ask Aheadly",
     "whatif": "What-if",
@@ -346,3 +347,54 @@ BASIS_NEXT_MONTH_ROWS = {
 }
 BASIS_MAYBE_NOTE = "Plus {amount} of maybe money in, counted only in some scenarios."
 BASIS_PARTIAL_MONTH = "The forecast reaches {last}, so this covers {first} to {last}."
+
+
+# ---------------------------------------------------------------- onboarding questions (2.7)
+QUESTIONS_TITLE = "A few questions"
+QUESTIONS_INTRO = (
+    "We already read your statement. These are the things it can't tell us. Every question is optional, "
+    "and you can stop and come back."
+)
+QUESTIONS_PROGRESS = "{done} of {total} answered"
+QUESTIONS_DONE = "That's everything for now. The forecast uses your answers."
+QUESTIONS_BANNER = "{n} quick question(s) will make your forecast better."
+QUESTIONS_GO = "Answer them"
+QUESTIONS_EXAMPLE = (
+    "This is the example business, so its owner's answers are filled in. Change anything you like."
+)
+WHY_LABEL = "Why we ask: "
+SAVE_ANSWER = "Save"
+SKIP = "Skip"
+BUSINESS_TYPE = "What does your business do?"
+BUSINESS_TYPE_PLACEHOLDER = "For example: a bakery, a hardware store, a design studio"
+CUSTOMERS_PAY = "How do your customers pay you?"
+CUSTOMERS_PAY_PLACEHOLDER = (
+    "For example: card every day; two cafés pay weekly by transfer; some invoices at 30 days"
+)
+BUSY_MONTHS = "Busy months"
+SLOW_MONTHS = "Slow months"
+SEASON_FOUND = "Last {month}, {pct} {more_less} money came in than in a normal month."
+SEASON_DISAGREES = (
+    "Last {month}, {pct} {more_less} money came in than in a normal month, so we won't change the forecast "
+    "unless you type your own estimate."
+)
+SEASON_NOT_IN_STATEMENT = "Your statement doesn't cover a {month} yet. How different is it, roughly?"
+SEASON_ESTIMATE = "{month}: % more (+) or less (−) money in than a normal month"
+SEASON_HOW = (
+    "A slow month lowers every scenario. A busy month's extra money mostly raises the best case: the main "
+    "forecast counts on only a little of it repeating."
+)
+SEASONS_TITLE = "Busy and slow months"
+SEASONS_NONE = "You haven't told us about busy or slow months, so every month is treated alike."
+SEASONS_USED = "{month} ({kind}): {pct}"
+SEASONS_CHANGE = "Change busy and slow months"
+SEASONS_SAVED = "Saved. The forecast uses your busy and slow months."
+OWNER_PAY_YES = "Yes, that's my pay"
+OWNER_PAY_NO = "No"
+MYSTERY_GUESS = "Our guess: **{category}**. {reason}"
+MYSTERY_PICK = "What kind of payment is it?"
+MYSTERY_NOT_SURE = "Pick one"
+MYSTERY_WORDS = "Or say what it is in your own words"
+MYSTERY_WORDS_PLACEHOLDER = "For example: my accountant's monthly fee"
+MYSTERY_SAVED = "Saved: {payee} is now {category}, in past and future statements."
+NOTHING_ELSE = "Nothing else for now"

@@ -96,7 +96,7 @@ if not status.connected:
                 core.reset()
                 st.error(copy.UPLOAD_FAILED.format(error=exc))
             else:
-                go_to("dashboard")
+                go_to("questions")
 else:
 
     def _account_row(a: dict) -> str:
@@ -110,6 +110,12 @@ else:
 
     rows = "".join(_account_row(a) for a in status.accounts)
     card(f'<div class="ah-card-title">✓ {html.escape(copy.ALL_SET)}</div>{rows}', "mint")
+    left = core.questions_left()
+    if left is None or left:  # just uploaded (not worked out yet) or questions still open
+        note, go = st.columns([4, 1])
+        note.info(copy.QUESTIONS_BANNER.format(n=left) if left else copy.QUESTIONS_INTRO)
+        if go.button(copy.QUESTIONS_GO, key="accounts-questions", type="primary"):
+            go_to("questions")
     if core.statement_end():
         st.caption(copy.STATEMENT_UP_TO.format(end=day(core.statement_end())))
     statement_notice(

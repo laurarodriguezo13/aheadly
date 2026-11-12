@@ -9,7 +9,7 @@ automatic checks have looked at (DECISIONS #28).
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 
@@ -25,6 +25,7 @@ class Example:
     profile: dict
     statements: list[tuple[str, bytes]]  # (file name, file content)
     upcoming: list[ScheduledItem]
+    answers: dict = field(default_factory=dict)  # the owner's onboarding answers (roadmap 2.7)
 
 
 def load_example(slug: str = DEFAULT_EXAMPLE) -> Example:
@@ -48,4 +49,4 @@ def load_example(slug: str = DEFAULT_EXAMPLE) -> Example:
         )
         for item in info["upcoming"]
     ]
-    return Example(slug, dict(info["profile"]), statements, upcoming)
+    return Example(slug, dict(info["profile"]), statements, upcoming, dict(info.get("answers", {})))

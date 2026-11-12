@@ -42,7 +42,7 @@ PENDING: dict[str, dict[str, str]] = {
     "risk_level": {},
     "shortfall_alerts": {},
     "hidden_future": {
-        "panaderia-la-esquina": "2.7 busy months (December card sales are far above November's)",
+        "panaderia-la-esquina": "2.8 band width (this December beat last year's busy month; 2.7 lifts mostly the best case)",
     },
     "recurring": {},
     "just_say_it": {},
@@ -90,7 +90,8 @@ def _d(text: str) -> date:
 
 
 def import_business(slug: str, with_one_offs: bool = False) -> AppCore:
-    """Upload a business's statements the way the owner would; optionally add the one-off items the
+    """Upload a business's statements the way the owner would; optionally (an owner who finished
+    onboarding) answer the onboarding questions with the key's answers and add the one-off items the
     owner knows about (as onboarding or "just say it" would)."""
     key, folder = KEYS[slug], BUSINESSES / slug
     start = _d(key["import"]["statement_end"]) + timedelta(days=1)
@@ -115,6 +116,8 @@ def import_business(slug: str, with_one_offs: bool = False) -> AppCore:
             path = folder / entry["path"]
             connectors.append(CsvConnector(path.read_bytes(), balance, path.name, business_profile=profile))
     core.connect_files(connectors)  # all statements in one upload, as the Accounts page does
+    if with_one_offs:
+        answer_onboarding(core, key["onboarding_answers"])
     if with_one_offs and key["one_offs_known"]:
         items = [
             ScheduledItem(
@@ -130,6 +133,17 @@ def import_business(slug: str, with_one_offs: bool = False) -> AppCore:
         core.repo.add_scheduled_items(core.status().business.id, items)
         core.run_daily_check(force=True)
     return core
+
+
+def answer_onboarding(core: AppCore, answers: dict) -> None:
+    """The owner answers the questions (roadmap 2.7) through the same App Core calls as the page."""
+    core.answer_business(answers["business_type"], answers["customers_pay"])
+    months = lambda listed: [int(m[5:7]) for m in listed]  # noqa: E731  "2026-12" → 12
+    core.answer_seasons(months(answers["busy_months"]), months(answers["slow_months"]))
+    if answers["owner_pay"]["is_owner_pay"]:
+        core.answer_owner_pay(answers["owner_pay"]["match_hint"], True)
+    for payee, words in answers["mystery_answers"].items():
+        core.answer_mystery(payee, words=words)
 
 
 # ------------------------------------------------------------- reading each statement

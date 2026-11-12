@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 import html
 
 import streamlit as st
@@ -302,3 +303,49 @@ def owner_file_summary(read) -> str:
     return copy.OWNER_SUMMARY["inventory"].format(
         rows=read.rows, total=money(read.total), low=len(low), names=names
     )
+
+
+def seasons_editor(core, key: str, busy: list[int], slow: list[int], own: dict[int, float]) -> tuple:
+    """Roadmap 2.7: pick busy and slow months; for each, what the statement says about it and the
+    owner's own estimate. Returns (busy, slow, changes): `changes` holds only months where the owner's
+    number differs from the statement's."""
+    months = list(range(1, 13))
+    name = lambda m: calendar.month_name[m]  # noqa: E731
+    left, right = st.columns(2)
+    busy = left.multiselect(copy.BUSY_MONTHS, months, default=busy, format_func=name, key=f"{key}-busy")
+    slow = right.multiselect(
+        copy.SLOW_MONTHS, [m for m in months if m not in busy], default=[m for m in slow if m not in busy],
+        format_func=name, key=f"{key}-slow",
+    )  # fmt: skip
+    found = core.season_estimates(busy, slow)
+    changes: dict[int, float] = {}
+    for month in sorted(set(busy) | set(slow)):
+        change = found.get(month)
+        is_busy = month in busy
+        if change is None:
+            st.caption(copy.SEASON_NOT_IN_STATEMENT.format(month=name(month)))
+            default = 0
+        else:
+            words = {
+                "month": name(month),
+                "pct": f"{abs(change):.0%}",
+                "more_less": "more" if change > 0 else "less",
+            }
+            agrees = change != 0 and (change > 0) == is_busy
+            st.caption((copy.SEASON_FOUND if agrees else copy.SEASON_DISAGREES).format(**words))
+            default = round(change * 100) if agrees else 0
+        if month in own:
+            default = round(own[month] * 100)
+        typed = st.number_input(
+            copy.SEASON_ESTIMATE.format(month=name(month)),
+            min_value=-70,
+            max_value=200,
+            value=int(default),
+            step=5,
+            key=f"{key}-pct-{month}",
+        )
+        statement_default = round(change * 100) if change is not None and (change > 0) == is_busy else 0
+        if typed != statement_default:
+            changes[month] = typed / 100
+    st.caption(copy.SEASON_HOW)
+    return busy, slow, changes

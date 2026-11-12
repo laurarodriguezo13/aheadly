@@ -25,6 +25,12 @@ dash = core.get_dashboard()
 forecast, business = dash.forecast, dash.business
 lag = core.statement_lag_days()
 statement_notice(core.statement_end(), core.today, lag, business.name if core.example() else None)
+left = core.questions_left()
+if left:
+    note, go = st.columns([4, 1])
+    note.info(copy.QUESTIONS_BANNER.format(n=left))
+    if go.button(copy.QUESTIONS_GO, key="dashboard-questions"):
+        go_to("questions")
 
 col1, col2, col3 = st.columns(3)
 with col1:

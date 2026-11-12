@@ -14,7 +14,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import pandas as pd
 
-from aheadly.ai import categorizer, plan_text, recurring
+from aheadly.ai import categorizer, plan_text, recurring, seasons
 from aheadly.ai.plan_text import ProposedItem
 from aheadly.ai.forecast_engine import (
     ForecastEngine,
@@ -27,7 +27,7 @@ from aheadly.ai.llm_client import create_llm_client
 from aheadly.ai.scenarios import apply_adjustments, parse_adjustment
 from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
-from aheadly.core import alert_rules
+from aheadly.core import alert_rules, onboarding
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
@@ -252,6 +252,155 @@ class AppCore:
         if sales <= 0:
             sales = self.repo.flow_totals(business.id, start)["money_in"]
         return round(sales / weeks, 2)
+
+    # ------------------------------------------------------------ onboarding questions (roadmap 2.7)
+    def onboarding(self) -> dict:
+        """The questions still to answer, in order, and how far the owner got. Answered and skipped
+        questions are remembered (the owner can stop and come back)."""
+        business = self._business()
+        done = self.repo.get_profile(business.id).get("onboarding_done", [])
+        pending = [q for q in self._questions() if q.id not in done]
+        self.repo.save_profile(business.id, {"questions_left": len(pending)})
+        return {"questions": pending, "done": len(done), "total": len(done) + len(pending)}
+
+    def questions_left(self) -> int | None:
+        """How many questions were left the last time they were worked out (cheap: for the sidebar);
+        None before the first time."""
+        business = self.repo.get_business()
+        return self.repo.get_profile(business.id).get("questions_left") if business else None
+
+    def answer_business(self, business_type: str, customers_pay: str = "") -> None:
+        changes = {"business_type": business_type.strip(), "customers_pay": customers_pay.strip()}
+        self.repo.save_profile(self._business().id, {k: v for k, v in changes.items() if v})
+        self._question_done("business")
+
+    def answer_seasons(
+        self, busy: list[int], slow: list[int], changes: dict[int, float] | None = None
+    ) -> None:
+        self.set_seasons(busy, slow, changes)
+        self._question_done("seasons")
+
+    def answer_owner_pay(self, payee: str, is_owner_pay: bool) -> None:
+        """Yes: every payment to it is the owner's pay (still money out, but one they can change)."""
+        if is_owner_pay:
+            self.set_payee_rule(payee, "owner_pay")
+        self._question_done(f"owner_pay:{categorizer.match_key(payee)}")
+
+    def answer_mystery(self, payee: str, category: str | None = None, words: str = "") -> str:
+        """What a payee is: a category picked from the list, or the owner's own words (or both).
+        Returns the category used."""
+        if category:
+            self.set_payee_rule(payee, category, words or payee)
+        elif words.strip():
+            category = self.answer_payee(payee, words)
+        else:
+            raise ValueError("Pick a category or say in your own words what it is.")
+        self._question_done(f"mystery:{categorizer.match_key(payee)}")
+        return category
+
+    def skip_question(self, question_id: str) -> None:
+        self._question_done(question_id)
+
+    def example_answers(self) -> dict:
+        """The example owner's own answers, to pre-fill the questions when trying the example."""
+        example = self.example()
+        return load_example(example).answers if example else {}
+
+    def _question_done(self, question_id: str) -> None:
+        business = self._business()
+        done = list(self.repo.get_profile(business.id).get("onboarding_done", []))
+        if question_id not in done:
+            done.append(question_id)
+        left = self.repo.get_profile(business.id).get("questions_left")
+        changes = {"onboarding_done": done}
+        if left:
+            changes["questions_left"] = left - 1
+        self.repo.save_profile(business.id, changes)
+
+    def _questions(self) -> list[onboarding.Question]:
+        business = self._business()
+        end = self.statement_end() or self.today
+        since = end - timedelta(days=90)
+        how_often = {}
+        for item in self.detected_recurring():
+            if item.rules and item.next_dates:
+                rule = recurring.recurrence_for(item.rules[0])
+                how_often[item.match_key] = recurring.describe(rule, item.next_dates[0])
+        # one-off small change isn't worth a question; anything that repeats is (it's in the forecast)
+        floor = 0.01 * self.repo.flow_totals(business.id, since)["money_out"]
+        payees = [
+            p
+            for p in self.repo.uncategorized_payees(business.id, since)
+            if abs(p["total"]) >= floor or categorizer.match_key(p["description"]) in how_often
+        ]
+        names = [p["description"] for p in payees[: onboarding.MAX_MYSTERIES + 2]]
+        return onboarding.build(
+            self.repo.get_profile(business.id), payees, self._category_suggestions(names), how_often
+        )
+
+    def _category_suggestions(self, payees: list[str]) -> dict[str, tuple[str, str]]:
+        """The connected model's guess for each payee (names only, one call, kept so reruns don't
+        call it again). Nothing is applied until the owner confirms."""
+        if not payees:
+            return {}
+        business = self._business()
+        kept = self.repo.get_profile(business.id).get("category_suggestions", {})
+        missing = [p for p in payees if p not in kept]
+        if missing:
+            found = self.translator.suggest_categories(missing)
+            kept = {**kept, **{p: list(found.get(p, ("", ""))) for p in missing}}
+            self.repo.save_profile(business.id, {"category_suggestions": kept})
+        return {p: (c, why) for p, (c, why) in kept.items() if p in payees and c}
+
+    # ------------------------------------------------------------ busy and slow months (roadmap 2.7)
+    def seasons(self) -> dict:
+        """The owner's busy and slow months, what the statement says about each (last time it came,
+        how much more or less money came in than in a normal month) and the change the forecast uses."""
+        business = self._business()
+        profile = self.repo.get_profile(business.id)
+        busy, slow = profile.get("busy_months", []), profile.get("slow_months", [])
+        money_in = seasons.daily_money_in(self.repo.daily_in_out(business.id))
+        found = seasons.month_estimates(money_in, busy, slow)
+        own = {int(m): v for m, v in profile.get("season_changes", {}).items()}
+        months = [
+            {
+                "month": m,
+                "name": seasons.MONTH_NAMES[m],
+                "kind": "busy" if m in busy else "slow",
+                "from_statement": found.get(m),
+                "owners": own.get(m),
+                "used": own[m] if m in own else _agreeing(found.get(m), m in busy),
+            }
+            for m in sorted(set(busy) | set(slow))
+        ]
+        return {
+            "answered": "busy_months" in profile,
+            "months": months,
+            "level": seasons.recent_level(money_in),
+        }
+
+    def season_estimates(self, busy: list[int], slow: list[int]) -> dict[int, float | None]:
+        """What the statement says about months the owner is about to mark (before saving)."""
+        money_in = seasons.daily_money_in(self.repo.daily_in_out(self._business().id))
+        return seasons.month_estimates(money_in, busy, slow)
+
+    def set_seasons(self, busy: list[int], slow: list[int], changes: dict[int, float] | None = None) -> None:
+        """Save the owner's answer. `changes`: their own estimate for a month (+0.5 = 50% more money
+        in than a normal month), replacing the one from the statement. The forecast reruns."""
+        busy = sorted({int(m) for m in busy})
+        slow = sorted({int(m) for m in slow} - set(busy))
+        own = {str(m): seasons.clamp(float(v)) for m, v in (changes or {}).items() if v is not None}
+        self.repo.save_profile(
+            self._business().id, {"busy_months": busy, "slow_months": slow, "season_changes": own}
+        )
+        self.run_daily_check(force=True)
+
+    def _month_shift(self, business_id: int) -> dict[int, float]:
+        profile = self.repo.get_profile(business_id)
+        if not profile.get("busy_months") and not profile.get("slow_months"):
+            return {}
+        info = self.seasons()
+        return seasons.daily_shift(info["level"], {m["month"]: m["used"] for m in info["months"]})
 
     # ------------------------------------------------------------ the forecast's basis (roadmap 2.6)
     def forecast_basis(self) -> dict:
@@ -947,6 +1096,7 @@ class AppCore:
             self._without_duplicates(scheduled_items),
             self.today,
             self.settings.horizon_days,
+            month_shift=self._month_shift(business.id),
         )
 
     def _events(self, end: date) -> list[tuple[date, float, str]]:
@@ -1006,6 +1156,14 @@ class AppCore:
             "low_cash_line": round(business.low_cash_line),
             "scheduled_labels": labels or "none",
         }
+
+
+def _agreeing(change: float | None, busy: bool) -> float:
+    """The statement's measure of a month, used only when it agrees with the owner: a month they
+    call busy that last time came in below normal changes nothing (they can type their own)."""
+    if change is None or (change > 0) != busy or change == 0:
+        return 0.0
+    return change
 
 
 def _from_statement(item: ScheduledItem) -> bool:

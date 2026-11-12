@@ -1,5 +1,5 @@
 {
-  "_about": "Roadmap 1.5 example business. Statements are copies of tests/businesses/panaderia-la-esquina/statements (a test checks they stay identical); upcoming items are the one-offs its owner knows about, from that business's answer key.",
+  "_about": "Roadmap 1.5 example business. Statements are copies of tests/businesses/panaderia-la-esquina/statements (a test checks they stay identical); upcoming items are the one-offs its owner knows about, from that business's answer key. Answers are the owner's onboarding answers from the same key, used to pre-fill the questions.",
   "profile": {
     "name": "Panadería La Esquina",
     "owner_name": "Maria",
@@ -49,5 +49,21 @@
       "date": "2026-12-17",
       "certainty": "confirmed"
     }
-  ]
+  ],
+  "answers": {
+    "business_type": "Bakery",
+    "customers_pay": "Card every day; two cafés on 7-day credit paying weekly by transfer; a few businesses on invoice",
+    "busy_months": [
+      12
+    ],
+    "slow_months": [
+      1
+    ],
+    "owner_pay": [
+      "TRANSF A CTA AHORROS M GOMEZ"
+    ],
+    "mystery": {
+      "TRANSF 0045 REF 88213": "loan repayment (equipment loan)"
+    }
+  }
 }

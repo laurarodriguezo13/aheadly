@@ -7,7 +7,15 @@ import streamlit as st
 
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import require_data, start_page
-from aheadly.ui.components import day, money, proposal_card, rows_html, section_title, statement_notice
+from aheadly.ui.components import (
+    day,
+    money,
+    proposal_card,
+    rows_html,
+    seasons_editor,
+    section_title,
+    statement_notice,
+)
 
 core = start_page(copy.BASIS_TITLE)
 require_data(core)
@@ -84,6 +92,45 @@ if rhythm:
                 slowest=rhythm["slowest_day"],
             )
         )
+
+# ---------------------------------------------------------------- busy and slow months (2.7)
+info = core.seasons()
+with st.container(border=True):
+    section_title(copy.SEASONS_TITLE)
+    if info["months"]:
+        st.markdown(
+            "\n".join(
+                "- "
+                + copy.SEASONS_USED.format(
+                    month=m["name"], kind=m["kind"], pct=f"{m['used']:+.0%}" if m["used"] else "no change"
+                )
+                for m in info["months"]
+            )
+        )
+    else:
+        st.caption(copy.SEASONS_NONE)
+    st.caption(copy.SEASON_HOW)
+    with st.expander(copy.SEASONS_CHANGE):
+        busy, slow, changes = seasons_editor(
+            core,
+            "basis-seasons",
+            [m["month"] for m in info["months"] if m["kind"] == "busy"],
+            [m["month"] for m in info["months"] if m["kind"] == "slow"],
+            {m["month"]: m["owners"] for m in info["months"] if m["owners"] is not None},
+        )
+        if st.button(copy.SAVE_ANSWER, key="basis-seasons-save"):
+            before = core.get_dashboard().forecast
+            core.set_seasons(busy, slow, changes)
+            after = core.get_dashboard().forecast
+            _done(
+                copy.SEASONS_SAVED,
+                {
+                    "before": round(before.lowest_with_today()[0]),
+                    "after": round(after.lowest_with_today()[0]),
+                    "risk_before": before.risk_level(core.status().business.low_cash_line),
+                    "risk_after": after.risk_level(core.status().business.low_cash_line),
+                },
+            )
 
 # ---------------------------------------------------------------- suggestions from a newer statement
 for suggestion in basis["suggestions"]:

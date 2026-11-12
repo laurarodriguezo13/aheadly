@@ -101,7 +101,9 @@ class ForecastEngine:
         scheduled_items: list[ScheduledItem],
         start: date,
         horizon_days: int = 56,
+        month_shift: dict[int, float] | None = None,
     ) -> ForecastResult:
+        """`month_shift`: extra money per day in the owner's busy (+) or slow (−) months (roadmap 2.7)."""
         if history.empty or len(history) < 14:
             raise ValueError("Need at least two weeks of history to forecast")
         dates = [start + timedelta(days=i) for i in range(horizon_days)]
@@ -114,7 +116,7 @@ class ForecastEngine:
         for event_date, amount, _label in expand_scheduled_items(sure, start, dates[-1]):
             scheduled_flow[(event_date - start).days] += amount
 
-        daily_flow = residual_paths + scheduled_flow
+        daily_flow = residual_paths + scheduled_flow + self._seasonal(dates, month_shift or {})
         # money that may not come (an overdue invoice, an order the owner isn't sure of) arrives in
         # only a share of the paths, so the worst case goes without some of it (roadmap 2.6)
         for item in unsure:
@@ -145,6 +147,18 @@ class ForecastEngine:
         return results
 
     # --------------------------------------------------------------- internals
+    def _seasonal(self, dates: list[date], month_shift: dict[int, float]) -> np.ndarray:
+        """Busy and slow months (roadmap 2.7), per path. A slow month's drop counts in every path (the
+        cautious side). A busy month's extra money may not repeat: half the paths get none of it, the
+        other half between none and all of last year's, so the base case counts on little of it
+        and the best case on most of it (DECISIONS #34)."""
+        shift = np.array([month_shift.get(d.month, 0.0) for d in dates])
+        if not shift.any():
+            return np.zeros((self.n_paths, len(dates)))
+        share = np.clip(np.random.default_rng(self.seed + 1).uniform(-1, 1, (self.n_paths, 1)), 0, 1)
+        return np.where(shift > 0, share * shift, shift)
+
+    # ---------------------------------------------------------------
     def _residual_paths(self, history: pd.DataFrame, horizon_days: int) -> np.ndarray:
         key = self._history_key(history, horizon_days)
         if key not in self._paths_cache:
