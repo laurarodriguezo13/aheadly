@@ -606,11 +606,14 @@ class Repository:
         self._conn.commit()
 
     # ----------------------------------------------------------- forecast runs
-    def save_forecast(self, business_id: int, result: ForecastResult, horizon_days: int) -> int:
+    def save_forecast(
+        self, business_id: int, result: ForecastResult, horizon_days: int, low_cash_line: float | None = None
+    ) -> int:
         lowest = result.lowest
+        chance = result.chance_below(low_cash_line) if low_cash_line is not None else None
         cur = self._conn.execute(
             "INSERT INTO forecast_runs (business_id, run_at, horizon_days, model, opening_balance, "
-            "min_p50, min_p50_date, min_p10, min_p90) VALUES (?,?,?,?,?,?,?,?,?)",
+            "min_p50, min_p50_date, min_p10, min_p90, chance_below_line) VALUES (?,?,?,?,?,?,?,?,?,?)",
             (
                 business_id,
                 _now(),
@@ -621,6 +624,7 @@ class Repository:
                 lowest.date.isoformat(),
                 result.min_p10,
                 result.min_p90,
+                chance,
             ),
         )
         run_id = cur.lastrowid
@@ -654,7 +658,11 @@ class Repository:
             for r in rows
         ]
         return ForecastResult(
-            opening_balance=run["opening_balance"], points=points, model=run["model"], run_id=run["id"]
+            opening_balance=run["opening_balance"],
+            points=points,
+            model=run["model"],
+            run_id=run["id"],
+            saved_chance=run["chance_below_line"],
         )
 
     def last_run_at(self, business_id: int) -> datetime | None:

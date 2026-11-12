@@ -10,7 +10,7 @@ import math
 from dataclasses import dataclass, field
 from datetime import date
 
-from aheadly.domain import Alert, Business, ForecastResult
+from aheadly.domain import Alert, Business, ForecastResult, chance_pct
 
 POSSIBLE_ACTIONS = [
     "collect_receivables_early",
@@ -60,6 +60,7 @@ def detect_shortfall(forecast: ForecastResult, business: Business, today: date) 
         "lowest_date": lowest.date.isoformat(),
         "first_below_line_date": first_cross.date.isoformat(),
         "weeks_ahead": weeks_ahead,
+        "chance_below_line_pct": chance_pct(forecast.chance_below(business.low_cash_line)),
         "top_outflows": forecast.top_outflows(lowest.date),
         "expected_inflows_before": forecast.inflows_before(lowest.date),
         "possible_actions": POSSIBLE_ACTIONS,

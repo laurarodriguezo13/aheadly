@@ -44,6 +44,9 @@ with col2:
             if low_date is None
             else f"In {weeks(alert_rules.weeks_until(core.today, low_date))}"
         )
+        chance = copy.chance_words(alert_rules.chance_pct(forecast.chance_below(business.low_cash_line)))
+        if chance:  # roadmap 3.1
+            when = f"{when} · {chance}"
         below = value < business.low_cash_line
         stat_card(
             copy.LOWEST_PROJECTED,

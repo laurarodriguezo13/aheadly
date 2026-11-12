@@ -860,7 +860,9 @@ class AppCore:
             return self.ensure_fresh()
         business = self._business()
         forecast = self._baseline_forecast()
-        forecast.run_id = self.repo.save_forecast(business.id, forecast, self.settings.horizon_days)
+        forecast.run_id = self.repo.save_forecast(
+            business.id, forecast, self.settings.horizon_days, business.low_cash_line
+        )
 
         detected = alert_rules.detect_alerts(forecast, business, self._avg_monthly_outflow(), self.today)
         open_alerts = self.repo.list_alerts(business.id)
@@ -1059,6 +1061,9 @@ class AppCore:
             },
             "lowest_worst_case": round(window.min_p10),
             "risk_level": window.risk_level(line),
+            "chance_below_line_pct": alert_rules.chance_pct(
+                forecast.chance_below(line, until=points[-1].date)
+            ),
             "low_cash_line": round(line),
         }
 

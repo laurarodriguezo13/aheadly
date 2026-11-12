@@ -132,6 +132,10 @@ def scenario_metrics(result) -> None:
         tone = "red" if value < result.low_cash_line else tone
         with col:
             stat_card(label, money(value), copy.LOWEST_BALANCE, tone, "sky" if tone != "red" else "rose")
+    numbers = result.summary()  # the chance before and after (roadmap 3.1)
+    before, after = numbers["baseline"]["chance_below_line_pct"], numbers["scenario"]["chance_below_line_pct"]
+    if after is not None:
+        st.caption(copy.CHANCE_SCENARIO.format(after=copy.chance_words(after), before=before))
 
 
 def proposal_card(core, items, key: str) -> int:

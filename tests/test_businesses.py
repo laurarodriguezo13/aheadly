@@ -51,6 +51,7 @@ PENDING: dict[str, dict[str, str]] = {
     },
     "owner_files": {},
     "band_coverage": {},
+    "chance_below": {},
     "internal_transfers": {},
     "insights": {"*": "4.1 things we noticed"},
     "timing_or_structural": {"*": "3.6 financing helper"},
@@ -219,6 +220,29 @@ def test_hidden_future(slug):
     point = next(p for p in forecast.points if p.date == _d(actual["date"]))
     margin = 0.10 * abs(forecast.opening_balance)
     assert point.balance_p10 - margin <= actual["balance"] <= point.balance_p90 + margin
+
+
+def _really_dipped(key: dict) -> bool:
+    line = key["business"]["low_cash_line"]
+    return any(day["balance"] < line for day in key["hidden_future"]["daily_balance"])
+
+
+def _chance(slug: str) -> float:
+    key = KEYS[slug]
+    return (
+        import_business(slug, with_one_offs=True)
+        .get_dashboard()
+        .forecast.chance_below(key["business"]["low_cash_line"])
+    )
+
+
+@pytest.mark.parametrize("slug", _businesses("chance_below"))
+def test_chance_below(slug):
+    """Roadmap 3.1: the chance of dipping below the line, against what really happened. A business
+    whose real balance went below its line got a chance of at least 40%; one that stayed above got
+    at most 60% (a "watch" business can sit near a coin flip: its bad days are spread out)."""
+    chance = _chance(slug)
+    assert (chance >= 0.40) if _really_dipped(KEYS[slug]) else (chance <= 0.60), f"chance {chance:.0%}"
 
 
 def _said(known: dict, said: list[str]) -> bool:

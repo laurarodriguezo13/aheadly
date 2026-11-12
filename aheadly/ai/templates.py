@@ -43,6 +43,7 @@ def answer_from_tool(tool: str, data: dict) -> str:
             f"If you do that, your lowest balance would be about {money(s['lowest_base_case'])} "
             f"around {day(s['lowest_date'])} (worst case {money(s['lowest_worst_case'])}, best case "
             f"{money(s['lowest_best_case'])}). Your low cash line is {money(data['low_cash_line'])}. {verdict}"
+            + chance_clause(s.get("chance_below_line_pct"))
         )
     if tool == "get_forecast":
         low = data["lowest_point"]
@@ -61,7 +62,7 @@ def answer_from_tool(tool: str, data: dict) -> str:
         )
         return (
             f"{period} your lowest point is about {money(low['balance_base_case'])} "
-            f"on {day(low['date'])}, which means {verdict}"
+            f"on {day(low['date'])}, which means {verdict}" + chance_clause(data.get("chance_below_line_pct"))
         )
     if tool == "get_cash_summary":
         return (
@@ -103,6 +104,28 @@ def _short_date(iso: str) -> str:
     return f"{d:%b} {d.day}"
 
 
+def chance_clause(pct: int | None) -> str:
+    """For chat answers (roadmap 3.1): ' The chance of dipping below your line: about 64%.'"""
+    if pct is None:
+        return ""
+    if pct == 0:
+        return " None of the ways the coming weeks could go dips below your line."
+    if pct == 100:
+        return " Every way the coming weeks could go dips below your line."
+    return f" The chance of dipping below your line: about {pct}%."
+
+
+def chance_sentence(pct: int | None) -> str:
+    """For the alert (roadmap 3.1): ' About 64% of the ways the coming weeks could go dip below it.'"""
+    if pct is None:
+        return ""
+    if pct == 0:
+        return " None of the ways the coming weeks could go dips below it."
+    if pct == 100:
+        return " Every way the coming weeks could go dips below it."
+    return f" About {pct}% of the ways the coming weeks could go dip below it."
+
+
 def alert_title(facts: dict) -> str:
     """How serious it is, from the numbers: code picks the title, the model only writes the body."""
     if facts["type"] == "idle_cash":
@@ -133,6 +156,7 @@ def alert_text(facts: dict) -> dict:
         "body": (
             f"Your balance could drop to about {money(facts['lowest_balance'])} in {weeks(facts['weeks_ahead'])}, "
             f"below your {money(facts['low_cash_line'])} line, because {cause} land close together."
+            + chance_sentence(facts.get("chance_below_line_pct"))
         ),
         "actions": [
             {

@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after merging Phase 2 into `main` and checking the live site** (374 tests: 355 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after 3.1** (397 tests: 378 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#36**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#37**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -29,7 +29,7 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8). Next: 3.1. Test-business scorecard: 61 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8); 3.1 done. Next: 3.2. Test-business scorecard: 67 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`. The owner's own files: `aheadly/data/connectors/owner_files.py` (`read_owner_file`: five kinds from the column titles), `AppCore.read_owner_file` / `use_owner_file` / `uploaded_files`.
@@ -54,7 +54,7 @@
 9. ~~`alerts.type` CHECK~~ insights table added in 1.4 (used by 4.1).
 
 **New since the check-in** (each assigned below):
-10. ~~Detected items treated as certain~~ 2.8: payments that vary get their own spread of amount and date. Still narrow without the 10% margin for the bakery and the auto shop (half the days inside) → watch in 3.1 (chance below the line uses the same paths).
+10. ~~Detected items treated as certain~~ 2.8: payments that vary get their own spread of amount and date. Still narrow without the 10% margin for the bakery and the auto shop (half the days inside). 3.1's chance, from the same paths, is on the right side for all six businesses (DECISIONS #36).
 11. ~~Busy months unknown to the forecast~~ 2.7 asks busy/slow months: slow months lower every case, busy months lift mostly the best case (cautious, DECISIONS #34). The bakery's December check still waits: its real December beat last year's → 2.8 band width.
 12. Unreadable amounts (`#¡VALOR!`) are left out; with a Balance column the amount could be recovered from the balance before and after → nice to have (the auto shop's categories check waits on it).
 13. ~~Lines the rules can't categorize end up as "other"~~ 2.7 asks about them, with the connected model's suggestion pre-filled (names only; offline, a plain question).
@@ -91,8 +91,8 @@
 | 2.6 | "How we built your forecast" page (replaces Money plan + "What we're counting on") | Must | L | 2.3, 2.4, 2.5 | Done |
 | 2.7 | Onboarding questions (detect first, then ask), with AI category suggestions for leftover payees | Must | L | 2.2, 2.3, 2.4 | Done |
 | 2.8 | Forecast confidence + "no big purchases known" note (+ band width) | Must | S | 1.3, 2.2 | Done |
-| 3.1 | Chance of dipping below the line | Must | S | 1.4 | **Next** |
-| 3.2 | Actions framework: computed impact, Test this, how-to steps, drafted message | Must | M | 3.1 |  |
+| 3.1 | Chance of dipping below the line | Must | S | 1.4 | Done |
+| 3.2 | Actions framework: computed impact, Test this, how-to steps, drafted message | Must | M | 3.1 | **Next** |
 | 3.3 | Suggested fixes (auto-tested what-ifs) | Must | M | 3.2, 2.3 |  |
 | 3.4 | Safe to spend + safe owner's pay | Must | S | 3.1, 2.3 |  |
 | 3.5 | One-click stress tests | Should | S | 2.2, 3.2 |  |
@@ -223,6 +223,7 @@ Score from history length, unidentified share, reconciliation, backtest error on
 
 #### 3.1 Chance of dipping below the line · Must · S
 `ForecastResult.path_minimums` (per-path minimum, not persisted) and `chance_below(line)`; persist in `forecast_runs.chance_below_line`; add to alert facts and scenario summary so the guardrail accepts it; show with the risk level.
+**Built (2026-11-12, DECISIONS #36):** the engine keeps every path's daily balance on the result (`ForecastResult.balance_paths`, this run only, instead of per-path minimums so a shorter window and 3.4's safe to spend can use them) and `chance_below(line, until=None)` counts paths that go below the line on any day, today's balance included. Saved with each run; a whole percent (`chance_below_line_pct`) in the shortfall alert's facts and template ("About 64% of the ways the coming weeks could go dip below it"), `forecast_summary` (chat, for its own window) and both sides of a what-if; the chat prompt says to mention it once. Shown on the dashboard's lowest-balance card ("64% chance of dipping below your line", or "every" / "no scenario dips below your line") and under a what-if's result with today's figure. Harness check `chance_below` against what really happened (no ranges in the keys): dipped → ≥ 40%, didn't → ≤ 60%, all six pass; overall squared gap 0.06 (< 0.10). Canonical demo: moving the oven to next month takes the seed from 100% to 4%. Can be above 50% with status "watch" (the costume shop, 53%). Rounding never says "none" or "every" when it isn't so (0.3% → 1%, 99.8% → 99%), and 0% / 100% are said in words ("Every way the coming weeks could go dips below it"), seen in the browser.
 
 #### 3.2 Actions framework · Must · M
 `Action(label, detail, impact, adjustment, how_to, message_draft)` in `domain.py`. `impact` = before/after lowest balance, risk level and chance from actually running `adjustment` (a `run_scenario` dict) through the scenario engine (paths are cached → instant). Actions **name the real item** (from the risk window's top contributors), replacing the generic template actions. UI component: action row with impact line, **Test this** → `AppCore.run_what_if(action.adjustment)` → result card → *Save as my plan*. **How to do it:** 2–3 steps + an optional drafted WhatsApp/email (supplier: move a date; customer: friendly reminder) written by the LLM from facts, guardrail-checked, template fallback, shown with Copy; the app never sends. Applies to alerts, insights (4.1) and tight what-if answers.

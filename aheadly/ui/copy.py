@@ -234,6 +234,7 @@ SAVE_PLAN = "Save as my plan"
 PLAN_SAVED = "Plan saved. You're on track."
 BEST_CASE, BASE_CASE, WORST_CASE = "Best case", "Base case", "Worst case"
 LOWEST_BALANCE = "lowest balance"
+CHANCE_SCENARIO = "With this change: {after} in the next 8 weeks (today: {before}%)."
 
 SETTINGS_TITLE = "Settings"
 LOW_CASH_LINE = "Low cash line"
@@ -394,3 +395,15 @@ CONFIDENCE_LEVELS = {"high": "high", "medium": "medium", "low": "low"}
 CONFIDENCE_ALL = "All the checks"
 NOTHING_PLANNED = "This forecast assumes no big one-off payments in the next 8 weeks. Planning any?"
 NOTHING_PLANNED_GO = "Tell us"
+
+
+# ---------------------------------------------------------------- chance below the line (3.1)
+def chance_words(pct: int | None) -> str:
+    """64 → '64% chance of dipping below your line' (empty when there's no chance to show)."""
+    if pct is None:
+        return ""
+    if pct <= 0:
+        return "no scenario dips below your line"
+    if pct >= 100:
+        return "every scenario dips below your line"
+    return f"{pct}% chance of dipping below your line"
