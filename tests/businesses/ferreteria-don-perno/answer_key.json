@@ -1,0 +1,921 @@
+{
+  "schema_version": 1,
+  "business": {
+    "slug": "ferreteria-don-perno",
+    "name": "Ferretería Don Perno",
+    "type": "hardware store",
+    "city": "Bucaramanga",
+    "employees": 5,
+    "low_cash_line": 5000.0,
+    "story": "Bucaramanga hardware store with two accounts and a business card, whose biggest customer brings about a third of income and has started paying later."
+  },
+  "files": [
+    {
+      "path": "statements/cuenta_corriente_5510.csv",
+      "kind": "bank_statement",
+      "account": "Corriente 5510",
+      "date_format": "DD/MM/YYYY",
+      "decimal": ".",
+      "newest_first": false,
+      "has_balance": true,
+      "first_date": "2025-11-11",
+      "last_date": "2026-11-10",
+      "lines": 926,
+      "unreadable_lines": 0,
+      "notes": "Separate Débito/Crédito columns; an empty cell means zero."
+    },
+    {
+      "path": "statements/cuenta_ahorros_7723.csv",
+      "kind": "bank_statement",
+      "account": "Ahorros 7723",
+      "date_format": "DD/MM/YYYY",
+      "decimal": ",",
+      "newest_first": true,
+      "has_balance": true,
+      "first_date": "2025-11-30",
+      "last_date": "2026-10-31",
+      "lines": 36,
+      "unreadable_lines": 0,
+      "notes": "Savings account; exempt from the 4x1000 (no GMF lines)."
+    },
+    {
+      "path": "statements/visa_empresarial_9031.csv",
+      "kind": "card_statement",
+      "account": "Visa Empresarial 9031",
+      "date_format": "MM/DD/YYYY",
+      "decimal": ".",
+      "newest_first": false,
+      "has_balance": true,
+      "first_date": "2025-11-17",
+      "last_date": "2026-11-09",
+      "lines": 106,
+      "unreadable_lines": 0,
+      "notes": "Month-first dates (e.g. 11/25/2025). Purchases under Charges; the payments from Corriente 5510 under Payments; Balance owed positive."
+    }
+  ],
+  "import": {
+    "statement_end": "2026-11-10",
+    "closing_balance_by_account": {
+      "Corriente 5510": 8951.54,
+      "Ahorros 7723": 3150.0,
+      "Visa Empresarial 9031": -285.44
+    },
+    "balance_to_type_if_no_column": null,
+    "total_cash": 12101.54,
+    "transactions_after_dedup": 1068,
+    "duplicates_across_files": 0,
+    "balance_breaks": [],
+    "internal_transfers": [
+      {
+        "date": "2025-12-03",
+        "amount": 9700.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-01-05",
+        "amount": 10800.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-02-04",
+        "amount": 9200.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-03-06",
+        "amount": 9900.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-04-01",
+        "amount": 10500.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-05-06",
+        "amount": 8900.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-06-03",
+        "amount": 8800.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-07-08",
+        "amount": 10500.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-08-12",
+        "amount": 10300.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-09-16",
+        "amount": 10200.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2026-10-22",
+        "amount": 10900.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      },
+      {
+        "date": "2025-12-23",
+        "amount": 3000.0,
+        "from": "Corriente 5510",
+        "to": "Ahorros 7723"
+      },
+      {
+        "date": "2026-01-20",
+        "amount": 3000.0,
+        "from": "Ahorros 7723",
+        "to": "Corriente 5510"
+      }
+    ],
+    "notes": "Card accounts show a negative closing balance (= amount owed) and are not part of total_cash. transactions_after_dedup counts distinct real lines readable in at least one file (unreadable and missing lines excluded; genuine same-day duplicates kept)."
+  },
+  "categories": {
+    "monthly_totals": {
+      "2025-12": {
+        "sales": 33752.59,
+        "transfer_internal": -12700.0,
+        "other_income": 4.16,
+        "payroll": -4725.92,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -341.38,
+        "loan": -420.0,
+        "suppliers": -20918.63,
+        "bank_fees": -141.26,
+        "other": -286.72,
+        "card_payment": -526.24
+      },
+      "2026-01": {
+        "sales": 29208.58,
+        "transfer_internal": -13800.0,
+        "other_income": 3.29,
+        "payroll": -3654.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -317.59,
+        "loan": -420.0,
+        "suppliers": -19254.46,
+        "taxes": -1811.53,
+        "bank_fees": -136.12,
+        "other": -265.78,
+        "card_payment": -248.06
+      },
+      "2026-02": {
+        "sales": 27686.74,
+        "transfer_internal": -9200.0,
+        "other_income": 4.13,
+        "payroll": -3654.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -336.94,
+        "loan": -420.0,
+        "suppliers": -18112.44,
+        "bank_fees": -127.64,
+        "other": -264.11,
+        "card_payment": -893.93
+      },
+      "2026-03": {
+        "sales": 40948.52,
+        "transfer_internal": -9900.0,
+        "other_income": 3.15,
+        "payroll": -3654.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -338.5,
+        "loan": -420.0,
+        "suppliers": -21296.84,
+        "taxes": -1952.87,
+        "bank_fees": -144.56,
+        "other": -323.49,
+        "card_payment": -504.7
+      },
+      "2026-04": {
+        "sales": 18955.15,
+        "transfer_internal": -10500.0,
+        "other_income": 4.09,
+        "payroll": -3654.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -337.57,
+        "loan": -420.0,
+        "suppliers": -21563.75,
+        "bank_fees": -138.39,
+        "other": -577.39,
+        "card_payment": -582.6
+      },
+      "2026-05": {
+        "sales": 28398.35,
+        "transfer_internal": -8900.0,
+        "other_income": 3.35,
+        "payroll": -3654.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -331.85,
+        "loan": -420.0,
+        "suppliers": -18529.16,
+        "taxes": -1695.65,
+        "bank_fees": -134.56,
+        "other": -272.29,
+        "card_payment": -592.33
+      },
+      "2026-06": {
+        "sales": 29271.68,
+        "transfer_internal": -8800.0,
+        "other_income": 3.13,
+        "payroll": -5104.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -325.68,
+        "loan": -420.0,
+        "suppliers": -21405.1,
+        "bank_fees": -144.85,
+        "other": -332.78,
+        "card_payment": -786.97
+      },
+      "2026-07": {
+        "sales": 30722.08,
+        "transfer_internal": -10500.0,
+        "other_income": 3.7,
+        "payroll": -3654.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -329.45,
+        "loan": -420.0,
+        "suppliers": -19142.39,
+        "taxes": -1723.46,
+        "bank_fees": -137.36,
+        "other": -287.74,
+        "card_payment": -389.67
+      },
+      "2026-08": {
+        "sales": 32050.27,
+        "transfer_internal": -10300.0,
+        "other_income": 3.26,
+        "payroll": -3654.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -331.11,
+        "loan": -420.0,
+        "suppliers": -18974.45,
+        "bank_fees": -128.47,
+        "other": -302.22,
+        "card_payment": -383.79
+      },
+      "2026-09": {
+        "sales": 29808.49,
+        "transfer_internal": -10200.0,
+        "other_income": 3.69,
+        "payroll": -3654.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -337.25,
+        "loan": -420.0,
+        "suppliers": -21440.84,
+        "taxes": -1916.3,
+        "bank_fees": -145.38,
+        "other": -467.95,
+        "card_payment": -643.0
+      },
+      "2026-10": {
+        "sales": 31728.61,
+        "transfer_internal": -10900.0,
+        "other_income": 3.53,
+        "payroll": -3654.0,
+        "owner_pay": -1800.0,
+        "rent": -1900.0,
+        "utilities": -340.9,
+        "loan": -420.0,
+        "suppliers": -21784.91,
+        "bank_fees": -142.34,
+        "other": -271.58,
+        "card_payment": -812.37
+      }
+    },
+    "tolerance_pct": 5,
+    "notes": "Signed sums (money in +, money out -), complete months only, all accounts. For transfer_internal and card_payment only the sending side is counted; card purchases are counted in their own categories."
+  },
+  "recurring": [
+    {
+      "label": "Card sales",
+      "category": "sales",
+      "direction": "in",
+      "amount": 555.48,
+      "amount_varies": true,
+      "cadence": "daily",
+      "day_rule": "Monday to Saturday",
+      "next_date": "2026-11-11",
+      "match_hint": "ABONO VENTAS DATAFONO",
+      "confirmed_by_owner": false,
+      "tolerance": 179.2
+    },
+    {
+      "label": "Cash deposits",
+      "category": "sales",
+      "direction": "in",
+      "amount": 942.08,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Monday",
+      "next_date": "2026-11-17",
+      "match_hint": "CONSIGNACION EFECTIVO",
+      "confirmed_by_owner": false,
+      "tolerance": 187.09
+    },
+    {
+      "label": "Constructora Ejemplo Andina (monthly invoice)",
+      "category": "sales",
+      "direction": "in",
+      "amount": 9975.56,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "invoice due 30 days after month end; paid later and later since mid-2026",
+      "next_date": "2026-11-25",
+      "match_hint": "TRANSF RECIBIDA CONSTRUCTORA EJEMPLO ANDINA",
+      "confirmed_by_owner": false,
+      "tolerance": 1496.33,
+      "notes": "days late: 0-3 until April 2026, then 6, 11, 15, 20, 26, 30"
+    },
+    {
+      "label": "Payroll (twice a month)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 1450.0,
+      "amount_varies": false,
+      "cadence": "twice a month",
+      "day_rule": "15th and last business day (earlier business day)",
+      "next_date": "2026-11-13",
+      "match_hint": "PAGO NOMINA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Social security (PILA)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 754.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "9th",
+      "next_date": "2026-12-09",
+      "match_hint": "PAGO PILA APORTES",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Prima (June and December bonus)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 1450.0,
+      "amount_varies": false,
+      "cadence": "twice a year",
+      "day_rule": "last Friday on or before Jun 30 and Dec 20",
+      "next_date": "2026-12-18",
+      "match_hint": "PAGO NOMINA PRIMA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Owner pay",
+      "category": "owner_pay",
+      "direction": "out",
+      "amount": 1800.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "1st (next business day)",
+      "next_date": "2026-12-01",
+      "match_hint": "TRANSF A CTA AHORROS H PRUEBA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Rent",
+      "category": "rent",
+      "direction": "out",
+      "amount": 1900.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "5th (next business day)",
+      "next_date": "2026-12-07",
+      "match_hint": "PAGO ARRIENDO BODEGA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Electricity (ESSA)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 233.02,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "7th",
+      "next_date": "2026-12-07",
+      "match_hint": "PAGO ESSA",
+      "confirmed_by_owner": false,
+      "tolerance": 34.95
+    },
+    {
+      "label": "Water (AMB)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 46.77,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "11th",
+      "next_date": "2026-11-11",
+      "match_hint": "PAGO AMB ACUEDUCTO",
+      "confirmed_by_owner": false,
+      "tolerance": 7.02
+    },
+    {
+      "label": "Phone & internet (Movistar)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 52.9,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "4th",
+      "next_date": "2026-12-04",
+      "match_hint": "PAGO MOVISTAR",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Truck leasing",
+      "category": "loan",
+      "direction": "out",
+      "amount": 420.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "22nd",
+      "next_date": "2026-11-23",
+      "match_hint": "TRANSF 0093 REF 61107",
+      "confirmed_by_owner": false,
+      "notes": "cryptic description; the owner explains it"
+    },
+    {
+      "label": "Hardware wholesaler (weekly)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 2538.46,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Tuesday",
+      "next_date": "2026-11-17",
+      "match_hint": "PAGO PSE DISTRIBUIDORA FERRETERA DEL ORIENTE",
+      "confirmed_by_owner": false,
+      "tolerance": 380.77
+    },
+    {
+      "label": "Cement supplier (every two weeks)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 3350.59,
+      "amount_varies": true,
+      "cadence": "every two weeks",
+      "day_rule": "Thursday",
+      "next_date": "2026-11-12",
+      "match_hint": "PAGO PSE CEMENTERA DEL NORTE",
+      "confirmed_by_owner": false,
+      "tolerance": 502.59
+    },
+    {
+      "label": "Paint supplier (monthly)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 1505.49,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "15th",
+      "next_date": "2026-11-17",
+      "match_hint": "PAGO PSE PINTURAS ANDINAS",
+      "confirmed_by_owner": false,
+      "tolerance": 225.82
+    },
+    {
+      "label": "VAT (IVA, bimonthly)",
+      "category": "taxes",
+      "direction": "out",
+      "amount": 1795.94,
+      "amount_varies": true,
+      "cadence": "every 2 months",
+      "day_rule": "14th of odd months",
+      "next_date": "2026-11-17",
+      "match_hint": "PAGO DIAN IVA",
+      "confirmed_by_owner": false,
+      "tolerance": 269.39
+    },
+    {
+      "label": "Credit card payment",
+      "category": "card_payment",
+      "direction": "out",
+      "amount": 587.07,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "8th (next business day)",
+      "next_date": "2026-12-09",
+      "match_hint": "PAGO TARJETA CREDITO VISA 9031",
+      "confirmed_by_owner": false,
+      "tolerance": 225.3,
+      "notes": "pays the card in full; not new spending"
+    },
+    {
+      "label": "Account fee",
+      "category": "bank_fees",
+      "direction": "out",
+      "amount": 8.4,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "last business day",
+      "next_date": "2026-11-30",
+      "match_hint": "CUOTA MANEJO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Fuel (card)",
+      "category": "other",
+      "direction": "out",
+      "amount": 57.84,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Monday (on the card)",
+      "next_date": "2026-11-16",
+      "match_hint": "COMPRA TERPEL",
+      "confirmed_by_owner": false,
+      "tolerance": 8.68
+    },
+    {
+      "label": "Accounting software (card)",
+      "category": "other",
+      "direction": "out",
+      "amount": 42.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "6th (on the card)",
+      "next_date": "2026-12-06",
+      "match_hint": "COMPRA SIIGO NUBE",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Card fee",
+      "category": "bank_fees",
+      "direction": "out",
+      "amount": 9.9,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "25th (on the card)",
+      "next_date": "2026-11-25",
+      "match_hint": "CUOTA DE MANEJO TC",
+      "confirmed_by_owner": false
+    }
+  ],
+  "one_offs_known": [],
+  "owner_files": [
+    {
+      "path": "files/libro_auxiliar_cartera.xlsx",
+      "kind": "ledger",
+      "rows": 21,
+      "total": 18951.59,
+      "overdue_rows": 0,
+      "notes": "Receivables sub-ledger for the big customer: invoices +, collections -. total = what it owes on 2026-11-10 (the September invoice, already overdue, and the October invoice)."
+    },
+    {
+      "path": "files/inventario.xlsx",
+      "kind": "inventory",
+      "rows": 14,
+      "total": 6233.0,
+      "overdue_rows": 0,
+      "notes": "total = stock value at cost; 3 items are below their reorder level."
+    }
+  ],
+  "onboarding_answers": {
+    "business_type": "hardware store",
+    "low_cash_line": 5000.0,
+    "customers_pay": "walk-in customers by card and cash; small contractors by transfer; one construction company on 30-day invoices",
+    "busy_months": [
+      "2026-12"
+    ],
+    "slow_months": [
+      "2027-01"
+    ],
+    "owner_pay": {
+      "match_hint": "TRANSF A CTA AHORROS H PRUEBA",
+      "is_owner_pay": true
+    },
+    "upcoming_in_own_words": [
+      "Constructora Ejemplo Andina owes me the September and October invoices"
+    ],
+    "mystery_answers": {
+      "TRANSF 0093 REF 61107": "leasing of the delivery truck"
+    }
+  },
+  "hidden_future": {
+    "notes": "End-of-day total of the bank accounts (card debt not included) for the 8 weeks after the statement, from the same simulation. It includes day-to-day noise the app cannot know: compare level and timing with tolerance.",
+    "daily_balance": [
+      {
+        "date": "2026-11-11",
+        "balance": 12580.96
+      },
+      {
+        "date": "2026-11-12",
+        "balance": 10164.06
+      },
+      {
+        "date": "2026-11-13",
+        "balance": 9330.46
+      },
+      {
+        "date": "2026-11-14",
+        "balance": 9999.18
+      },
+      {
+        "date": "2026-11-15",
+        "balance": 9999.18
+      },
+      {
+        "date": "2026-11-16",
+        "balance": 10289.15
+      },
+      {
+        "date": "2026-11-17",
+        "balance": 5750.0
+      },
+      {
+        "date": "2026-11-18",
+        "balance": 6265.36
+      },
+      {
+        "date": "2026-11-19",
+        "balance": 6807.19
+      },
+      {
+        "date": "2026-11-20",
+        "balance": 7747.27
+      },
+      {
+        "date": "2026-11-21",
+        "balance": 8456.12
+      },
+      {
+        "date": "2026-11-22",
+        "balance": 8456.12
+      },
+      {
+        "date": "2026-11-23",
+        "balance": 9397.45
+      },
+      {
+        "date": "2026-11-24",
+        "balance": 7209.19
+      },
+      {
+        "date": "2026-11-25",
+        "balance": 17169.85
+      },
+      {
+        "date": "2026-11-26",
+        "balance": 14710.18
+      },
+      {
+        "date": "2026-11-27",
+        "balance": 15318.85
+      },
+      {
+        "date": "2026-11-28",
+        "balance": 15983.06
+      },
+      {
+        "date": "2026-11-29",
+        "balance": 15983.06
+      },
+      {
+        "date": "2026-11-30",
+        "balance": 16046.98
+      },
+      {
+        "date": "2026-12-01",
+        "balance": 12544.63
+      },
+      {
+        "date": "2026-12-02",
+        "balance": 13102.62
+      },
+      {
+        "date": "2026-12-03",
+        "balance": 13727.63
+      },
+      {
+        "date": "2026-12-04",
+        "balance": 14291.93
+      },
+      {
+        "date": "2026-12-05",
+        "balance": 15046.94
+      },
+      {
+        "date": "2026-12-06",
+        "balance": 15046.94
+      },
+      {
+        "date": "2026-12-07",
+        "balance": 15060.43
+      },
+      {
+        "date": "2026-12-08",
+        "balance": 15323.06
+      },
+      {
+        "date": "2026-12-09",
+        "balance": 11969.59
+      },
+      {
+        "date": "2026-12-10",
+        "balance": 9150.75
+      },
+      {
+        "date": "2026-12-11",
+        "balance": 9696.62
+      },
+      {
+        "date": "2026-12-12",
+        "balance": 10487.64
+      },
+      {
+        "date": "2026-12-13",
+        "balance": 10487.64
+      },
+      {
+        "date": "2026-12-14",
+        "balance": 12817.83
+      },
+      {
+        "date": "2026-12-15",
+        "balance": 7513.71
+      },
+      {
+        "date": "2026-12-16",
+        "balance": 8026.25
+      },
+      {
+        "date": "2026-12-17",
+        "balance": 8598.17
+      },
+      {
+        "date": "2026-12-18",
+        "balance": 7982.34
+      },
+      {
+        "date": "2026-12-19",
+        "balance": 8892.57
+      },
+      {
+        "date": "2026-12-20",
+        "balance": 8892.57
+      },
+      {
+        "date": "2026-12-21",
+        "balance": 10298.7
+      },
+      {
+        "date": "2026-12-22",
+        "balance": 7984.17
+      },
+      {
+        "date": "2026-12-23",
+        "balance": 8606.59
+      },
+      {
+        "date": "2026-12-24",
+        "balance": 6072.01
+      },
+      {
+        "date": "2026-12-25",
+        "balance": 6414.86
+      },
+      {
+        "date": "2026-12-26",
+        "balance": 7221.81
+      },
+      {
+        "date": "2026-12-27",
+        "balance": 7221.81
+      },
+      {
+        "date": "2026-12-28",
+        "balance": 8741.03
+      },
+      {
+        "date": "2026-12-29",
+        "balance": 6899.73
+      },
+      {
+        "date": "2026-12-30",
+        "balance": 16980.21
+      },
+      {
+        "date": "2026-12-31",
+        "balance": 16037.9
+      },
+      {
+        "date": "2027-01-01",
+        "balance": 16259.09
+      },
+      {
+        "date": "2027-01-02",
+        "balance": 16912.36
+      },
+      {
+        "date": "2027-01-03",
+        "balance": 16912.36
+      },
+      {
+        "date": "2027-01-04",
+        "balance": 16500.13
+      },
+      {
+        "date": "2027-01-05",
+        "balance": 12550.32
+      }
+    ],
+    "lowest": {
+      "date": "2026-11-17",
+      "balance": 5750.0
+    }
+  },
+  "expected": {
+    "risk_level": [
+      "safe",
+      "watch"
+    ],
+    "alerts_must": [],
+    "alerts_must_not": [],
+    "insights_must": [
+      "few_customers",
+      "customers_paying_later"
+    ],
+    "insights_must_not": [
+      "cost_creeping_up",
+      "costs_faster_than_sales",
+      "duplicate_charge",
+      "sales_slowing",
+      "net_flow_shrinking",
+      "idle_cash"
+    ],
+    "fixes_that_work": [],
+    "what_ifs": [
+      {
+        "question": "What if Constructora Ejemplo Andina pays each invoice a month later still?",
+        "change": "its 2026-11-26 and 2026-12-30 payments move 30 days later",
+        "lowest_balance_direction": "down",
+        "approx_change": -9063.23,
+        "tolerance": 1812.64,
+        "notes": "lowest -$3,313.23 on 2026-12-24 (base case $5,750.00 on 2026-11-17)"
+      },
+      {
+        "question": "What if Constructora Ejemplo Andina stops paying altogether?",
+        "change": "no more payments from the big customer",
+        "lowest_balance_direction": "down",
+        "approx_change": -12151.27,
+        "tolerance": 2430.25,
+        "notes": "lowest -$6,401.27 on 2027-01-05 (base case $5,750.00 on 2026-11-17)"
+      }
+    ],
+    "chat_questions": [
+      {
+        "question": "How much cash do I have right now?",
+        "answer_must_reflect": [
+          "$12,101.54 across both bank accounts",
+          "checking $8,951.54, savings $3,150.00",
+          "the Visa card owes $285.44: that is debt, not cash"
+        ]
+      },
+      {
+        "question": "Is my biggest customer paying later?",
+        "answer_must_reflect": [
+          "yes: from about 4.1 days late (May-Jul payments) to about 15.4 days (Aug-Oct)",
+          "it brings about 33% of income"
+        ]
+      },
+      {
+        "question": "How much did I spend on the business card in October 2026?",
+        "answer_must_reflect": [
+          "about $503.12 of purchases",
+          "the PAGO TARJETA line in checking pays the card; it is not extra spending"
+        ]
+      }
+    ],
+    "timing_or_structural": "timing",
+    "notes": "Insight metrics: {\"weeks_of_cover\": 1.83, \"cost_creep_max\": 0.053, \"cost_creep_category\": \"suppliers\", \"sales_change\": 0.059, \"cost_change\": 0.004, \"cost_vs_sales_gap\": -0.055, \"top_customers\": [[\"Constructora Ejemplo Andina SAS\", 0.329], [\"Remodelaciones Ficticias\", 0.03]], \"top2_customer_share\": 0.359, \"days_late_prior3\": 4.1, \"days_late_recent3\": 15.4, \"days_late_change\": 11.3, \"owner_pay_recent3\": 5400.0, \"surplus_before_owner_pay_recent3\": 9092.15, \"owner_pay_share_of_surplus\": 0.594, \"operating_net_per_month_prior3\": 1832.65, \"operating_net_per_month_recent3\": 3450.71, \"net_flow_change_vs_income\": 0.055, \"exact_duplicate_lines\": []} | Windows: prior3 = 2026-05..07, recent3 = 2026-08..10 (complete months). weeks_of_cover = cash on 2026-11-10 / average weekly money out in the last 91 days (own-account transfers and card payments excluded; card purchases included). thin_cushion must <1.5, must_not >3; idle_cash must >16, must_not <8. cost_creeping_up: largest recent3/prior3 change of a cost category worth >=5% of costs; must >=20%, must_not <=10%. costs_faster_than_sales: cost change minus sales change; must >=8 pts, must_not <=2 pts. few_customers: share of income (May-Oct) from the two largest named payers (card/cash deposits are anonymous); must >=25%, must_not <=16%. customers_paying_later: change in amount-weighted days late of invoice payments; must >=7 days, must_not <=2 or no invoiced customers. owner_pay_high: owner pay / surplus before owner pay in recent3; must >=0.8, must_not <=0.5. sales_slowing: must <=-10%, must_not >=-3%. net_flow_shrinking: change in monthly operating net (excl. owner pay, loans, equipment, own transfers) as a share of monthly income; must <=-5%, must_not >=-1%. duplicate_charge: must_not when no identical (date, description, amount) lines exist. Values between the two thresholds are judgement calls and appear in neither list. | risk_level rule: true lowest < 90% of the line -> act_now; 90-110% -> watch or act_now; 110-140% -> safe or watch; above -> safe."
+  }
+}

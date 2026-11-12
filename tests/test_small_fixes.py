@@ -35,7 +35,7 @@ def test_next_month_answer_stays_inside_next_month(connected_core):
     assert date.fromisoformat(data["lowest_point"]["date"]) <= date(2026, 12, 31)
 
     answer = connected_core.ask("Will I have enough cash next month?")
-    assert "2026-12-31" in answer.text
+    assert "Dec 31, 2026" in answer.text  # readable dates (review after phase 2)
 
 
 def test_alert_text_is_not_bakery_specific():

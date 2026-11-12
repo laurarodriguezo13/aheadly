@@ -1,0 +1,693 @@
+{
+  "schema_version": 1,
+  "business": {
+    "slug": "disfraces-la-fantasia",
+    "name": "Disfraces La Fantasía",
+    "type": "costume shop",
+    "city": "Barranquilla",
+    "employees": 3,
+    "low_cash_line": 3000.0,
+    "story": "Barranquilla costume shop just past its Halloween peak: the slow season, a big VAT bill and the Carnaval stock deposit pull cash down, but it stays above the line."
+  },
+  "files": [
+    {
+      "path": "statements/movimientos_6610.xlsx",
+      "kind": "bank_statement",
+      "account": "Ahorros 6610",
+      "date_format": "Excel date cells",
+      "decimal": null,
+      "newest_first": false,
+      "has_balance": true,
+      "first_date": "2025-11-11",
+      "last_date": "2026-11-10",
+      "lines": 728,
+      "unreadable_lines": 0,
+      "notes": "Excel file: real date cells and number cells on one sheet named Movimientos."
+    }
+  ],
+  "import": {
+    "statement_end": "2026-11-10",
+    "closing_balance_by_account": {
+      "Ahorros 6610": 13813.31
+    },
+    "balance_to_type_if_no_column": null,
+    "total_cash": 13813.31,
+    "transactions_after_dedup": 728,
+    "duplicates_across_files": 0,
+    "balance_breaks": [],
+    "internal_transfers": [],
+    "notes": "Card accounts show a negative closing balance (= amount owed) and are not part of total_cash. transactions_after_dedup counts distinct real lines readable in at least one file (unreadable and missing lines excluded; genuine same-day duplicates kept)."
+  },
+  "categories": {
+    "monthly_totals": {
+      "2025-12": {
+        "sales": 6814.98,
+        "payroll": -3390.82,
+        "owner_pay": -1200.0,
+        "rent": -1280.0,
+        "utilities": -318.55,
+        "suppliers": -5033.83,
+        "loan": 15500.0,
+        "bank_fees": -51.34,
+        "other": -57.24
+      },
+      "2026-01": {
+        "sales": 9306.48,
+        "payroll": -3246.0,
+        "owner_pay": -1200.0,
+        "rent": -1280.0,
+        "utilities": -340.55,
+        "suppliers": -5735.98,
+        "taxes": -717.58,
+        "bank_fees": -55.45,
+        "other": -70.81,
+        "loan": -3123.5
+      },
+      "2026-02": {
+        "sales": 21439.06,
+        "payroll": -3846.0,
+        "owner_pay": -1200.0,
+        "rent": -1350.0,
+        "utilities": -309.97,
+        "suppliers": -844.42,
+        "loan": -14215.35,
+        "bank_fees": -74.48,
+        "other": -70.92
+      },
+      "2026-03": {
+        "sales": 3998.8,
+        "payroll": -2646.0,
+        "owner_pay": -1200.0,
+        "rent": -1350.0,
+        "utilities": -317.71,
+        "suppliers": -500.24,
+        "taxes": -2152.19,
+        "bank_fees": -38.05,
+        "other": -73.46,
+        "loan": 3500.0
+      },
+      "2026-04": {
+        "sales": 5892.72,
+        "payroll": -2646.0,
+        "owner_pay": -1200.0,
+        "rent": -1350.0,
+        "utilities": -327.81,
+        "suppliers": -550.63,
+        "bank_fees": -34.84,
+        "equipment": -380.0,
+        "other": -12.24,
+        "loan": 1920.2
+      },
+      "2026-05": {
+        "sales": 7629.59,
+        "payroll": -2646.0,
+        "owner_pay": -1200.0,
+        "rent": -1350.0,
+        "utilities": -348.48,
+        "suppliers": -558.55,
+        "taxes": -692.41,
+        "bank_fees": -32.66,
+        "other": -94.05,
+        "loan": -3641.87
+      },
+      "2026-06": {
+        "sales": 7909.85,
+        "payroll": -3696.0,
+        "owner_pay": -1200.0,
+        "rent": -1350.0,
+        "utilities": -321.74,
+        "suppliers": -557.82,
+        "bank_fees": -35.04,
+        "loan": -1652.0
+      },
+      "2026-07": {
+        "sales": 8174.23,
+        "payroll": -2646.0,
+        "owner_pay": -1200.0,
+        "rent": -1350.0,
+        "utilities": -346.0,
+        "suppliers": -530.03,
+        "taxes": -1087.76,
+        "bank_fees": -33.88,
+        "other": -35.34
+      },
+      "2026-08": {
+        "sales": 8185.13,
+        "payroll": -2646.0,
+        "owner_pay": -1200.0,
+        "rent": -1350.0,
+        "utilities": -322.77,
+        "suppliers": -6127.47,
+        "loan": 7898.67,
+        "bank_fees": -51.91,
+        "other": -57.09
+      },
+      "2026-09": {
+        "sales": 7836.97,
+        "payroll": -2646.0,
+        "owner_pay": -1200.0,
+        "rent": -1350.0,
+        "utilities": -341.1,
+        "suppliers": -5823.67,
+        "taxes": -1145.16,
+        "bank_fees": -58.46,
+        "other": -15.98
+      },
+      "2026-10": {
+        "sales": 29454.94,
+        "payroll": -3846.0,
+        "owner_pay": -1200.0,
+        "rent": -1350.0,
+        "utilities": -332.27,
+        "suppliers": -817.99,
+        "loan": -10959.8,
+        "bank_fees": -62.31,
+        "other": -75.84
+      }
+    },
+    "tolerance_pct": 5,
+    "notes": "Signed sums (money in +, money out -), complete months only, all accounts. For transfer_internal and card_payment only the sending side is counted; card purchases are counted in their own categories."
+  },
+  "recurring": [
+    {
+      "label": "Card sales",
+      "category": "sales",
+      "direction": "in",
+      "amount": 113.23,
+      "amount_varies": true,
+      "cadence": "daily",
+      "day_rule": "Monday to Saturday (Sundays too in Feb and Oct)",
+      "next_date": "2026-11-11",
+      "match_hint": "ABONO VENTAS DATAFONO",
+      "confirmed_by_owner": false,
+      "tolerance": 33.41,
+      "notes": "strongly seasonal: Oct and Feb peaks"
+    },
+    {
+      "label": "Cash deposits",
+      "category": "sales",
+      "direction": "in",
+      "amount": 1263.78,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Monday",
+      "next_date": "2026-11-17",
+      "match_hint": "CONSIGNACION EFECTIVO",
+      "confirmed_by_owner": false,
+      "tolerance": 917.6
+    },
+    {
+      "label": "Payroll (twice a month)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 1050.0,
+      "amount_varies": false,
+      "cadence": "twice a month",
+      "day_rule": "15th and last business day (earlier business day)",
+      "next_date": "2026-11-13",
+      "match_hint": "PAGO NOMINA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Social security (PILA)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 546.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "10th",
+      "next_date": "2026-12-10",
+      "match_hint": "PAGO PILA APORTES",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Prima (June and December bonus)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 1050.0,
+      "amount_varies": false,
+      "cadence": "twice a year",
+      "day_rule": "last Friday on or before Jun 30 and Dec 20",
+      "next_date": "2026-12-18",
+      "match_hint": "PAGO NOMINA PRIMA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Owner pay",
+      "category": "owner_pay",
+      "direction": "out",
+      "amount": 1200.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "1st (next business day)",
+      "next_date": "2026-12-01",
+      "match_hint": "TRANSF A CTA AHORROS R EJEMPLO",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Rent",
+      "category": "rent",
+      "direction": "out",
+      "amount": 1350.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "5th (next business day)",
+      "next_date": "2026-12-07",
+      "match_hint": "PAGO ARRIENDO",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Electricity (Air-e)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 242.91,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "8th",
+      "next_date": "2026-12-09",
+      "match_hint": "PAGO AIR-E",
+      "confirmed_by_owner": false,
+      "tolerance": 36.44
+    },
+    {
+      "label": "Water (Triple A)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 45.88,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "12th",
+      "next_date": "2026-11-12",
+      "match_hint": "PAGO TRIPLE A",
+      "confirmed_by_owner": false,
+      "tolerance": 6.88
+    },
+    {
+      "label": "Internet (Claro)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 44.9,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "3rd",
+      "next_date": "2026-12-03",
+      "match_hint": "PAGO CLARO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Fabric supplier (twice a month)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 375.63,
+      "amount_varies": true,
+      "cadence": "twice a month",
+      "day_rule": "8th and 22nd",
+      "next_date": "2026-11-23",
+      "match_hint": "PAGO PSE TEXTILES DEL CARIBE",
+      "confirmed_by_owner": false,
+      "tolerance": 134.13
+    },
+    {
+      "label": "VAT (IVA, bimonthly)",
+      "category": "taxes",
+      "direction": "out",
+      "amount": 1383.52,
+      "amount_varies": true,
+      "cadence": "every 2 months",
+      "day_rule": "13th of odd months",
+      "next_date": "2026-11-13",
+      "match_hint": "PAGO DIAN IVA",
+      "confirmed_by_owner": false,
+      "tolerance": 1122.5,
+      "notes": "7% of the previous two months' sales, so the 2026-11-13 payment is much larger than the average shown here"
+    },
+    {
+      "label": "Account fee",
+      "category": "bank_fees",
+      "direction": "out",
+      "amount": 5.1,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "last business day",
+      "next_date": "2026-11-30",
+      "match_hint": "CUOTA MANEJO",
+      "confirmed_by_owner": false
+    }
+  ],
+  "one_offs_known": [
+    {
+      "label": "Carnaval stock deposit",
+      "amount": -5200.0,
+      "date": "2026-12-09",
+      "source": "files/compromisos_proveedores.csv",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "VAT (IVA, bimonthly)",
+      "amount": -2600.0,
+      "date": "2026-11-13",
+      "source": "files/compromisos_proveedores.csv",
+      "certainty": "estimate"
+    },
+    {
+      "label": "Christmas play rental",
+      "amount": 950.0,
+      "date": "2026-12-04",
+      "source": "onboarding",
+      "certainty": "likely"
+    }
+  ],
+  "owner_files": [
+    {
+      "path": "files/compromisos_proveedores.csv",
+      "kind": "upcoming_payments",
+      "rows": 3,
+      "total": -13000.0,
+      "overdue_rows": 0,
+      "notes": "All rows are payments (total negative). The 2027-01-12 balance falls after the 8-week window. The VAT row is the owner's estimate, rounded to $100."
+    }
+  ],
+  "onboarding_answers": {
+    "business_type": "costume shop",
+    "low_cash_line": 3000.0,
+    "customers_pay": "walk-in customers by card and cash; schools and event companies rent costumes by transfer",
+    "busy_months": [
+      "2026-10",
+      "2027-02"
+    ],
+    "slow_months": [
+      "2026-11",
+      "2026-12",
+      "2027-01"
+    ],
+    "owner_pay": {
+      "match_hint": "TRANSF A CTA AHORROS R EJEMPLO",
+      "is_owner_pay": true
+    },
+    "upcoming_in_own_words": [
+      "The Carnaval stock deposit, $5,200, on Dec 9 (the other $5,200 in January)",
+      "VAT for September-October, about $2,600.00, on Nov 13",
+      "The school usually rents costumes for its Christmas play, about $950, early December"
+    ],
+    "mystery_answers": {}
+  },
+  "hidden_future": {
+    "notes": "End-of-day total of the bank accounts (card debt not included) for the 8 weeks after the statement, from the same simulation. It includes day-to-day noise the app cannot know: compare level and timing with tolerance.",
+    "daily_balance": [
+      {
+        "date": "2026-11-11",
+        "balance": 13925.89
+      },
+      {
+        "date": "2026-11-12",
+        "balance": 13997.85
+      },
+      {
+        "date": "2026-11-13",
+        "balance": 10456.16
+      },
+      {
+        "date": "2026-11-14",
+        "balance": 10579.17
+      },
+      {
+        "date": "2026-11-15",
+        "balance": 10579.17
+      },
+      {
+        "date": "2026-11-16",
+        "balance": 10637.49
+      },
+      {
+        "date": "2026-11-17",
+        "balance": 10975.85
+      },
+      {
+        "date": "2026-11-18",
+        "balance": 11078.95
+      },
+      {
+        "date": "2026-11-19",
+        "balance": 11182.01
+      },
+      {
+        "date": "2026-11-20",
+        "balance": 11300.61
+      },
+      {
+        "date": "2026-11-21",
+        "balance": 11462.04
+      },
+      {
+        "date": "2026-11-22",
+        "balance": 11462.04
+      },
+      {
+        "date": "2026-11-23",
+        "balance": 11513.18
+      },
+      {
+        "date": "2026-11-24",
+        "balance": 11580.03
+      },
+      {
+        "date": "2026-11-25",
+        "balance": 11670.43
+      },
+      {
+        "date": "2026-11-26",
+        "balance": 11766.86
+      },
+      {
+        "date": "2026-11-27",
+        "balance": 11882.28
+      },
+      {
+        "date": "2026-11-28",
+        "balance": 12019.35
+      },
+      {
+        "date": "2026-11-29",
+        "balance": 12019.35
+      },
+      {
+        "date": "2026-11-30",
+        "balance": 11296.98
+      },
+      {
+        "date": "2026-12-01",
+        "balance": 10257.56
+      },
+      {
+        "date": "2026-12-02",
+        "balance": 10417.43
+      },
+      {
+        "date": "2026-12-03",
+        "balance": 10556.32
+      },
+      {
+        "date": "2026-12-04",
+        "balance": 11668.92
+      },
+      {
+        "date": "2026-12-05",
+        "balance": 11894.49
+      },
+      {
+        "date": "2026-12-06",
+        "balance": 11894.49
+      },
+      {
+        "date": "2026-12-07",
+        "balance": 11136.79
+      },
+      {
+        "date": "2026-12-08",
+        "balance": 11232.77
+      },
+      {
+        "date": "2026-12-09",
+        "balance": 5676.93
+      },
+      {
+        "date": "2026-12-10",
+        "balance": 5312.12
+      },
+      {
+        "date": "2026-12-11",
+        "balance": 5477.76
+      },
+      {
+        "date": "2026-12-12",
+        "balance": 5729.03
+      },
+      {
+        "date": "2026-12-13",
+        "balance": 5729.03
+      },
+      {
+        "date": "2026-12-14",
+        "balance": 6257.08
+      },
+      {
+        "date": "2026-12-15",
+        "balance": 5343.36
+      },
+      {
+        "date": "2026-12-16",
+        "balance": 5500.32
+      },
+      {
+        "date": "2026-12-17",
+        "balance": 5660.69
+      },
+      {
+        "date": "2026-12-18",
+        "balance": 4800.09
+      },
+      {
+        "date": "2026-12-19",
+        "balance": 5039.29
+      },
+      {
+        "date": "2026-12-20",
+        "balance": 5039.29
+      },
+      {
+        "date": "2026-12-21",
+        "balance": 5535.33
+      },
+      {
+        "date": "2026-12-22",
+        "balance": 5427.32
+      },
+      {
+        "date": "2026-12-23",
+        "balance": 5565.72
+      },
+      {
+        "date": "2026-12-24",
+        "balance": 5629.91
+      },
+      {
+        "date": "2026-12-25",
+        "balance": 5710.97
+      },
+      {
+        "date": "2026-12-26",
+        "balance": 5869.5
+      },
+      {
+        "date": "2026-12-27",
+        "balance": 5869.5
+      },
+      {
+        "date": "2026-12-28",
+        "balance": 6356.92
+      },
+      {
+        "date": "2026-12-29",
+        "balance": 6467.77
+      },
+      {
+        "date": "2026-12-30",
+        "balance": 6587.02
+      },
+      {
+        "date": "2026-12-31",
+        "balance": 5659.27
+      },
+      {
+        "date": "2027-01-01",
+        "balance": 5755.93
+      },
+      {
+        "date": "2027-01-02",
+        "balance": 5972.77
+      },
+      {
+        "date": "2027-01-03",
+        "balance": 5972.77
+      },
+      {
+        "date": "2027-01-04",
+        "balance": 5134.08
+      },
+      {
+        "date": "2027-01-05",
+        "balance": 3900.0
+      }
+    ],
+    "lowest": {
+      "date": "2027-01-05",
+      "balance": 3900.0
+    }
+  },
+  "expected": {
+    "risk_level": [
+      "safe",
+      "watch"
+    ],
+    "alerts_must": [],
+    "alerts_must_not": [
+      "shortfall"
+    ],
+    "insights_must": [],
+    "insights_must_not": [
+      "thin_cushion",
+      "duplicate_charge",
+      "sales_slowing",
+      "few_customers",
+      "customers_paying_later",
+      "owner_pay_high",
+      "idle_cash"
+    ],
+    "fixes_that_work": [],
+    "what_ifs": [
+      {
+        "question": "What if December sales are as weak as November?",
+        "change": "card sales and cash deposits x0.64 in 2026-12",
+        "lowest_balance_direction": "down",
+        "approx_change": -2079.99,
+        "tolerance": 415.99,
+        "notes": "lowest $1,820.01 on 2027-01-05 (base case $3,900.00 on 2027-01-05)"
+      },
+      {
+        "question": "What if the school doesn't rent costumes for its Christmas play?",
+        "change": "Christmas play rental ($950, 2026-12-04) removed",
+        "lowest_balance_direction": "down",
+        "approx_change": -950.0,
+        "tolerance": 250.0,
+        "notes": "lowest $2,950.00 on 2027-01-05 (base case $3,900.00 on 2027-01-05)"
+      },
+      {
+        "question": "What if I pay the Carnaval deposit on January 5 instead of December 9?",
+        "change": "Carnaval stock deposit from 2026-12-09 to 2027-01-05",
+        "lowest_balance_direction": "about the same",
+        "approx_change": 0.0,
+        "tolerance": 250.0,
+        "notes": "lowest $3,900.00 on 2027-01-05 (base case $3,900.00 on 2027-01-05)"
+      }
+    ],
+    "chat_questions": [
+      {
+        "question": "Will November be as good as October?",
+        "answer_must_reflect": [
+          "no: November to mid-January is the slow season (last year was the same)",
+          "cash falls from $13,813.31 to about $3,900.00 by 2027-01-05",
+          "the VAT payment of about $2,610.43 on 2026-11-13 is based on the Halloween sales"
+        ]
+      },
+      {
+        "question": "Sales dropped a lot this month. Should I worry?",
+        "answer_must_reflect": [
+          "no: it is the normal slow season after Halloween",
+          "Carnaval sales pick up from mid-January"
+        ]
+      }
+    ],
+    "timing_or_structural": "timing",
+    "notes": "Insight metrics: {\"weeks_of_cover\": 3.94, \"cost_creep_max\": 6.756, \"cost_creep_category\": \"suppliers\", \"sales_change\": 0.918, \"cost_change\": 0.605, \"cost_vs_sales_gap\": -0.313, \"top_customers\": [[\"Colegio Ejemplo Bilingüe\", 0.027], [\"Eventos Prueba SAS\", 0.018]], \"top2_customer_share\": 0.045, \"days_late_prior3\": null, \"days_late_recent3\": 0.0, \"days_late_change\": null, \"owner_pay_recent3\": 3600.0, \"surplus_before_owner_pay_recent3\": 13995.89, \"owner_pay_share_of_surplus\": 0.257, \"operating_net_per_month_prior3\": 2000.63, \"operating_net_per_month_recent3\": 5685.67, \"net_flow_change_vs_income\": 0.466, \"exact_duplicate_lines\": []} | Windows: prior3 = 2026-05..07, recent3 = 2026-08..10 (complete months). weeks_of_cover = cash on 2026-11-10 / average weekly money out in the last 91 days (own-account transfers and card payments excluded; card purchases included). thin_cushion must <1.5, must_not >3; idle_cash must >16, must_not <8. cost_creeping_up: largest recent3/prior3 change of a cost category worth >=5% of costs; must >=20%, must_not <=10%. costs_faster_than_sales: cost change minus sales change; must >=8 pts, must_not <=2 pts. few_customers: share of income (May-Oct) from the two largest named payers (card/cash deposits are anonymous); must >=25%, must_not <=16%. customers_paying_later: change in amount-weighted days late of invoice payments; must >=7 days, must_not <=2 or no invoiced customers. owner_pay_high: owner pay / surplus before owner pay in recent3; must >=0.8, must_not <=0.5. sales_slowing: must <=-10%, must_not >=-3%. net_flow_shrinking: change in monthly operating net (excl. owner pay, loans, equipment, own transfers) as a share of monthly income; must <=-5%, must_not >=-1%. duplicate_charge: must_not when no identical (date, description, amount) lines exist. Values between the two thresholds are judgement calls and appear in neither list. | cost_creeping_up: seasonal stock buying and temps before Halloween, not a trend (judgement) | costs_faster_than_sales: seasonal stock buying and temps before Halloween, not a trend (judgement) | net_flow_shrinking: Aug-Oct vs May-Jul compares a peak with a lull (judgement) | sales_slowing: the November drop is the normal post-Halloween slow season | risk_level rule: true lowest < 90% of the line -> act_now; 90-110% -> watch or act_now; 110-140% -> safe or watch; above -> safe."
+  }
+}

@@ -38,16 +38,21 @@ def parse_adjustment(raw: dict) -> Adjustment:
 
 
 def apply_adjustments(
-    items: list[ScheduledItem], adjustments: list[Adjustment], today: date, horizon_days: int = 56
+    items: list[ScheduledItem],
+    adjustments: list[Adjustment],
+    today: date,
+    horizon_days: int = 56,
+    weekly_sales: float = 0.0,
 ) -> list[ScheduledItem]:
+    """`weekly_sales`: the business's real average weekly sales, which a revenue change is a percent of."""
     result = [replace(item) for item in items]
     for adjustment in adjustments:
-        result = _apply_one(result, adjustment, today, horizon_days)
+        result = _apply_one(result, adjustment, today, horizon_days, weekly_sales)
     return result
 
 
 def _apply_one(
-    items: list[ScheduledItem], adj: Adjustment, today: date, horizon_days: int
+    items: list[ScheduledItem], adj: Adjustment, today: date, horizon_days: int, weekly_sales: float
 ) -> list[ScheduledItem]:
     p = adj.params
     if adj.type == "one_time_expense":
@@ -63,20 +68,25 @@ def _apply_one(
     if adj.type in ("move_item", "collect_early"):
         target = _find(items, p["label"])
         target.due_date = p["new_date"]
+        target.user_edited = True  # a later upload must not undo the owner's plan
         return items
     if adj.type == "remove_item":
         target = _find(items, p["label"])
         target.active = False
+        target.user_edited = True
         return items
     if adj.type == "recurring_change":
         target = _find(items, p["label"])
         target.amount += float(p["amount_delta"])
+        target.user_edited = True
         if p.get("start_date"):
             target.due_date = max(target.due_date, p["start_date"])
         return items
     if adj.type == "revenue_change":
+        if weekly_sales <= 0:
+            raise ValueError("There are no sales in your statement yet to change.")
         return items + _revenue_change_items(
-            float(p["percent"]), p.get("start_date") or today, today, horizon_days
+            float(p["percent"]), p.get("start_date") or today, today, horizon_days, weekly_sales
         )
     raise ValueError(f"Unhandled adjustment type {adj.type}")
 
@@ -90,7 +100,7 @@ def _find(items: list[ScheduledItem], label: str) -> ScheduledItem:
 
 
 def _revenue_change_items(
-    percent: float, start: date, today: date, horizon_days: int, weekly_sales: float = 5500.0
+    percent: float, start: date, today: date, horizon_days: int, weekly_sales: float
 ) -> list[ScheduledItem]:
     """Model a sales change as one weekly adjustment line (simple, explainable)."""
     weekly_delta = weekly_sales * percent / 100.0

@@ -10,6 +10,9 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any
 
+from aheadly.ai.categorizer import CATEGORIES
+from aheadly.ai.plan_text import PROPOSE_TOOL
+
 if TYPE_CHECKING:  # avoids a runtime import cycle (App Core builds the dispatcher)
     from aheadly.core.app_core import AppCore
 
@@ -77,7 +80,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "parameters": {
             "type": "object",
             "properties": {
-                "category": {"type": "string"},
+                "category": {"type": "string", "enum": list(CATEGORIES)},
                 "since": {"type": "string", "description": "ISO date"},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50},
             },
@@ -100,6 +103,7 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "description": "Open alerts with the facts behind them.",
         "parameters": {"type": "object", "properties": {}},
     },
+    PROPOSE_TOOL,
 ]
 
 
@@ -107,6 +111,8 @@ class ToolDispatcher:
     def __init__(self, core: "AppCore"):
         self._core = core
         self.last_scenario = None  # the UI renders a result card when a what-if ran
+        self.last_proposals: list = []  # plan items the chat proposed (roadmap 2.4); the owner adds them
+        self.last_question = ""  # what the owner wrote: proposed amounts must appear in it
 
     @property
     def schemas(self) -> list[dict]:
@@ -114,7 +120,7 @@ class ToolDispatcher:
 
     def scheduled_labels(self) -> list[str]:
         """Names of the business's scheduled items (the offline planner uses them when a provider is down)."""
-        return [item["description"] for item in self._core.planned_items()]
+        return self._core.scheduled_labels()
 
     def dispatch(self, name: str, arguments: dict) -> dict:
         """EAFP: run the tool, turn any failure into an error payload for the model."""
@@ -146,4 +152,12 @@ class ToolDispatcher:
             return result.summary()
         if name == "get_alerts":
             return {"alerts": core.alerts_as_dicts()}
+        if name == "propose_plan_items":
+            proposals = core.check_proposals(args, self.last_question)
+            self.last_proposals = proposals
+            return {
+                "proposed": [p.to_dict() for p in proposals],
+                "saved": False,
+                "note": "Not saved yet: the owner checks each item and presses Add.",
+            }
         raise ValueError(f"Unknown tool '{name}'")

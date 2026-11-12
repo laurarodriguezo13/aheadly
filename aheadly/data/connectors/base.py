@@ -18,6 +18,7 @@ class SyncPayload:
     balance: float
     transactions: list[Transaction]
     scheduled_items: list[ScheduledItem] = field(default_factory=list)
+    account_kind: str = "bank"  # bank | card (a card's balance is money owed, shown negative)
 
 
 class ConnectorNotConfigured(RuntimeError):

@@ -46,6 +46,19 @@ class ScheduledItem:
     id: int | None = None
     source: str = "demo"
     active: bool = True
+    # where it came from and how sure we are (roadmap 1.4; used by detection and the forecast page)
+    status: str = "user"  # detected (found in the statement) | confirmed (by the owner) | user (added)
+    certainty: str = "confirmed"  # confirmed | maybe
+    likelihood: float = 1.0  # for a maybe item: the chance it happens
+    category: str | None = None
+    match_key: str | None = None  # normalized payee, links it to the transactions it explains
+    end_date: date | None = None
+    user_edited: bool = False  # the owner changed it: detection never overwrites it again
+    paused: bool = False
+    # how much it moved in the past (roadmap 2.8, worked out at forecast time, not stored): the
+    # amount's spread as a share of it, and how many days early or late it usually comes
+    spread: float = 0.0
+    jitter_days: int = 0
 
 
 @dataclass
@@ -191,6 +204,7 @@ class ChatAnswer:
     tool_names: list[str] = field(default_factory=list)
     scenario: ScenarioResult | None = None
     used_fallback: bool = False
+    proposals: list = field(default_factory=list)  # plan items to confirm (roadmap 2.4), never saved yet
 
 
 def end_of_next_month(today: date) -> date:

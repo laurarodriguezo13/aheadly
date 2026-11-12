@@ -1,0 +1,843 @@
+{
+  "schema_version": 1,
+  "business": {
+    "slug": "estudio-lapiz-rojo",
+    "name": "Estudio Lápiz Rojo",
+    "type": "design studio",
+    "city": "Medellín",
+    "employees": 2,
+    "low_cash_line": 5000.0,
+    "story": "Healthy Medellín design studio with steady retainers and far more cash than it needs: no alerts, only idle cash."
+  },
+  "files": [
+    {
+      "path": "statements/account_statement_0932.csv",
+      "kind": "bank_statement",
+      "account": "Ahorros 0932",
+      "date_format": "YYYY-MM-DD",
+      "decimal": ".",
+      "newest_first": false,
+      "has_balance": true,
+      "first_date": "2025-11-11",
+      "last_date": "2026-11-10",
+      "lines": 594,
+      "unreadable_lines": 0,
+      "notes": "English layout; an empty Debit or Credit cell means zero; amounts with thousands commas are quoted."
+    }
+  ],
+  "import": {
+    "statement_end": "2026-11-10",
+    "closing_balance_by_account": {
+      "Ahorros 0932": 52400.0
+    },
+    "balance_to_type_if_no_column": null,
+    "total_cash": 52400.0,
+    "transactions_after_dedup": 594,
+    "duplicates_across_files": 0,
+    "balance_breaks": [],
+    "internal_transfers": [],
+    "notes": "Card accounts show a negative closing balance (= amount owed) and are not part of total_cash. transactions_after_dedup counts distinct real lines readable in at least one file (unreadable and missing lines excluded; genuine same-day duplicates kept)."
+  },
+  "categories": {
+    "monthly_totals": {
+      "2025-12": {
+        "sales": 10775.9,
+        "other_income": 18.11,
+        "payroll": -5565.95,
+        "owner_pay": -2800.0,
+        "rent": -740.0,
+        "utilities": -116.25,
+        "other": -686.52,
+        "taxes": -189.72,
+        "bank_fees": -47.31
+      },
+      "2026-01": {
+        "sales": 10427.99,
+        "other_income": 18.99,
+        "payroll": -4265.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -117.84,
+        "other": -489.0,
+        "taxes": -2144.7,
+        "bank_fees": -49.28
+      },
+      "2026-02": {
+        "sales": 11757.93,
+        "other_income": 19.53,
+        "payroll": -4265.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -121.78,
+        "other": -500.22,
+        "taxes": -193.22,
+        "bank_fees": -42.73
+      },
+      "2026-03": {
+        "sales": 11253.15,
+        "other_income": 22.88,
+        "payroll": -4265.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -118.62,
+        "other": -470.86,
+        "taxes": -2005.29,
+        "bank_fees": -48.65
+      },
+      "2026-04": {
+        "sales": 11684.66,
+        "other_income": 23.28,
+        "payroll": -4265.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -118.93,
+        "other": -489.51,
+        "taxes": -191.86,
+        "bank_fees": -41.48
+      },
+      "2026-05": {
+        "sales": 11767.03,
+        "other_income": 23.84,
+        "payroll": -4265.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -115.17,
+        "other": -446.32,
+        "taxes": -1899.54,
+        "bank_fees": -51.17
+      },
+      "2026-06": {
+        "sales": 12387.21,
+        "other_income": 25.46,
+        "payroll": -5955.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -116.15,
+        "other": -496.62,
+        "taxes": -179.33,
+        "bank_fees": -48.22
+      },
+      "2026-07": {
+        "sales": 12556.94,
+        "other_income": 25.44,
+        "payroll": -4265.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -122.72,
+        "other": -430.99,
+        "taxes": -2240.35,
+        "bank_fees": -52.36
+      },
+      "2026-08": {
+        "sales": 12548.5,
+        "other_income": 23.88,
+        "payroll": -4265.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -116.87,
+        "other": -457.2,
+        "taxes": -172.52,
+        "bank_fees": -43.87
+      },
+      "2026-09": {
+        "sales": 11903.3,
+        "other_income": 24.44,
+        "payroll": -4265.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -118.4,
+        "other": -469.78,
+        "taxes": -2243.44,
+        "bank_fees": -51.61
+      },
+      "2026-10": {
+        "sales": 12156.13,
+        "other_income": 27.05,
+        "payroll": -4265.56,
+        "owner_pay": -2800.0,
+        "rent": -780.0,
+        "utilities": -118.85,
+        "other": -491.25,
+        "taxes": -176.78,
+        "bank_fees": -41.44
+      }
+    },
+    "tolerance_pct": 5,
+    "notes": "Signed sums (money in +, money out -), complete months only, all accounts. For transfer_internal and card_payment only the sending side is counted; card purchases are counted in their own categories."
+  },
+  "recurring": [
+    {
+      "label": "Retainer Inversiones Ejemplo SAS",
+      "category": "sales",
+      "direction": "in",
+      "amount": 850.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-11",
+      "match_hint": "TRANSF RECIBIDA INVERSIONES EJEMPLO SAS",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Clínica Muestra",
+      "category": "sales",
+      "direction": "in",
+      "amount": 820.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF RECIBIDA CLINICA MUESTRA",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Hotel Simulado",
+      "category": "sales",
+      "direction": "in",
+      "amount": 790.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-12-11",
+      "match_hint": "TRANSF RECIBIDA HOTEL SIMULADO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Colegio Inventado",
+      "category": "sales",
+      "direction": "in",
+      "amount": 760.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF RECIBIDA COLEGIO INVENTADO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Agencia Demo Ltda",
+      "category": "sales",
+      "direction": "in",
+      "amount": 740.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF RECIBIDA AGENCIA DEMO LTDA",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Tienda Ejemplo",
+      "category": "sales",
+      "direction": "in",
+      "amount": 720.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF RECIBIDA TIENDA EJEMPLO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Fundación Muestra",
+      "category": "sales",
+      "direction": "in",
+      "amount": 700.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF RECIBIDA FUNDACION MUESTRA",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Óptica Demo",
+      "category": "sales",
+      "direction": "in",
+      "amount": 680.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-12-10",
+      "match_hint": "TRANSF RECIBIDA OPTICA DEMO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Restaurante Ficticio",
+      "category": "sales",
+      "direction": "in",
+      "amount": 650.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF RECIBIDA RESTAURANTE FICTICIO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Ferretería Prueba",
+      "category": "sales",
+      "direction": "in",
+      "amount": 620.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-13",
+      "match_hint": "TRANSF RECIBIDA FERRETERIA PRUEBA",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Gimnasio Ejemplo",
+      "category": "sales",
+      "direction": "in",
+      "amount": 590.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF RECIBIDA GIMNASIO EJEMPLO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Retainer Librería Simulada",
+      "category": "sales",
+      "direction": "in",
+      "amount": 560.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "around the 15th (invoice due date)",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF RECIBIDA LIBRERIA SIMULADA",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Payroll (twice a month)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 1690.0,
+      "amount_varies": false,
+      "cadence": "twice a month",
+      "day_rule": "15th and last business day (earlier business day)",
+      "next_date": "2026-11-13",
+      "match_hint": "PAGO NOMINA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Social security (PILA)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 885.56,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "9th (next business day)",
+      "next_date": "2026-12-09",
+      "match_hint": "PAGO PILA APORTES",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Owner pay",
+      "category": "owner_pay",
+      "direction": "out",
+      "amount": 2800.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "last business day",
+      "next_date": "2026-11-30",
+      "match_hint": "TRANSF A CTA AHORROS V EJEMPLO",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Rent",
+      "category": "rent",
+      "direction": "out",
+      "amount": 780.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "1st (next business day)",
+      "next_date": "2026-12-01",
+      "match_hint": "PAGO ARRIENDO OFICINA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Power & water (EPM)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 63.13,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "12th",
+      "next_date": "2026-11-12",
+      "match_hint": "PAGO EPM",
+      "confirmed_by_owner": false,
+      "tolerance": 9.47
+    },
+    {
+      "label": "Internet (Tigo Une)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 54.9,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "7th",
+      "next_date": "2026-12-07",
+      "match_hint": "PAGO TIGO UNE",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Adobe subscription",
+      "category": "other",
+      "direction": "out",
+      "amount": 89.99,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "3rd (any day of the week)",
+      "next_date": "2026-12-03",
+      "match_hint": "COMPRA ADOBE",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Figma subscription",
+      "category": "other",
+      "direction": "out",
+      "amount": 45.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "22nd (any day of the week)",
+      "next_date": "2026-11-22",
+      "match_hint": "COMPRA FIGMA",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Google Workspace",
+      "category": "other",
+      "direction": "out",
+      "amount": 36.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "1st (any day of the week)",
+      "next_date": "2026-12-01",
+      "match_hint": "COMPRA GOOGLE WORKSPACE",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Accountant (cryptic transfer)",
+      "category": "other",
+      "direction": "out",
+      "amount": 260.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "20th",
+      "next_date": "2026-11-20",
+      "match_hint": "TRANSF 0117 REF 40562",
+      "confirmed_by_owner": false,
+      "notes": "cryptic description; the owner explains it"
+    },
+    {
+      "label": "VAT (IVA, bimonthly)",
+      "category": "taxes",
+      "direction": "out",
+      "amount": 1911.24,
+      "amount_varies": true,
+      "cadence": "every 2 months",
+      "day_rule": "12th of odd months",
+      "next_date": "2026-11-12",
+      "match_hint": "PAGO DIAN IVA",
+      "confirmed_by_owner": false,
+      "tolerance": 286.69
+    },
+    {
+      "label": "Withholding tax (monthly)",
+      "category": "taxes",
+      "direction": "out",
+      "amount": 178.47,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "12th",
+      "next_date": "2026-11-12",
+      "match_hint": "PAGO DIAN RETENCION",
+      "confirmed_by_owner": false,
+      "tolerance": 26.77
+    },
+    {
+      "label": "Interest",
+      "category": "other_income",
+      "direction": "in",
+      "amount": 25.02,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "last day of the month",
+      "next_date": "2026-11-30",
+      "match_hint": "ABONO INTERESES",
+      "confirmed_by_owner": false,
+      "tolerance": 3.75
+    },
+    {
+      "label": "Account fee",
+      "category": "bank_fees",
+      "direction": "out",
+      "amount": 6.9,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "last business day",
+      "next_date": "2026-11-30",
+      "match_hint": "CUOTA MANEJO",
+      "confirmed_by_owner": false
+    }
+  ],
+  "one_offs_known": [
+    {
+      "label": "New laptop",
+      "amount": -1650.0,
+      "date": "2026-12-02",
+      "source": "files/upcoming_payments.csv",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Domain & hosting renewal",
+      "amount": -214.5,
+      "date": "2026-12-09",
+      "source": "files/upcoming_payments.csv",
+      "certainty": "likely"
+    }
+  ],
+  "owner_files": [
+    {
+      "path": "files/upcoming_payments.csv",
+      "kind": "upcoming_payments",
+      "rows": 2,
+      "total": -1864.5,
+      "overdue_rows": 0,
+      "notes": "All rows are payments; total is negative (money out)."
+    },
+    {
+      "path": "files/open_invoices.csv",
+      "kind": "receivables",
+      "rows": 10,
+      "total": 7010.0,
+      "overdue_rows": 0,
+      "notes": "November retainers not yet paid on 2026-11-10; none overdue."
+    }
+  ],
+  "onboarding_answers": {
+    "business_type": "design studio",
+    "low_cash_line": 5000.0,
+    "customers_pay": "12 clients on monthly retainers by bank transfer (invoice due on the 15th); project work paid by card through a payment link",
+    "busy_months": [],
+    "slow_months": [
+      "2026-12",
+      "2027-01"
+    ],
+    "owner_pay": {
+      "match_hint": "TRANSF A CTA AHORROS V EJEMPLO",
+      "is_owner_pay": true
+    },
+    "upcoming_in_own_words": [
+      "I'm buying a laptop for Isabela, about $1,650, on Dec 2",
+      "Our domain and hosting renew around Dec 9, roughly $215"
+    ],
+    "mystery_answers": {
+      "TRANSF 0117 REF 40562": "my accountant's monthly fee"
+    }
+  },
+  "hidden_future": {
+    "notes": "End-of-day total of the bank accounts (card debt not included) for the 8 weeks after the statement, from the same simulation. It includes day-to-day noise the app cannot know: compare level and timing with tolerance.",
+    "daily_balance": [
+      {
+        "date": "2026-11-11",
+        "balance": 53250.0
+      },
+      {
+        "date": "2026-11-12",
+        "balance": 52452.1
+      },
+      {
+        "date": "2026-11-13",
+        "balance": 52252.52
+      },
+      {
+        "date": "2026-11-14",
+        "balance": 52252.52
+      },
+      {
+        "date": "2026-11-15",
+        "balance": 52252.52
+      },
+      {
+        "date": "2026-11-16",
+        "balance": 52252.52
+      },
+      {
+        "date": "2026-11-17",
+        "balance": 57792.52
+      },
+      {
+        "date": "2026-11-18",
+        "balance": 58641.22
+      },
+      {
+        "date": "2026-11-19",
+        "balance": 58641.22
+      },
+      {
+        "date": "2026-11-20",
+        "balance": 58380.18
+      },
+      {
+        "date": "2026-11-21",
+        "balance": 58380.18
+      },
+      {
+        "date": "2026-11-22",
+        "balance": 58335.0
+      },
+      {
+        "date": "2026-11-23",
+        "balance": 58335.0
+      },
+      {
+        "date": "2026-11-24",
+        "balance": 58335.0
+      },
+      {
+        "date": "2026-11-25",
+        "balance": 58335.0
+      },
+      {
+        "date": "2026-11-26",
+        "balance": 58335.0
+      },
+      {
+        "date": "2026-11-27",
+        "balance": 58335.0
+      },
+      {
+        "date": "2026-11-28",
+        "balance": 58335.0
+      },
+      {
+        "date": "2026-11-29",
+        "balance": 58335.0
+      },
+      {
+        "date": "2026-11-30",
+        "balance": 53840.56
+      },
+      {
+        "date": "2026-12-01",
+        "balance": 53021.3
+      },
+      {
+        "date": "2026-12-02",
+        "balance": 51364.7
+      },
+      {
+        "date": "2026-12-03",
+        "balance": 51274.35
+      },
+      {
+        "date": "2026-12-04",
+        "balance": 51268.06
+      },
+      {
+        "date": "2026-12-05",
+        "balance": 51268.06
+      },
+      {
+        "date": "2026-12-06",
+        "balance": 51268.06
+      },
+      {
+        "date": "2026-12-07",
+        "balance": 51723.27
+      },
+      {
+        "date": "2026-12-08",
+        "balance": 51723.27
+      },
+      {
+        "date": "2026-12-09",
+        "balance": 50618.81
+      },
+      {
+        "date": "2026-12-10",
+        "balance": 51287.68
+      },
+      {
+        "date": "2026-12-11",
+        "balance": 52077.68
+      },
+      {
+        "date": "2026-12-12",
+        "balance": 52077.68
+      },
+      {
+        "date": "2026-12-13",
+        "balance": 52077.68
+      },
+      {
+        "date": "2026-12-14",
+        "balance": 54043.84
+      },
+      {
+        "date": "2026-12-15",
+        "balance": 54577.08
+      },
+      {
+        "date": "2026-12-16",
+        "balance": 56427.08
+      },
+      {
+        "date": "2026-12-17",
+        "balance": 56427.08
+      },
+      {
+        "date": "2026-12-18",
+        "balance": 55450.32
+      },
+      {
+        "date": "2026-12-19",
+        "balance": 55450.32
+      },
+      {
+        "date": "2026-12-20",
+        "balance": 55450.32
+      },
+      {
+        "date": "2026-12-21",
+        "balance": 55507.36
+      },
+      {
+        "date": "2026-12-22",
+        "balance": 55462.18
+      },
+      {
+        "date": "2026-12-23",
+        "balance": 55462.18
+      },
+      {
+        "date": "2026-12-24",
+        "balance": 55789.8
+      },
+      {
+        "date": "2026-12-25",
+        "balance": 55789.8
+      },
+      {
+        "date": "2026-12-26",
+        "balance": 55789.8
+      },
+      {
+        "date": "2026-12-27",
+        "balance": 55789.8
+      },
+      {
+        "date": "2026-12-28",
+        "balance": 56285.32
+      },
+      {
+        "date": "2026-12-29",
+        "balance": 56285.32
+      },
+      {
+        "date": "2026-12-30",
+        "balance": 56285.32
+      },
+      {
+        "date": "2026-12-31",
+        "balance": 51797.15
+      },
+      {
+        "date": "2027-01-01",
+        "balance": 51761.01
+      },
+      {
+        "date": "2027-01-02",
+        "balance": 51761.01
+      },
+      {
+        "date": "2027-01-03",
+        "balance": 51670.66
+      },
+      {
+        "date": "2027-01-04",
+        "balance": 52540.05
+      },
+      {
+        "date": "2027-01-05",
+        "balance": 52540.05
+      }
+    ],
+    "lowest": {
+      "date": "2026-12-09",
+      "balance": 50618.81
+    }
+  },
+  "expected": {
+    "risk_level": [
+      "safe"
+    ],
+    "alerts_must": [],
+    "alerts_must_not": [
+      "shortfall"
+    ],
+    "insights_must": [
+      "idle_cash"
+    ],
+    "insights_must_not": [
+      "thin_cushion",
+      "cost_creeping_up",
+      "costs_faster_than_sales",
+      "unusual_charge",
+      "duplicate_charge",
+      "new_recurring_charge",
+      "sales_slowing",
+      "few_customers",
+      "customers_paying_later",
+      "owner_pay_high",
+      "net_flow_shrinking"
+    ],
+    "fixes_that_work": [],
+    "what_ifs": [
+      {
+        "question": "What if I hire a third designer at $1,300 a month from December?",
+        "change": "+$650 payroll on 2026-12-15 and on 2026-12-31",
+        "lowest_balance_direction": "down",
+        "approx_change": -248.15,
+        "tolerance": 250.0,
+        "notes": "lowest $50,370.66 on 2027-01-03 (base case $50,618.81 on 2026-12-09)"
+      },
+      {
+        "question": "What if I move $30,000 into a 90-day term deposit next week?",
+        "change": "-$30,000 on 2026-11-17",
+        "lowest_balance_direction": "down",
+        "approx_change": -30000.0,
+        "tolerance": 6000.0,
+        "notes": "lowest $20,618.81 on 2026-12-09 (base case $50,618.81 on 2026-12-09)"
+      }
+    ],
+    "chat_questions": [
+      {
+        "question": "Will I have enough cash over the next two months?",
+        "answer_must_reflect": [
+          "yes, no shortfall expected",
+          "lowest about $50,618.81 around 2026-12-09, far above $5,000"
+        ]
+      },
+      {
+        "question": "How much could I safely put into a term deposit?",
+        "answer_must_reflect": [
+          "roughly $36,000.00 (judgement: accept 60%-140% of this)",
+          "keeps the $5,000 minimum plus about a month of costs"
+        ]
+      },
+      {
+        "question": "Is any client paying me later than before?",
+        "answer_must_reflect": [
+          "no; clients pay at the same point every month"
+        ]
+      }
+    ],
+    "timing_or_structural": "none",
+    "notes": "Insight metrics: {\"weeks_of_cover\": 24.31, \"cost_creep_max\": 0.032, \"cost_creep_category\": \"other\", \"sales_change\": -0.003, \"cost_change\": -0.147, \"cost_vs_sales_gap\": -0.144, \"top_customers\": [[\"Inversiones Ejemplo SAS\", 0.069], [\"Clínica Muestra\", 0.067]], \"top2_customer_share\": 0.136, \"days_late_prior3\": 0.9, \"days_late_recent3\": 1.0, \"days_late_change\": 0.1, \"owner_pay_recent3\": 8400.0, \"surplus_before_owner_pay_recent3\": 17044.61, \"owner_pay_share_of_surplus\": 0.493, \"operating_net_per_month_prior3\": 4586.76, \"operating_net_per_month_recent3\": 5681.53, \"net_flow_change_vs_income\": 0.089, \"exact_duplicate_lines\": []} | Windows: prior3 = 2026-05..07, recent3 = 2026-08..10 (complete months). weeks_of_cover = cash on 2026-11-10 / average weekly money out in the last 91 days (own-account transfers and card payments excluded; card purchases included). thin_cushion must <1.5, must_not >3; idle_cash must >16, must_not <8. cost_creeping_up: largest recent3/prior3 change of a cost category worth >=5% of costs; must >=20%, must_not <=10%. costs_faster_than_sales: cost change minus sales change; must >=8 pts, must_not <=2 pts. few_customers: share of income (May-Oct) from the two largest named payers (card/cash deposits are anonymous); must >=25%, must_not <=16%. customers_paying_later: change in amount-weighted days late of invoice payments; must >=7 days, must_not <=2 or no invoiced customers. owner_pay_high: owner pay / surplus before owner pay in recent3; must >=0.8, must_not <=0.5. sales_slowing: must <=-10%, must_not >=-3%. net_flow_shrinking: change in monthly operating net (excl. owner pay, loans, equipment, own transfers) as a share of monthly income; must <=-5%, must_not >=-1%. duplicate_charge: must_not when no identical (date, description, amount) lines exist. Values between the two thresholds are judgement calls and appear in neither list. | unusual_charge: no out-of-pattern charge was put in the data | new_recurring_charge: every subscription runs the whole year | risk_level rule: true lowest < 90% of the line -> act_now; 90-110% -> watch or act_now; 110-140% -> safe or watch; above -> safe."
+  }
+}

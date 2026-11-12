@@ -13,7 +13,8 @@ cd Aheadly
 uv sync                      # or: python3.11 -m venv .venv && pip install -r requirements.txt
 cp .env.example .env         # defaults: DEMO_MODE=true, LLM_PROVIDER=stub
 uv run streamlit run app.py
-# Accounts → upload a bank statement (+ optional upcoming payments)
+# Accounts → upload a bank statement (+ optional upcoming payments),
+#            or click "Try the example bakery" to see it with no files of your own
 ```
 
 Optional, a real language model: set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY=...` in `.env` (or `anthropic` + `ANTHROPIC_API_KEY`). Keys never go anywhere else.
@@ -21,7 +22,7 @@ Optional, a real language model: set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY=.
 Other commands:
 
 ```bash
-uv run pytest -q                      # 69 tests, all offline, a few seconds
+uv run pytest -q                      # all offline, a few seconds; ends with the test-business scorecard
 uv run black .                        # formatting
 uv run python -m aheadly.jobs.daily_run   # the daily check from the command line (cron-able)
 ```
@@ -56,13 +57,13 @@ Rules we keep: the UI only calls `AppCore`; only the Insight Translator talks to
 | Folder | What lives there |
 |---|---|
 | `app.py` | Streamlit entry: page config, sidebar logo, `st.navigation` |
-| `aheadly/ui/views/` | the six page scripts (Dashboard, Alerts, Ask Aheadly, What-if, Accounts, Settings) |
+| `aheadly/ui/views/` | the eight page scripts (Dashboard, Questions, Alerts, How we built it, Ask Aheadly, What-if, Accounts, Settings) |
 | `aheadly/ui/` | brand CSS on top of `.streamlit/config.toml`, all copy strings, cards, charts (weekly lows), cached bootstrap |
 | `aheadly/core/` | `AppCore` and the deterministic `alert_rules` |
 | `aheadly/ai/` | `ForecastEngine` + models, `scenarios`, `InsightTranslator`, `llm_client`, `tools`, `guardrails`, `prompts`, `templates` |
 | `aheadly/data/` | `schema.sql`, `Repository`, `seed_demo`, `connectors/` |
 | `aheadly/jobs/` | `daily_run` (cron-able) |
-| `tests/` | pytest: unit tests per component plus the demo script as a functional test |
+| `tests/` | pytest: unit tests per component, the demo script as a functional test, and `test_businesses.py`, which runs the six test businesses in `tests/businesses/` against their answer keys |
 | `docs/` | UML diagrams, milestone check-in |
 
 ## How the AI works
@@ -91,8 +92,10 @@ If Gemini answers 429 or 503 the client waits as long as Google asks and retries
 
 ## Uploading your data
 
-Accounts → upload a bank statement (CSV or Excel). Headers may be the app's (`date, description, amount[, category]`) or a bank's (`Date, Description, Debit, Credit, Balance`, Spanish accepted). If the file has a Balance column, the current balance is read from its newest row; otherwise type it in.
+Accounts → upload a bank statement (CSV or Excel). Headers may be the app's (`date, description, amount[, category]`) or a bank's (`Date, Description, Debit, Credit, Balance`, or Spanish: `Fecha, Descripción, Valor, Saldo`, `Fecha Movimiento`, `Monto`, `Saldo Disponible`…). Real bank exports are fine: comma, semicolon or tab separated, UTF-8 or Windows-1252, bank lines above the header, newest line first, dates like `10/11/2026` (day first), `11-nov-2026` or `2026-11-10`, amounts like `1.250,00`, `1,250.00`, `$ 2.000` or `(900,50)`. If the file has a Balance column, the current balance is read from its newest line and checked line by line; otherwise type it in. Lines that can't be read are left out and counted, never turned into $0. If the statement ends before yesterday, the forecast starts the day after it ends, and the app says so. Every line gets a category (sales, payroll, rent, utilities, suppliers, taxes, loan, bank fees...) from the bank's wording (DECISIONS #29); what the app can't tell, the owner answers once and it sticks. Other files you keep (upcoming payments, money customers owe you, an employee list, a ledger or your inventory, any layout) can be added with the statements or later; each is previewed and used only when you confirm (DECISIONS #32). Upcoming one-offs can also be typed in plain words on the "How we built it" page or in the chat ("I'm buying a new oven for $7,500 on Nov 14"): the app shows what it understood and adds nothing until you press Add (DECISIONS #31). Repeating payments and income (payroll, rent, utilities, taxes, a customer's monthly transfer) are found with their calendar rule and put on their real dates in the forecast (DECISIONS #30). The **How we built it** page lists everything the forecast counts on (where it starts, your normal week, regular and one-off payments, what's left out, next month at a glance); change, pause, end or remove any payment and it shows what that does to your lowest balance (DECISIONS #33). After the upload, **Questions** asks only what the statement can't show (what the business does, busy and slow months, whether a regular transfer is your own pay, what a few unplaced payees are, anything big coming up), one at a time and all skippable; the connected AI suggests categories from payee names only, and nothing changes until you save (DECISIONS #34). The dashboard says how much to trust the forecast (high, medium or low, and why) and asks about big one-off payments when none are known (DECISIONS #35).
 
-Optionally upload a second file with upcoming **one-off** payments and expected income (`Date, Description, Amount`, minus = money going out), for example a planned purchase, a big supplier order or a customer order. Regular payments (payroll, rent, suppliers) are learned from the statement, so don't list them again: they would be counted twice.
+Optionally upload a second file with upcoming **one-off** payments and expected income (`Date, Description, Amount`, minus = money going out, same formats as above), for example a planned purchase, a big supplier order or a customer order. Regular payments (payroll, rent, suppliers) are learned from the statement, so don't list them again: they would be counted twice.
 
-A sample bank export of the demo bakery is still in `data/samples/` for testing the import (regenerate it with `uv run python -m scripts.make_sample_export`).
+No files at hand? On Accounts, **Try the example bakery** loads Panadería La Esquina (`aheadly/examples/`): a year of statements from the test businesses plus the one-off payments its owner knows about. It is always shown as of the day after its statement ends (Nov 11, 2026). Settings → Start over goes back to your own upload.
+
+A sample bank export of the demo bakery is still in `data/samples/` for testing the import (regenerate it with `uv run python -m scripts.make_sample_export`). For realistic files, use the statements in `tests/businesses/<business>/statements/`: six test businesses made separately from the code, each with an answer key (DECISIONS #25).

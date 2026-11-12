@@ -64,8 +64,10 @@ def _forecast_frame(forecast: ForecastResult) -> pd.DataFrame:
     )
 
 
-def _with_today(rows: pd.DataFrame, today: date, balance: float, first: bool) -> pd.DataFrame:
-    anchor = pd.DataFrame({"date": [pd.Timestamp(today)], "customdata": ["Today"]})
+def _with_today(
+    rows: pd.DataFrame, today: date, balance: float, first: bool, label: str = "Today"
+) -> pd.DataFrame:
+    anchor = pd.DataFrame({"date": [pd.Timestamp(today)], "customdata": [label]})
     for column in ("balance", "p10", "p50", "p90"):
         if column in rows:
             anchor[column] = balance
@@ -98,7 +100,13 @@ def _band(fig: go.Figure, rows: pd.DataFrame, color: str, name: str) -> None:
 
 
 def _regions(
-    fig: go.Figure, low_cash_line: float, today: date, end: date, y_min: float, y_max: float
+    fig: go.Figure,
+    low_cash_line: float,
+    today: date,
+    end: date,
+    y_min: float,
+    y_max: float,
+    label: str = "Today",
 ) -> None:
     """Soft background: forecast window in lavender, the zone under the low cash line in rose."""
     fig.add_vrect(
@@ -116,7 +124,7 @@ def _regions(
     fig.add_vline(
         x=pd.Timestamp(today),
         line=dict(color="#B9B3D9", dash="dot", width=1),
-        annotation_text="Today",
+        annotation_text=label,
         annotation_position="top",
         annotation_font=dict(color=TOKENS["ink"], size=11),
     )
@@ -126,13 +134,22 @@ def _regions(
 
 
 def forecast_chart(
-    history: pd.DataFrame, forecast: ForecastResult | None, low_cash_line: float, today: date, balance: float
+    history: pd.DataFrame,
+    forecast: ForecastResult | None,
+    low_cash_line: float,
+    today: date,
+    balance: float,
+    start_label: str = "Today",
 ) -> go.Figure:
+    """`start_label`: what the line where the forecast begins is called ("Today" unless the
+    statement ends earlier)."""
     fig = go.Figure()
     values = [balance, low_cash_line]
     end = today + timedelta(days=56)
     if not history.empty:
-        past = _with_today(_weekly_lows(history, "balance", today), today, balance, first=False)
+        past = _with_today(
+            _weekly_lows(history, "balance", today), today, balance, first=False, label=start_label
+        )
         values += list(past["balance"])
         fig.add_trace(
             go.Scatter(
@@ -147,7 +164,11 @@ def forecast_chart(
         )
     if forecast:
         future = _with_today(
-            _weekly_lows(_forecast_frame(forecast), "p50", today), today, balance, first=True
+            _weekly_lows(_forecast_frame(forecast), "p50", today),
+            today,
+            balance,
+            first=True,
+            label=start_label,
         )
         values += list(future["p10"]) + list(future["p90"])
         end = forecast.horizon_end
@@ -178,7 +199,7 @@ def forecast_chart(
             )
         )
     pad = 0.12 * (max(values) - min(values) or 1000)
-    _regions(fig, low_cash_line, today, end, min(values) - pad, max(values) + pad)
+    _regions(fig, low_cash_line, today, end, min(values) - pad, max(values) + pad, start_label)
     fig.update_layout(**_LAYOUT)
     return fig
 

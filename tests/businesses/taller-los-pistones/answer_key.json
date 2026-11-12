@@ -1,0 +1,851 @@
+{
+  "schema_version": 1,
+  "business": {
+    "slug": "taller-los-pistones",
+    "name": "Taller Los Pistones",
+    "type": "auto repair shop",
+    "city": "Pereira",
+    "employees": 3,
+    "low_cash_line": 1800.0,
+    "story": "Pereira auto-repair shop with ordinary finances but the messiest files: preamble lines, unreadable rows, a missing line and an old account closed in August."
+  },
+  "files": [
+    {
+      "path": "statements/extracto_4589.csv",
+      "kind": "bank_statement",
+      "account": "Ahorros 4589",
+      "date_format": "DD/MM/YYYY",
+      "decimal": ",",
+      "newest_first": true,
+      "has_balance": true,
+      "first_date": "2025-11-11",
+      "last_date": "2026-11-10",
+      "lines": 840,
+      "unreadable_lines": 4,
+      "notes": "Six preamble lines (bank, account, holder, period, final balance, blank) above the header; Windows-1252; amounts like '$ 2.000' or '-$ 1.234,56' (no decimals when the cents are zero)."
+    },
+    {
+      "path": "statements/cuenta_vieja_1180_hasta_agosto.csv",
+      "kind": "bank_statement",
+      "account": "Ahorros 1180",
+      "date_format": "YYYY-MM-DD",
+      "decimal": ",",
+      "newest_first": false,
+      "has_balance": true,
+      "first_date": "2025-11-13",
+      "last_date": "2026-08-28",
+      "lines": 46,
+      "unreadable_lines": 0,
+      "notes": "Older statement on purpose: the account was closed on 2026-08-28 (final balance 0,00)."
+    }
+  ],
+  "import": {
+    "statement_end": "2026-11-10",
+    "closing_balance_by_account": {
+      "Ahorros 4589": 7900.0,
+      "Ahorros 1180": 0.0
+    },
+    "balance_to_type_if_no_column": null,
+    "total_cash": 7900.0,
+    "transactions_after_dedup": 882,
+    "duplicates_across_files": 0,
+    "balance_breaks": [
+      {
+        "file": "statements/extracto_4589.csv",
+        "first_date": "2026-06-17"
+      }
+    ],
+    "internal_transfers": [
+      {
+        "date": "2025-11-14",
+        "amount": 1400.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2025-11-27",
+        "amount": 1500.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2025-12-16",
+        "amount": 1000.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2025-12-29",
+        "amount": 1200.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-01-15",
+        "amount": 1200.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-01-30",
+        "amount": 1100.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-02-11",
+        "amount": 1400.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-02-26",
+        "amount": 1200.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-03-10",
+        "amount": 1500.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-03-31",
+        "amount": 1700.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-04-10",
+        "amount": 1000.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-04-27",
+        "amount": 1000.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-05-08",
+        "amount": 900.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-05-29",
+        "amount": 1200.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-06-16",
+        "amount": 1400.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-06-30",
+        "amount": 1000.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-07-14",
+        "amount": 1500.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-07-30",
+        "amount": 1200.0,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      },
+      {
+        "date": "2026-08-28",
+        "amount": 1374.69,
+        "from": "Ahorros 1180",
+        "to": "Ahorros 4589"
+      }
+    ],
+    "notes": "Card accounts show a negative closing balance (= amount owed) and are not part of total_cash. transactions_after_dedup counts distinct real lines readable in at least one file (unreadable and missing lines excluded; genuine same-day duplicates kept)."
+  },
+  "categories": {
+    "monthly_totals": {
+      "2025-12": {
+        "sales": 10871.93,
+        "transfer_internal": -2200.0,
+        "bank_fees": -62.99,
+        "payroll": -4316.67,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -287.98,
+        "suppliers": -4717.08,
+        "loan": -285.0,
+        "taxes": -780.6,
+        "other": -105.97
+      },
+      "2026-01": {
+        "sales": 10573.57,
+        "transfer_internal": -2300.0,
+        "bank_fees": -50.56,
+        "payroll": -3800.0,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -282.92,
+        "suppliers": -3541.37,
+        "loan": -285.0,
+        "other": -83.66
+      },
+      "2026-02": {
+        "sales": 10933.25,
+        "transfer_internal": -2600.0,
+        "bank_fees": -59.13,
+        "payroll": -3040.0,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -297.84,
+        "suppliers": -3907.47,
+        "loan": -285.0,
+        "taxes": -665.63
+      },
+      "2026-03": {
+        "sales": 11144.27,
+        "transfer_internal": -3200.0,
+        "bank_fees": -55.02,
+        "payroll": -3040.0,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -295.84,
+        "suppliers": -4029.98,
+        "loan": -285.0
+      },
+      "2026-04": {
+        "sales": 11364.62,
+        "transfer_internal": -2000.0,
+        "bank_fees": -60.05,
+        "payroll": -3040.0,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -279.37,
+        "suppliers": -4544.33,
+        "loan": -285.0,
+        "taxes": -672.98,
+        "other": -35.68
+      },
+      "2026-05": {
+        "sales": 10277.25,
+        "transfer_internal": -2100.0,
+        "bank_fees": -53.43,
+        "payroll": -3800.0,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -273.56,
+        "suppliers": -4208.91,
+        "loan": -285.0,
+        "other": -137.61
+      },
+      "2026-06": {
+        "sales": 9967.83,
+        "transfer_internal": -2400.0,
+        "bank_fees": -57.06,
+        "payroll": -4686.67,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -271.14,
+        "suppliers": -3593.69,
+        "loan": -285.0,
+        "taxes": -668.37,
+        "other": -112.14
+      },
+      "2026-07": {
+        "sales": 11405.29,
+        "transfer_internal": -2700.0,
+        "bank_fees": -54.57,
+        "payroll": -3040.0,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -292.1,
+        "suppliers": -4618.35,
+        "loan": -285.0
+      },
+      "2026-08": {
+        "sales": 10561.23,
+        "payroll": -3800.0,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -290.03,
+        "suppliers": -3848.18,
+        "loan": -285.0,
+        "taxes": -635.99,
+        "bank_fees": -51.9,
+        "other": -16.77,
+        "transfer_internal": -1374.69
+      },
+      "2026-09": {
+        "sales": 12181.13,
+        "payroll": -3040.0,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -283.8,
+        "suppliers": -5067.96,
+        "loan": -285.0,
+        "bank_fees": -53.33
+      },
+      "2026-10": {
+        "sales": 11946.27,
+        "payroll": -3800.0,
+        "owner_pay": -1300.0,
+        "rent": -1100.0,
+        "utilities": -290.15,
+        "suppliers": -3846.68,
+        "loan": -285.0,
+        "taxes": -675.48,
+        "bank_fees": -58.82,
+        "other": -713.96
+      }
+    },
+    "tolerance_pct": 5,
+    "notes": "Signed sums (money in +, money out -), complete months only, all accounts. For transfer_internal and card_payment only the sending side is counted; card purchases are counted in their own categories."
+  },
+  "recurring": [
+    {
+      "label": "Card sales",
+      "category": "sales",
+      "direction": "in",
+      "amount": 282.57,
+      "amount_varies": true,
+      "cadence": "daily",
+      "day_rule": "Monday to Saturday (closed Sundays and holidays)",
+      "next_date": "2026-11-11",
+      "match_hint": "ABONO VENTAS DATAFONO",
+      "confirmed_by_owner": false,
+      "tolerance": 92.87
+    },
+    {
+      "label": "Insurance claims (Aseguradora Ejemplo)",
+      "category": "sales",
+      "direction": "in",
+      "amount": 1469.4,
+      "amount_varies": true,
+      "cadence": "twice a month",
+      "day_rule": "around the 10th and the 25th",
+      "next_date": "2026-11-11",
+      "match_hint": "TRANSF RECIBIDA ASEGURADORA EJEMPLO",
+      "confirmed_by_owner": false,
+      "tolerance": 295.87,
+      "notes": "into Ahorros 1180 until July 2026, into Ahorros 4589 since August"
+    },
+    {
+      "label": "Payroll (weekly, Saturday)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 760.0,
+      "amount_varies": false,
+      "cadence": "weekly",
+      "day_rule": "Saturday",
+      "next_date": "2026-11-14",
+      "match_hint": "PAGO NOMINA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Prima (June and December bonus)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 1646.67,
+      "amount_varies": false,
+      "cadence": "twice a year",
+      "day_rule": "last Friday on or before Jun 30 and Dec 20",
+      "next_date": "2026-12-18",
+      "match_hint": "PAGO NOMINA PRIMA",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Owner pay",
+      "category": "owner_pay",
+      "direction": "out",
+      "amount": 650.0,
+      "amount_varies": false,
+      "cadence": "twice a month",
+      "day_rule": "5th and 20th (next business day)",
+      "next_date": "2026-11-20",
+      "match_hint": "TRANSF A CTA AHORROS O SIMULADO",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Rent",
+      "category": "rent",
+      "direction": "out",
+      "amount": 1100.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "10th (next business day)",
+      "next_date": "2026-12-10",
+      "match_hint": "PAGO ARRIENDO BODEGA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Electricity",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 194.01,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "6th",
+      "next_date": "2026-12-07",
+      "match_hint": "PAGO ENERGIA DE PEREIRA",
+      "confirmed_by_owner": false,
+      "tolerance": 29.1
+    },
+    {
+      "label": "Water",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 54.68,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "9th",
+      "next_date": "2026-12-09",
+      "match_hint": "PAGO AGUAS Y AGUAS",
+      "confirmed_by_owner": false,
+      "tolerance": 8.2
+    },
+    {
+      "label": "Internet (Tigo)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 38.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "4th",
+      "next_date": "2026-12-04",
+      "match_hint": "PAGO TIGO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Parts supplier (weekly)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 827.14,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Wednesday",
+      "next_date": "2026-11-11",
+      "match_hint": "PAGO PSE AUTOPARTES DEL EJE",
+      "confirmed_by_owner": false,
+      "tolerance": 211.9
+    },
+    {
+      "label": "Lubricants (monthly)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 424.18,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "12th",
+      "next_date": "2026-11-12",
+      "match_hint": "PAGO PSE LUBRICANTES PRUEBA",
+      "confirmed_by_owner": false,
+      "tolerance": 63.63
+    },
+    {
+      "label": "Car-lift loan",
+      "category": "loan",
+      "direction": "out",
+      "amount": 285.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "16th",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF 0078 REF 55120",
+      "confirmed_by_owner": false,
+      "notes": "cryptic description; the owner explains it"
+    },
+    {
+      "label": "VAT (IVA, bimonthly)",
+      "category": "taxes",
+      "direction": "out",
+      "amount": 683.18,
+      "amount_varies": true,
+      "cadence": "every 2 months",
+      "day_rule": "13th of even months",
+      "next_date": "2026-12-14",
+      "match_hint": "PAGO DIAN IVA",
+      "confirmed_by_owner": false,
+      "tolerance": 102.48
+    },
+    {
+      "label": "Account fee",
+      "category": "bank_fees",
+      "direction": "out",
+      "amount": 5.2,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "last business day",
+      "next_date": "2026-11-30",
+      "match_hint": "CUOTA MANEJO",
+      "confirmed_by_owner": false
+    }
+  ],
+  "one_offs_known": [
+    {
+      "label": "Insurance claims (Aseguradora Ejemplo)",
+      "amount": 1341.03,
+      "date": "2026-11-11",
+      "source": "files/reclamaciones_pendientes.xlsx",
+      "certainty": "likely"
+    },
+    {
+      "label": "Insurance claims (Aseguradora Ejemplo)",
+      "amount": 1165.6,
+      "date": "2026-11-26",
+      "source": "files/reclamaciones_pendientes.xlsx",
+      "certainty": "likely"
+    },
+    {
+      "label": "Insurance claims (Aseguradora Ejemplo)",
+      "amount": 1217.03,
+      "date": "2026-12-14",
+      "source": "files/reclamaciones_pendientes.xlsx",
+      "certainty": "likely"
+    },
+    {
+      "label": "Insurance claims (Aseguradora Ejemplo)",
+      "amount": 1495.93,
+      "date": "2026-12-22",
+      "source": "files/reclamaciones_pendientes.xlsx",
+      "certainty": "likely"
+    }
+  ],
+  "owner_files": [
+    {
+      "path": "files/mecanicos.csv",
+      "kind": "employees",
+      "rows": 3,
+      "total": 760.0,
+      "overdue_rows": 0,
+      "notes": "total = weekly payroll, paid every Saturday as one PAGO NOMINA line"
+    },
+    {
+      "path": "files/reclamaciones_pendientes.xlsx",
+      "kind": "receivables",
+      "rows": 5,
+      "total": 6199.59,
+      "overdue_rows": 1,
+      "notes": "Claims filed with the insurer. SIN-26117 is disputed and is never paid in the hidden future; the others are paid on their expected dates."
+    }
+  ],
+  "onboarding_answers": {
+    "business_type": "auto repair shop",
+    "low_cash_line": 1800.0,
+    "customers_pay": "drivers pay by card or Nequi; an insurance company pays repair claims by transfer about twice a month",
+    "busy_months": [],
+    "slow_months": [],
+    "owner_pay": {
+      "match_hint": "TRANSF A CTA AHORROS O SIMULADO",
+      "is_owner_pay": true
+    },
+    "upcoming_in_own_words": [
+      "The insurer still owes me several claims (see my file)"
+    ],
+    "mystery_answers": {
+      "TRANSF 0078 REF 55120": "loan for the car lift",
+      "TRANSF INTERBANCARIA RECIBIDA 1180": "money from my old account at the other bank (closed in August)"
+    }
+  },
+  "hidden_future": {
+    "notes": "End-of-day total of the bank accounts (card debt not included) for the 8 weeks after the statement, from the same simulation. It includes day-to-day noise the app cannot know: compare level and timing with tolerance.",
+    "daily_balance": [
+      {
+        "date": "2026-11-11",
+        "balance": 8731.26
+      },
+      {
+        "date": "2026-11-12",
+        "balance": 8508.68
+      },
+      {
+        "date": "2026-11-13",
+        "balance": 8774.14
+      },
+      {
+        "date": "2026-11-14",
+        "balance": 8258.43
+      },
+      {
+        "date": "2026-11-15",
+        "balance": 8258.43
+      },
+      {
+        "date": "2026-11-16",
+        "balance": 8258.43
+      },
+      {
+        "date": "2026-11-17",
+        "balance": 8336.28
+      },
+      {
+        "date": "2026-11-18",
+        "balance": 7632.36
+      },
+      {
+        "date": "2026-11-19",
+        "balance": 8501.96
+      },
+      {
+        "date": "2026-11-20",
+        "balance": 8661.57
+      },
+      {
+        "date": "2026-11-21",
+        "balance": 8073.99
+      },
+      {
+        "date": "2026-11-22",
+        "balance": 8073.99
+      },
+      {
+        "date": "2026-11-23",
+        "balance": 9353.11
+      },
+      {
+        "date": "2026-11-24",
+        "balance": 9596.92
+      },
+      {
+        "date": "2026-11-25",
+        "balance": 8824.52
+      },
+      {
+        "date": "2026-11-26",
+        "balance": 10682.11
+      },
+      {
+        "date": "2026-11-27",
+        "balance": 11019.41
+      },
+      {
+        "date": "2026-11-28",
+        "balance": 10409.91
+      },
+      {
+        "date": "2026-11-29",
+        "balance": 10409.91
+      },
+      {
+        "date": "2026-11-30",
+        "balance": 10727.77
+      },
+      {
+        "date": "2026-12-01",
+        "balance": 11565.16
+      },
+      {
+        "date": "2026-12-02",
+        "balance": 10890.5
+      },
+      {
+        "date": "2026-12-03",
+        "balance": 11124.86
+      },
+      {
+        "date": "2026-12-04",
+        "balance": 11414.1
+      },
+      {
+        "date": "2026-12-05",
+        "balance": 10897.69
+      },
+      {
+        "date": "2026-12-06",
+        "balance": 10897.69
+      },
+      {
+        "date": "2026-12-07",
+        "balance": 10319.35
+      },
+      {
+        "date": "2026-12-08",
+        "balance": 10319.35
+      },
+      {
+        "date": "2026-12-09",
+        "balance": 10091.95
+      },
+      {
+        "date": "2026-12-10",
+        "balance": 9204.32
+      },
+      {
+        "date": "2026-12-11",
+        "balance": 9823.69
+      },
+      {
+        "date": "2026-12-12",
+        "balance": 9258.69
+      },
+      {
+        "date": "2026-12-13",
+        "balance": 9258.69
+      },
+      {
+        "date": "2026-12-14",
+        "balance": 9856.38
+      },
+      {
+        "date": "2026-12-15",
+        "balance": 10121.35
+      },
+      {
+        "date": "2026-12-16",
+        "balance": 9405.44
+      },
+      {
+        "date": "2026-12-17",
+        "balance": 9705.54
+      },
+      {
+        "date": "2026-12-18",
+        "balance": 8305.92
+      },
+      {
+        "date": "2026-12-19",
+        "balance": 7805.02
+      },
+      {
+        "date": "2026-12-20",
+        "balance": 7805.02
+      },
+      {
+        "date": "2026-12-21",
+        "balance": 7339.76
+      },
+      {
+        "date": "2026-12-22",
+        "balance": 9154.37
+      },
+      {
+        "date": "2026-12-23",
+        "balance": 9015.71
+      },
+      {
+        "date": "2026-12-24",
+        "balance": 9381.25
+      },
+      {
+        "date": "2026-12-25",
+        "balance": 9381.25
+      },
+      {
+        "date": "2026-12-26",
+        "balance": 8847.82
+      },
+      {
+        "date": "2026-12-27",
+        "balance": 8847.82
+      },
+      {
+        "date": "2026-12-28",
+        "balance": 9086.49
+      },
+      {
+        "date": "2026-12-29",
+        "balance": 9307.45
+      },
+      {
+        "date": "2026-12-30",
+        "balance": 8588.81
+      },
+      {
+        "date": "2026-12-31",
+        "balance": 8796.88
+      },
+      {
+        "date": "2027-01-01",
+        "balance": 8796.88
+      },
+      {
+        "date": "2027-01-02",
+        "balance": 8187.14
+      },
+      {
+        "date": "2027-01-03",
+        "balance": 8187.14
+      },
+      {
+        "date": "2027-01-04",
+        "balance": 9063.27
+      },
+      {
+        "date": "2027-01-05",
+        "balance": 8641.4
+      }
+    ],
+    "lowest": {
+      "date": "2026-12-21",
+      "balance": 7339.76
+    }
+  },
+  "expected": {
+    "risk_level": [
+      "safe"
+    ],
+    "alerts_must": [],
+    "alerts_must_not": [
+      "shortfall"
+    ],
+    "insights_must": [
+      "unusual_charge",
+      "owner_pay_high"
+    ],
+    "insights_must_not": [
+      "thin_cushion",
+      "cost_creeping_up",
+      "costs_faster_than_sales",
+      "duplicate_charge",
+      "sales_slowing",
+      "customers_paying_later",
+      "net_flow_shrinking",
+      "idle_cash"
+    ],
+    "fixes_that_work": [],
+    "what_ifs": [
+      {
+        "question": "What if the insurer pays two weeks late from now on?",
+        "change": "every insurer payment after 2026-11-10 moves 14 days later",
+        "lowest_balance_direction": "down",
+        "approx_change": -1217.03,
+        "tolerance": 250.0,
+        "notes": "lowest $6,122.73 on 2026-12-21 (base case $7,339.76 on 2026-12-21)"
+      }
+    ],
+    "chat_questions": [
+      {
+        "question": "How much money do I have?",
+        "answer_must_reflect": [
+          "$7,900.00 in Ahorros 4589 on 2026-11-10",
+          "the old account Ahorros 1180 was closed on 2026-08-28",
+          "the sweeps from 1180 are not income"
+        ]
+      },
+      {
+        "question": "What is COMPRA INTERNACIONAL MKTPLACE*ZX81?",
+        "answer_must_reflect": [
+          "a one-off charge of $689.30 on 2026-10-27 that matches nothing before it; worth checking with the bank"
+        ]
+      },
+      {
+        "question": "Is anything wrong with my bank file?",
+        "answer_must_reflect": [
+          "the balance stops adding up on 2026-06-17: a line is missing",
+          "4 rows could not be read"
+        ]
+      }
+    ],
+    "timing_or_structural": "none",
+    "notes": "Insight metrics: {\"weeks_of_cover\": 3.04, \"cost_creep_max\": 0.028, \"cost_creep_category\": \"suppliers\", \"sales_change\": 0.096, \"cost_change\": 0.021, \"cost_vs_sales_gap\": -0.075, \"top_customers\": [[\"Aseguradora Ejemplo SA\", 0.247]], \"top2_customer_share\": 0.247, \"days_late_prior3\": null, \"days_late_recent3\": null, \"days_late_change\": null, \"owner_pay_recent3\": 3900.0, \"surplus_before_owner_pay_recent3\": 4060.58, \"owner_pay_share_of_surplus\": 0.96, \"operating_net_per_month_prior3\": 827.59, \"operating_net_per_month_recent3\": 1638.52, \"net_flow_change_vs_income\": 0.077, \"exact_duplicate_lines\": []} | Windows: prior3 = 2026-05..07, recent3 = 2026-08..10 (complete months). weeks_of_cover = cash on 2026-11-10 / average weekly money out in the last 91 days (own-account transfers and card payments excluded; card purchases included). thin_cushion must <1.5, must_not >3; idle_cash must >16, must_not <8. cost_creeping_up: largest recent3/prior3 change of a cost category worth >=5% of costs; must >=20%, must_not <=10%. costs_faster_than_sales: cost change minus sales change; must >=8 pts, must_not <=2 pts. few_customers: share of income (May-Oct) from the two largest named payers (card/cash deposits are anonymous); must >=25%, must_not <=16%. customers_paying_later: change in amount-weighted days late of invoice payments; must >=7 days, must_not <=2 or no invoiced customers. owner_pay_high: owner pay / surplus before owner pay in recent3; must >=0.8, must_not <=0.5. sales_slowing: must <=-10%, must_not >=-3%. net_flow_shrinking: change in monthly operating net (excl. owner pay, loans, equipment, own transfers) as a share of monthly income; must <=-5%, must_not >=-1%. duplicate_charge: must_not when no identical (date, description, amount) lines exist. Values between the two thresholds are judgement calls and appear in neither list. | risk_level rule: true lowest < 90% of the line -> act_now; 90-110% -> watch or act_now; 110-140% -> safe or watch; above -> safe."
+  }
+}

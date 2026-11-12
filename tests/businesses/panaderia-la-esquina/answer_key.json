@@ -1,0 +1,857 @@
+{
+  "schema_version": 1,
+  "business": {
+    "slug": "panaderia-la-esquina",
+    "name": "Panadería La Esquina",
+    "type": "bakery",
+    "city": "Bogotá",
+    "employees": 6,
+    "low_cash_line": 2000.0,
+    "story": "Bogotá bakery whose new oven drains its cushion, so cash dips below $2,000 in mid-December until two cafés pay their Christmas orders."
+  },
+  "files": [
+    {
+      "path": "statements/extracto_ahorros_4471_2025-11_2026-05.csv",
+      "kind": "bank_statement",
+      "account": "Ahorros 4471",
+      "date_format": "DD/MM/YYYY",
+      "decimal": ",",
+      "newest_first": true,
+      "has_balance": true,
+      "first_date": "2025-11-11",
+      "last_date": "2026-05-15",
+      "lines": 623,
+      "unreadable_lines": 0,
+      "notes": "Windows-1252 encoding; overlaps the next file 2026-05-01..2026-05-15"
+    },
+    {
+      "path": "statements/extracto_ahorros_4471_2026-05_2026-11.csv",
+      "kind": "bank_statement",
+      "account": "Ahorros 4471",
+      "date_format": "DD/MM/YYYY",
+      "decimal": ",",
+      "newest_first": true,
+      "has_balance": true,
+      "first_date": "2026-05-01",
+      "last_date": "2026-11-10",
+      "lines": 641,
+      "unreadable_lines": 0,
+      "notes": "UTF-8; overlaps the previous file 2026-05-01..2026-05-15"
+    }
+  ],
+  "import": {
+    "statement_end": "2026-11-10",
+    "closing_balance_by_account": {
+      "Ahorros 4471": 8200.0
+    },
+    "balance_to_type_if_no_column": null,
+    "total_cash": 8200.0,
+    "transactions_after_dedup": 1217,
+    "duplicates_across_files": 47,
+    "balance_breaks": [],
+    "internal_transfers": [],
+    "notes": "Card accounts show a negative closing balance (= amount owed) and are not part of total_cash. transactions_after_dedup counts distinct real lines readable in at least one file (unreadable and missing lines excluded; genuine same-day duplicates kept)."
+  },
+  "categories": {
+    "monthly_totals": {
+      "2025-12": {
+        "sales": 31178.18,
+        "payroll": -7517.41,
+        "suppliers": -11894.39,
+        "rent": -860.0,
+        "utilities": -437.32,
+        "loan": -310.0,
+        "bank_fees": -99.93,
+        "other": -46.11,
+        "owner_pay": -2760.0
+      },
+      "2026-01": {
+        "sales": 14420.83,
+        "payroll": -6656.0,
+        "suppliers": -4248.65,
+        "rent": -860.0,
+        "utilities": -353.84,
+        "loan": -310.0,
+        "taxes": -154.7,
+        "bank_fees": -69.03,
+        "other": -72.1,
+        "owner_pay": -3450.0
+      },
+      "2026-02": {
+        "sales": 14041.81,
+        "payroll": -5324.8,
+        "suppliers": -3981.51,
+        "rent": -900.0,
+        "utilities": -444.32,
+        "loan": -310.0,
+        "bank_fees": -61.32,
+        "other": -30.4,
+        "owner_pay": -2760.0
+      },
+      "2026-03": {
+        "sales": 16144.39,
+        "payroll": -5324.8,
+        "suppliers": -8048.28,
+        "rent": -900.0,
+        "utilities": -356.23,
+        "loan": -310.0,
+        "taxes": -163.67,
+        "bank_fees": -76.37,
+        "other": -76.63,
+        "owner_pay": -2760.0
+      },
+      "2026-04": {
+        "sales": 16211.18,
+        "payroll": -6656.0,
+        "suppliers": -4918.94,
+        "rent": -900.0,
+        "utilities": -461.03,
+        "loan": -310.0,
+        "bank_fees": -76.5,
+        "equipment": -640.0,
+        "other": -98.49,
+        "owner_pay": -3450.0
+      },
+      "2026-05": {
+        "sales": 15884.03,
+        "payroll": -5324.8,
+        "suppliers": -3992.79,
+        "rent": -900.0,
+        "utilities": -375.69,
+        "loan": -310.0,
+        "taxes": -150.13,
+        "bank_fees": -61.34,
+        "other": -75.17,
+        "owner_pay": -2760.0
+      },
+      "2026-06": {
+        "sales": 15886.02,
+        "payroll": -8209.07,
+        "suppliers": -8475.52,
+        "rent": -900.0,
+        "utilities": -479.68,
+        "loan": -310.0,
+        "bank_fees": -89.57,
+        "other": -103.28,
+        "owner_pay": -2760.0
+      },
+      "2026-07": {
+        "sales": 16573.23,
+        "payroll": -6656.0,
+        "suppliers": -4895.16,
+        "rent": -900.0,
+        "utilities": -366.7,
+        "loan": -310.0,
+        "taxes": -164.75,
+        "bank_fees": -71.99,
+        "other": -104.89,
+        "owner_pay": -3450.0
+      },
+      "2026-08": {
+        "sales": 16578.63,
+        "payroll": -5324.8,
+        "suppliers": -4266.01,
+        "rent": -900.0,
+        "utilities": -482.46,
+        "loan": -310.0,
+        "bank_fees": -60.97,
+        "other": -53.71,
+        "owner_pay": -2760.0
+      },
+      "2026-09": {
+        "sales": 15821.66,
+        "payroll": -5324.8,
+        "suppliers": -8729.54,
+        "rent": -900.0,
+        "utilities": -379.76,
+        "loan": -310.0,
+        "taxes": -137.86,
+        "bank_fees": -79.24,
+        "other": -120.79,
+        "owner_pay": -2760.0
+      },
+      "2026-10": {
+        "sales": 16373.67,
+        "payroll": -6656.0,
+        "suppliers": -4396.26,
+        "rent": -900.0,
+        "utilities": -494.3,
+        "loan": -310.0,
+        "bank_fees": -70.56,
+        "owner_pay": -3450.0
+      }
+    },
+    "tolerance_pct": 5,
+    "notes": "Signed sums (money in +, money out -), complete months only, all accounts. For transfer_internal and card_payment only the sending side is counted; card purchases are counted in their own categories."
+  },
+  "recurring": [
+    {
+      "label": "Card sales",
+      "category": "sales",
+      "direction": "in",
+      "amount": 469.66,
+      "amount_varies": true,
+      "cadence": "daily",
+      "day_rule": "every day (smaller on Sundays and holidays)",
+      "next_date": "2026-11-11",
+      "match_hint": "ABONO VENTAS DATAFONO",
+      "confirmed_by_owner": false,
+      "tolerance": 121.92
+    },
+    {
+      "label": "Café El Tinto Feliz (weekly)",
+      "category": "sales",
+      "direction": "in",
+      "amount": 354.39,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Monday (next business day if a holiday)",
+      "next_date": "2026-11-17",
+      "match_hint": "TRANSF RECIBIDA CAFE EL TINTO FELIZ",
+      "confirmed_by_owner": true,
+      "tolerance": 53.16
+    },
+    {
+      "label": "Café La Molienda Azul (weekly)",
+      "category": "sales",
+      "direction": "in",
+      "amount": 299.63,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Thursday",
+      "next_date": "2026-11-12",
+      "match_hint": "TRANSF RECIBIDA CAFE MOLIENDA AZUL",
+      "confirmed_by_owner": true,
+      "tolerance": 44.94
+    },
+    {
+      "label": "Payroll",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 1331.2,
+      "amount_varies": false,
+      "cadence": "weekly",
+      "day_rule": "Friday (Thursday if Friday is a holiday)",
+      "next_date": "2026-11-13",
+      "match_hint": "PAGO NOMINA",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Owner pay",
+      "category": "owner_pay",
+      "direction": "out",
+      "amount": 690.0,
+      "amount_varies": false,
+      "cadence": "weekly",
+      "day_rule": "Friday",
+      "next_date": "2026-11-13",
+      "match_hint": "TRANSF A CTA AHORROS M GOMEZ",
+      "confirmed_by_owner": true
+    },
+    {
+      "label": "Flour supplier (weekly)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 458.2,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Wednesday",
+      "next_date": "2026-11-11",
+      "match_hint": "PAGO PSE MOLINOS EL TRIGAL",
+      "confirmed_by_owner": false,
+      "tolerance": 68.73
+    },
+    {
+      "label": "Dairy supplier (weekly)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 338.29,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Thursday",
+      "next_date": "2026-11-12",
+      "match_hint": "PAGO PSE LACTEOS LA VAQUITA",
+      "confirmed_by_owner": false,
+      "tolerance": 50.74
+    },
+    {
+      "label": "Egg supplier (weekly)",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 207.92,
+      "amount_varies": true,
+      "cadence": "weekly",
+      "day_rule": "Tuesday",
+      "next_date": "2026-11-17",
+      "match_hint": "PAGO PSE AVICOLA LOS ANDES",
+      "confirmed_by_owner": false,
+      "tolerance": 31.19
+    },
+    {
+      "label": "Quarterly flour order",
+      "category": "suppliers",
+      "direction": "out",
+      "amount": 4000.0,
+      "amount_varies": false,
+      "cadence": "quarterly",
+      "day_rule": "15th of Mar/Jun/Sep/Dec (next business day)",
+      "next_date": "2026-12-15",
+      "match_hint": "PAGO PSE HARINERA DEL VALLE",
+      "confirmed_by_owner": true,
+      "notes": "$3,800 until March 2026, $4,000 since June"
+    },
+    {
+      "label": "Rent",
+      "category": "rent",
+      "direction": "out",
+      "amount": 900.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "15th (next business day if weekend/holiday)",
+      "next_date": "2026-11-17",
+      "match_hint": "PAGO ARRIENDO",
+      "confirmed_by_owner": true,
+      "notes": "$860 until Jan 2026; 2026-11-15 is a Sunday and the 16th a holiday, so the next one is on the 17th"
+    },
+    {
+      "label": "Electricity (Enel)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 201.97,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "5th (next business day)",
+      "next_date": "2026-12-07",
+      "match_hint": "PAGO ENEL",
+      "confirmed_by_owner": false,
+      "tolerance": 30.3,
+      "notes": "rises about 1.2% a month"
+    },
+    {
+      "label": "Gas (Vanti)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 134.41,
+      "amount_varies": true,
+      "cadence": "monthly",
+      "day_rule": "6th (next business day)",
+      "next_date": "2026-12-07",
+      "match_hint": "PAGO VANTI",
+      "confirmed_by_owner": false,
+      "tolerance": 20.16,
+      "notes": "rises about 1.5% a month"
+    },
+    {
+      "label": "Water (bimonthly)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 99.98,
+      "amount_varies": true,
+      "cadence": "every 2 months",
+      "day_rule": "8th of even months (next business day)",
+      "next_date": "2026-12-09",
+      "match_hint": "PAGO ACUEDUCTO EAAB",
+      "confirmed_by_owner": false,
+      "tolerance": 15.0
+    },
+    {
+      "label": "Internet & phone (Claro)",
+      "category": "utilities",
+      "direction": "out",
+      "amount": 41.9,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "3rd",
+      "next_date": "2026-12-03",
+      "match_hint": "PAGO CLARO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Loan repayment",
+      "category": "loan",
+      "direction": "out",
+      "amount": 310.0,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "20th (next business day)",
+      "next_date": "2026-11-20",
+      "match_hint": "TRANSF 0045 REF 88213",
+      "confirmed_by_owner": false,
+      "notes": "cryptic description; the owner explains it"
+    },
+    {
+      "label": "ICA tax (bimonthly)",
+      "category": "taxes",
+      "direction": "out",
+      "amount": 152.6,
+      "amount_varies": true,
+      "cadence": "every 2 months",
+      "day_rule": "19th of odd months (next business day)",
+      "next_date": "2026-11-19",
+      "match_hint": "PAGO SHD IMPUESTO ICA",
+      "confirmed_by_owner": false,
+      "tolerance": 22.89
+    },
+    {
+      "label": "Debit card fee",
+      "category": "bank_fees",
+      "direction": "out",
+      "amount": 4.62,
+      "amount_varies": false,
+      "cadence": "monthly",
+      "day_rule": "last business day",
+      "next_date": "2026-11-30",
+      "match_hint": "CUOTA MANEJO",
+      "confirmed_by_owner": false
+    },
+    {
+      "label": "Prima (June and December bonus)",
+      "category": "payroll",
+      "direction": "out",
+      "amount": 2884.27,
+      "amount_varies": false,
+      "cadence": "twice a year",
+      "day_rule": "last Friday on or before Jun 30 and Dec 20",
+      "next_date": "2026-12-18",
+      "match_hint": "PAGO NOMINA PRIMA",
+      "confirmed_by_owner": true,
+      "notes": "legal bonus of half a month's pay"
+    }
+  ],
+  "one_offs_known": [
+    {
+      "label": "New oven",
+      "amount": -7500.0,
+      "date": "2026-11-14",
+      "source": "files/proximos_pagos.xlsx",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Christmas ingredients",
+      "amount": -2640.0,
+      "date": "2026-12-10",
+      "source": "files/proximos_pagos.xlsx",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Quarterly flour order",
+      "amount": -4000.0,
+      "date": "2026-12-15",
+      "source": "files/proximos_pagos.xlsx",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Christmas order Café El Tinto Feliz",
+      "amount": 5500.0,
+      "date": "2026-12-16",
+      "source": "files/proximos_pagos.xlsx",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Christmas order Café La Molienda Azul",
+      "amount": 5500.0,
+      "date": "2026-12-17",
+      "source": "files/proximos_pagos.xlsx",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Corporate hamper order",
+      "amount": 3883.34,
+      "date": "2026-11-12",
+      "source": "files/cartera.xlsx",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Overdue invoice Colegio Muestra",
+      "amount": 240.0,
+      "date": "2026-11-24",
+      "source": "files/cartera.xlsx",
+      "certainty": "likely"
+    }
+  ],
+  "owner_files": [
+    {
+      "path": "files/proximos_pagos.xlsx",
+      "kind": "upcoming_payments",
+      "rows": 5,
+      "total": -3140.0,
+      "overdue_rows": 0,
+      "notes": "Amounts are positive with a Tipo column (Ingreso/Egreso); total = ingresos minus egresos. Two title rows above the header."
+    },
+    {
+      "path": "files/cartera.xlsx",
+      "kind": "receivables",
+      "rows": 5,
+      "total": 4970.15,
+      "overdue_rows": 2,
+      "notes": "Overdue: Colegio Muestra (pays 2026-11-24, 43 days late) and Restaurante Ejemplo Ltda (never pays in the hidden future; doubtful). Café El Tinto Feliz is due Monday 2026-11-16, a holiday, and pays on 2026-11-17."
+    },
+    {
+      "path": "files/empleados.xlsx",
+      "kind": "employees",
+      "rows": 6,
+      "total": 1331.2,
+      "overdue_rows": 0,
+      "notes": "total = weekly payroll, paid every Friday as one PAGO NOMINA line"
+    }
+  ],
+  "onboarding_answers": {
+    "business_type": "bakery",
+    "low_cash_line": 2000.0,
+    "customers_pay": "card every day; two cafés on 7-day credit paying weekly by transfer; a few businesses on invoice",
+    "busy_months": [
+      "2026-12"
+    ],
+    "slow_months": [
+      "2027-01"
+    ],
+    "owner_pay": {
+      "match_hint": "TRANSF A CTA AHORROS M GOMEZ",
+      "is_owner_pay": true
+    },
+    "upcoming_in_own_words": [
+      "I'm buying a new oven for $7,500 on Nov 14",
+      "Constructora Prueba owes me $3,883.34 for Christmas hampers, due Nov 12",
+      "Christmas ingredients, about $2,640.00, on Dec 10",
+      "The quarterly flour order of $4,000 is due Dec 15",
+      "Both cafés ordered Christmas baskets: $5,500 each, paid Dec 16 and 17"
+    ],
+    "mystery_answers": {
+      "TRANSF 0045 REF 88213": "loan repayment (equipment loan)"
+    }
+  },
+  "hidden_future": {
+    "notes": "End-of-day total of the bank accounts (card debt not included) for the 8 weeks after the statement, from the same simulation. It includes day-to-day noise the app cannot know: compare level and timing with tolerance.",
+    "daily_balance": [
+      {
+        "date": "2026-11-11",
+        "balance": 8143.61
+      },
+      {
+        "date": "2026-11-12",
+        "balance": 12382.09
+      },
+      {
+        "date": "2026-11-13",
+        "balance": 10816.48
+      },
+      {
+        "date": "2026-11-14",
+        "balance": 3964.63
+      },
+      {
+        "date": "2026-11-15",
+        "balance": 4358.58
+      },
+      {
+        "date": "2026-11-16",
+        "balance": 4659.28
+      },
+      {
+        "date": "2026-11-17",
+        "balance": 4401.12
+      },
+      {
+        "date": "2026-11-18",
+        "balance": 4362.3
+      },
+      {
+        "date": "2026-11-19",
+        "balance": 4585.42
+      },
+      {
+        "date": "2026-11-20",
+        "balance": 2687.74
+      },
+      {
+        "date": "2026-11-21",
+        "balance": 3291.88
+      },
+      {
+        "date": "2026-11-22",
+        "balance": 3678.36
+      },
+      {
+        "date": "2026-11-23",
+        "balance": 4494.94
+      },
+      {
+        "date": "2026-11-24",
+        "balance": 4945.03
+      },
+      {
+        "date": "2026-11-25",
+        "balance": 4920.36
+      },
+      {
+        "date": "2026-11-26",
+        "balance": 5399.68
+      },
+      {
+        "date": "2026-11-27",
+        "balance": 3825.14
+      },
+      {
+        "date": "2026-11-28",
+        "balance": 4380.52
+      },
+      {
+        "date": "2026-11-29",
+        "balance": 4726.9
+      },
+      {
+        "date": "2026-11-30",
+        "balance": 5533.82
+      },
+      {
+        "date": "2026-12-01",
+        "balance": 5958.86
+      },
+      {
+        "date": "2026-12-02",
+        "balance": 6019.87
+      },
+      {
+        "date": "2026-12-03",
+        "balance": 6434.93
+      },
+      {
+        "date": "2026-12-04",
+        "balance": 4974.54
+      },
+      {
+        "date": "2026-12-05",
+        "balance": 5716.13
+      },
+      {
+        "date": "2026-12-06",
+        "balance": 6196.12
+      },
+      {
+        "date": "2026-12-07",
+        "balance": 6819.26
+      },
+      {
+        "date": "2026-12-08",
+        "balance": 7286.63
+      },
+      {
+        "date": "2026-12-09",
+        "balance": 6970.64
+      },
+      {
+        "date": "2026-12-10",
+        "balance": 4888.07
+      },
+      {
+        "date": "2026-12-11",
+        "balance": 3536.5
+      },
+      {
+        "date": "2026-12-12",
+        "balance": 4293.03
+      },
+      {
+        "date": "2026-12-13",
+        "balance": 4806.7
+      },
+      {
+        "date": "2026-12-14",
+        "balance": 5869.69
+      },
+      {
+        "date": "2026-12-15",
+        "balance": 1350.0
+      },
+      {
+        "date": "2026-12-16",
+        "balance": 6862.86
+      },
+      {
+        "date": "2026-12-17",
+        "balance": 12842.06
+      },
+      {
+        "date": "2026-12-18",
+        "balance": 8496.03
+      },
+      {
+        "date": "2026-12-19",
+        "balance": 9283.84
+      },
+      {
+        "date": "2026-12-20",
+        "balance": 9777.47
+      },
+      {
+        "date": "2026-12-21",
+        "balance": 10431.74
+      },
+      {
+        "date": "2026-12-22",
+        "balance": 10829.84
+      },
+      {
+        "date": "2026-12-23",
+        "balance": 10832.74
+      },
+      {
+        "date": "2026-12-24",
+        "balance": 9333.02
+      },
+      {
+        "date": "2026-12-25",
+        "balance": 9817.61
+      },
+      {
+        "date": "2026-12-26",
+        "balance": 10563.51
+      },
+      {
+        "date": "2026-12-27",
+        "balance": 11067.55
+      },
+      {
+        "date": "2026-12-28",
+        "balance": 12054.73
+      },
+      {
+        "date": "2026-12-29",
+        "balance": 12405.93
+      },
+      {
+        "date": "2026-12-30",
+        "balance": 12353.09
+      },
+      {
+        "date": "2026-12-31",
+        "balance": 10862.92
+      },
+      {
+        "date": "2027-01-01",
+        "balance": 11146.86
+      },
+      {
+        "date": "2027-01-02",
+        "balance": 11700.42
+      },
+      {
+        "date": "2027-01-03",
+        "balance": 11980.23
+      },
+      {
+        "date": "2027-01-04",
+        "balance": 12612.31
+      },
+      {
+        "date": "2027-01-05",
+        "balance": 12528.42
+      }
+    ],
+    "lowest": {
+      "date": "2026-12-15",
+      "balance": 1350.0
+    }
+  },
+  "expected": {
+    "risk_level": [
+      "act_now"
+    ],
+    "alerts_must": [
+      {
+        "type": "shortfall",
+        "around": "2026-12-15",
+        "cause_labels": [
+          "New oven",
+          "Quarterly flour order",
+          "Christmas ingredients"
+        ],
+        "notes": "'around' = first day the true end-of-day cash is below the line; accept +/- 7 days. The explanation should name at least one of cause_labels."
+      }
+    ],
+    "alerts_must_not": [],
+    "insights_must": [
+      "owner_pay_high"
+    ],
+    "insights_must_not": [
+      "cost_creeping_up",
+      "costs_faster_than_sales",
+      "duplicate_charge",
+      "sales_slowing",
+      "customers_paying_later",
+      "net_flow_shrinking",
+      "idle_cash"
+    ],
+    "fixes_that_work": [
+      {
+        "what": "move New oven to 2026-12-21, after the Christmas orders arrive",
+        "result": "stays above the minimum (lowest $8,143.61 on 2026-11-11)"
+      },
+      {
+        "what": "pay the oven in two halves: 2026-11-14 and 2026-12-21",
+        "result": "stays above the minimum (lowest $5,100.00 on 2026-12-15)"
+      },
+      {
+        "what": "move Quarterly flour order to 2026-12-18",
+        "result": "stays above the minimum (lowest $2,687.74 on 2026-11-20)"
+      },
+      {
+        "what": "skip owner pay on the five Fridays 2026-11-13 to 2026-12-11",
+        "result": "stays above the minimum (lowest $4,073.26 on 2026-11-20)"
+      }
+    ],
+    "what_ifs": [
+      {
+        "question": "What if I move the new oven payment to next month?",
+        "change": "New oven from 2026-11-14 to 2026-12-31",
+        "lowest_balance_direction": "up",
+        "approx_change": 6793.61,
+        "tolerance": 1358.72,
+        "notes": "lowest $8,143.61 on 2026-11-11 (base case $1,350.00 on 2026-12-15)"
+      },
+      {
+        "question": "What if I pay the oven exactly one month later, on December 14?",
+        "change": "New oven from 2026-11-14 to 2026-12-14",
+        "lowest_balance_direction": "about the same",
+        "approx_change": 0.0,
+        "tolerance": 250.0,
+        "notes": "lowest $1,350.00 on 2026-12-15 (base case $1,350.00 on 2026-12-15)"
+      },
+      {
+        "question": "What if both cafés pay their Christmas orders a week late?",
+        "change": "Christmas orders from 2026-12-16/17 to 2026-12-23/24",
+        "lowest_balance_direction": "down",
+        "approx_change": -3853.97,
+        "tolerance": 770.79,
+        "notes": "lowest -$2,503.97 on 2026-12-18 (base case $1,350.00 on 2026-12-15)"
+      }
+    ],
+    "chat_questions": [
+      {
+        "question": "Will I have enough cash next month?",
+        "answer_must_reflect": [
+          "no: cash goes below $2,000 around 2026-12-15 (week 5)",
+          "lowest about $1,350.00 around 2026-12-15",
+          "it recovers when the cafés pay their Christmas orders on Dec 16-17"
+        ]
+      },
+      {
+        "question": "Why does my cash drop in mid-December?",
+        "answer_must_reflect": [
+          "the $7,500 oven on Nov 14 uses up most of the cushion",
+          "the $4,000 quarterly flour order and the rent both fall on Dec 15",
+          "the Christmas ingredients ($2,640.00) on Dec 10"
+        ]
+      },
+      {
+        "question": "Can I afford the new oven?",
+        "answer_must_reflect": [
+          "paying it on Nov 14 takes cash below the minimum in December",
+          "it works if paid after the Christmas orders arrive (from Dec 21)"
+        ]
+      }
+    ],
+    "timing_or_structural": "timing",
+    "notes": "Insight metrics: {\"weeks_of_cover\": 2.18, \"cost_creep_max\": 0.002, \"cost_creep_category\": \"suppliers\", \"sales_change\": 0.009, \"cost_change\": -0.071, \"cost_vs_sales_gap\": -0.08, \"top_customers\": [[\"Café El Tinto Feliz\", 0.097], [\"Café La Molienda Azul\", 0.078]], \"top2_customer_share\": 0.175, \"days_late_prior3\": 0.0, \"days_late_recent3\": 0.0, \"days_late_change\": 0.0, \"owner_pay_recent3\": 8970.0, \"surplus_before_owner_pay_recent3\": 8566.9, \"owner_pay_share_of_surplus\": 1.047, \"operating_net_per_month_prior3\": 2015.58, \"operating_net_per_month_recent3\": 3165.63, \"net_flow_change_vs_income\": 0.071, \"exact_duplicate_lines\": []} | Windows: prior3 = 2026-05..07, recent3 = 2026-08..10 (complete months). weeks_of_cover = cash on 2026-11-10 / average weekly money out in the last 91 days (own-account transfers and card payments excluded; card purchases included). thin_cushion must <1.5, must_not >3; idle_cash must >16, must_not <8. cost_creeping_up: largest recent3/prior3 change of a cost category worth >=5% of costs; must >=20%, must_not <=10%. costs_faster_than_sales: cost change minus sales change; must >=8 pts, must_not <=2 pts. few_customers: share of income (May-Oct) from the two largest named payers (card/cash deposits are anonymous); must >=25%, must_not <=16%. customers_paying_later: change in amount-weighted days late of invoice payments; must >=7 days, must_not <=2 or no invoiced customers. owner_pay_high: owner pay / surplus before owner pay in recent3; must >=0.8, must_not <=0.5. sales_slowing: must <=-10%, must_not >=-3%. net_flow_shrinking: change in monthly operating net (excl. owner pay, loans, equipment, own transfers) as a share of monthly income; must <=-5%, must_not >=-1%. duplicate_charge: must_not when no identical (date, description, amount) lines exist. Values between the two thresholds are judgement calls and appear in neither list. | 'move New oven to 2026-12-14 (exactly one month later)' is not enough: still dips to $1,350.00 on 2026-12-15 | risk_level rule: true lowest < 90% of the line -> act_now; 90-110% -> watch or act_now; 110-140% -> safe or watch; above -> safe."
+  }
+}

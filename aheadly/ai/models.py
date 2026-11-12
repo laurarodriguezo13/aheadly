@@ -95,7 +95,14 @@ class ProphetModel:
         return forecast["yhat"].to_numpy()
 
     def sample_paths(self, horizon_days: int, n_paths: int, rng: np.random.Generator) -> np.ndarray:
-        samples = self._model.predictive_samples(self._future(horizon_days))["yhat"]  # (horizon, n)
+        # Prophet draws its samples from numpy's global generator: seed it from ours (and put it back),
+        # so the same files give the same forecast on every visit
+        state = np.random.get_state()
+        np.random.seed(int(rng.integers(2**31 - 1)))
+        try:
+            samples = self._model.predictive_samples(self._future(horizon_days))["yhat"]  # (horizon, n)
+        finally:
+            np.random.set_state(state)
         paths = samples.T
         if paths.shape[0] >= n_paths:
             return paths[:n_paths]
