@@ -65,6 +65,8 @@ with st.container(border=True):
         width="stretch",
         config={"displayModeBar": False},
     )
+    if st.button(copy.BASIS_LINK, key="dashboard-basis"):
+        go_to("basis")
 
 left, right = st.columns([1, 1])
 with left, st.container(border=True):

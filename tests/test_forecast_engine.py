@@ -26,3 +26,22 @@ def test_recurring_items_expand_inside_the_window():
 def test_backtest_reports_naive_and_main_model(connected_core):
     scores = connected_core.backtest()
     assert "seasonal_naive" in scores and all(v > 0 for v in scores.values())
+
+
+def test_prophet_gives_the_same_paths_for_the_same_files():
+    """Loading the same statement twice shows the same lowest balance (Prophet samples are seeded)."""
+    import numpy as np
+    import pandas as pd
+    import pytest
+
+    pytest.importorskip("prophet")
+    from aheadly.ai.models import ProphetModel
+
+    dates = pd.date_range("2026-06-01", periods=120, freq="D")
+    flows = np.random.default_rng(1).normal(100, 40, len(dates))
+    history = pd.DataFrame({"date": dates, "net_flow": flows})
+    runs = []
+    for _ in range(2):
+        model = ProphetModel(n_paths=50).fit(history)
+        runs.append(model.sample_paths(14, 50, np.random.default_rng(7)))
+    assert np.allclose(runs[0], runs[1])

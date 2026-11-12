@@ -14,7 +14,6 @@ from aheadly.ui.components import (
     local_time,
     money,
     owner_file_card,
-    proposal_card,
     section_title,
     statement_notice,
 )
@@ -136,38 +135,9 @@ else:
             st.warning(copy.BALANCE_BREAKS.format(n=n, date=day(first)))
     with st.container(border=True):
         section_title(copy.PLANNED_TITLE)
-        planned = core.planned_items()
-        if planned:
-            st.dataframe(
-                planned,
-                hide_index=True,
-                width="stretch",
-                column_config={
-                    "date": "Date",
-                    "description": "What",
-                    "amount": st.column_config.NumberColumn("Amount", format="dollar"),
-                    "repeats": "Repeats",
-                },
-            )
-        st.caption(copy.PLANNED_HELP)
-        if st.session_state.get("plan_added"):
-            st.success(copy.PLAN_ITEMS_ADDED.format(n=st.session_state.pop("plan_added")))
-        said = st.text_area(
-            copy.JUST_SAY_IT, placeholder=copy.JUST_SAY_IT_PLACEHOLDER, help=copy.JUST_SAY_IT_HELP
-        )
-        if st.button(copy.READ_IT, disabled=not said.strip()):
-            with st.spinner(copy.READING_IT):
-                st.session_state["plan_proposals"] = core.parse_plan_text(said)
-        proposals = st.session_state.get("plan_proposals")
-        if proposals is not None:
-            if not proposals:
-                st.info(copy.NOTHING_UNDERSTOOD)
-            else:
-                added = proposal_card(core, proposals, "accounts-plan")
-                if added:
-                    st.session_state.pop("plan_proposals", None)
-                    st.session_state["plan_added"] = added
-                    st.rerun()
+        st.caption(copy.PLANNED_MOVED)
+        if st.button(copy.BASIS_LINK, key="accounts-basis"):
+            go_to("basis")
     with st.container(border=True):
         section_title(copy.OWNER_FILES_TITLE)
         st.caption(copy.OWNER_FILES_HELP)
@@ -194,25 +164,6 @@ else:
             if owner_file_card(core, entry, f"owner-{index}-{entry['name']}"):
                 pending.remove(entry)
                 st.rerun()
-    regular = core.recurring_table()
-    if regular:
-        with st.expander(copy.RECURRING_TITLE.format(n=len(regular))):
-            st.caption(copy.RECURRING_HELP)
-            st.dataframe(
-                [
-                    {
-                        "What": row["description"],
-                        "How often": row["how_often"],
-                        "Amount": ("≈ " if row["varies"] else "") + money(row["amount"]),
-                        "Next": row["next"],
-                        "In the forecast": row["in_forecast"],
-                        "Category": copy.CATEGORY_NAMES.get(row["category"], row["category"]),
-                    }
-                    for row in regular
-                ],
-                hide_index=True,
-                width="stretch",
-            )
     with st.container(border=True):
         section_title("Recent transactions")
         recent = core.repo.list_transactions(status.business.id, limit=20)

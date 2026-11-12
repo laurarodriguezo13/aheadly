@@ -16,7 +16,8 @@ from aheadly.version import code_version
 
 VIEWS = "aheadly/ui/views"
 PAGES = {
-    name: f"{VIEWS}/{name}.py" for name in ("dashboard", "alerts", "ask", "whatif", "accounts", "settings")
+    name: f"{VIEWS}/{name}.py"
+    for name in ("dashboard", "alerts", "basis", "ask", "whatif", "accounts", "settings")
 }
 
 

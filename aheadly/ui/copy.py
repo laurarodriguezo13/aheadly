@@ -9,6 +9,7 @@ NAV = {
     "ask": "Ask Aheadly",
     "whatif": "What-if",
     "accounts": "Accounts",
+    "basis": "How we built it",
     "settings": "Settings",
 }
 
@@ -172,6 +173,10 @@ PROPOSAL_COLUMNS = {
 }
 DIRECTION_NAMES = {"in": "Coming in", "out": "Going out"}
 PLANNED_TITLE = "What we're counting on"
+PLANNED_MOVED = (
+    "Your regular payments, one-offs and anything you tell us now live on one page, where you can change "
+    "them and see what each change does."
+)
 PLANNED_HELP = (
     "These upcoming payments and income come from your upcoming-payments file, what you tell us below, "
     "and any plan you save. "
@@ -247,3 +252,97 @@ LOW_CASH_HELP = "Your safety buffer. Below this line Aheadly warns you."
 RUN_CHECK = "Run today's check"
 RESET_DEMO = "Start over"
 BACKTEST = "Compare forecast models (backtest)"
+
+
+# ---------------------------------------------------------------- how we built your forecast (2.6)
+BASIS_TITLE = "How we built your forecast"
+BASIS_INTRO = (
+    "Everything the forecast counts on, in one place. Change anything that's wrong and you'll see "
+    "what it does to your lowest balance."
+)
+BASIS_LINK = "How we built this forecast"
+BASIS_START = "Where it starts"
+BASIS_START_ROWS = {
+    "balance": "Cash today",
+    "statement": "Statement up to",
+    "history": "History we learned from",
+    "lines": "Transactions read",
+    "accounts": "Accounts",
+}
+BASIS_UNIDENTIFIED = "{n} transactions have no clear description; they still count in your normal week."
+BASIS_RHYTHM = "Your normal week"
+BASIS_RHYTHM_BODY = (
+    "Apart from the payments listed below, money in is usually **{in_low} to {in_high}** a week and money "
+    "out **{out_low} to {out_high}** a week (the middle half of your last {weeks} weeks). "
+    "{busiest} is your busiest day for money in, {slowest} the slowest. The forecast repeats this rhythm, "
+    "with the ups and downs your past weeks had."
+)
+BASIS_REGULAR = "Regular payments"
+BASIS_REGULAR_HELP = (
+    "Each one goes on its own dates. ≈ means the amount varies; we use a typical recent amount."
+)
+BASIS_ONE_OFFS = "One-off payments"
+BASIS_ONE_OFFS_HELP = "Things you told us about, from your files, or added below."
+BASIS_NO_ONE_OFFS = "None yet. Tell us below about anything coming up."
+BADGES = {
+    "statement": "Found in your statement",
+    "confirmed": "Confirmed by you",
+    "file": "From your file",
+    "owner": "Added by you",
+    "example": "Part of the example",
+}
+BASIS_COLUMNS = {
+    "label": "What",
+    "amount": "Amount",
+    "how_often": "How often",
+    "next": "Next",
+    "badge": "Where it comes from",
+    "note": "Note",
+}
+BASIS_PAUSED = "Paused"
+BASIS_ENDS = "Ends {date}"
+BASIS_MAYBE = "Maybe: counted in 3 of 4 scenarios"
+BASIS_EDIT = "Change a payment"
+BASIS_PICK = "Which one?"
+BASIS_AMOUNT = "Amount"
+BASIS_NEXT_DATE = "Date"
+BASIS_HAS_END = "It stops on a date"
+BASIS_END_DATE = "Last date"
+BASIS_SAVE = "Save changes"
+BASIS_PAUSE = "Pause"
+BASIS_RESUME = "Resume"
+BASIS_REMOVE = "Remove"
+BASIS_LOOKS_RIGHT = "Looks right"
+BASIS_CONFIRMED = "Marked as confirmed. It won't be changed by a new upload."
+BASIS_EFFECT = "{what}. Lowest balance: {before} → {after}."
+BASIS_RISK_CHANGED = " Your status went from {before} to {after}."
+RISK_NAMES = {"act_now": "act now", "watch": "watch", "safe": "on track"}
+BASIS_SAVED = "Saved {label}"
+BASIS_PAUSED_DONE = "Paused {label}"
+BASIS_RESUMED_DONE = "{label} counts again"
+BASIS_REMOVED_DONE = "Removed {label}"
+BASIS_PAST_DUE = "{label} ({amount}) was due {date}. Did it happen?"
+BASIS_HAPPENED = "Yes, it happened"
+BASIS_NOT_YET = "Not yet: move it a week"
+BASIS_SUGGESTION = (
+    "{label}: your statement shows {found} lately, you set {planned}. Use the statement's amount?"
+)
+BASIS_USE_FOUND = "Use {found}"
+BASIS_NOT_COUNTED = "What we're not counting on"
+BASIS_OWN_MOVES = "{n} moves between your own accounts (not income or spending)"
+BASIS_CARD_PAYMENTS = "{n} credit card payments (the card purchases already count)"
+BASIS_SOME_MONTHS = "Only some months of the year, so not repeated: {labels}"
+BASIS_PAUSED_LIST = "Paused by you: {labels}"
+BASIS_SWITCHED_OFF = {"removed": "Removed by you", "doubtful": "Too old to count on"}
+BASIS_NOTHING_LEFT_OUT = "Nothing left out."
+BASIS_NEXT_MONTH = "{month} at a glance"
+BASIS_NEXT_MONTH_ROWS = {
+    "rhythm": "Your normal weeks",
+    "recurring_in": "Regular money in",
+    "recurring_out": "Regular payments",
+    "one_off_in": "One-off money in",
+    "one_off_out": "One-off payments",
+    "total": "Net change in cash",
+}
+BASIS_MAYBE_NOTE = "Plus {amount} of maybe money in, counted only in some scenarios."
+BASIS_PARTIAL_MONTH = "The forecast reaches {last}, so this covers {first} to {last}."

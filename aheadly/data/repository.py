@@ -416,26 +416,28 @@ class Repository:
         rows = self._conn.execute(
             "SELECT * FROM scheduled_items WHERE business_id=? AND active=1 ORDER BY due_date", (business_id,)
         ).fetchall()
-        return [
-            ScheduledItem(
-                id=r["id"],
-                label=r["label"],
-                amount=r["amount"],
-                due_date=date.fromisoformat(r["due_date"]),
-                kind=r["kind"],
-                recurrence=r["recurrence"],
-                source=r["source"],
-                status=r["status"] or "user",
-                certainty=r["certainty"] or "confirmed",
-                likelihood=1.0 if r["likelihood"] is None else float(r["likelihood"]),
-                category=r["category"],
-                match_key=r["match_key"],
-                end_date=date.fromisoformat(r["end_date"]) if r["end_date"] else None,
-                user_edited=bool(r["user_edited"]),
-                paused=bool(r["paused"]),
-            )
-            for r in rows
-        ]
+        return [self._scheduled_from_row(r) for r in rows]
+
+    @staticmethod
+    def _scheduled_from_row(r) -> ScheduledItem:
+        return ScheduledItem(
+            id=r["id"],
+            label=r["label"],
+            amount=r["amount"],
+            due_date=date.fromisoformat(r["due_date"]),
+            kind=r["kind"],
+            recurrence=r["recurrence"],
+            source=r["source"],
+            active=bool(r["active"]),
+            status=r["status"] or "user",
+            certainty=r["certainty"] or "confirmed",
+            likelihood=1.0 if r["likelihood"] is None else float(r["likelihood"]),
+            category=r["category"],
+            match_key=r["match_key"],
+            end_date=date.fromisoformat(r["end_date"]) if r["end_date"] else None,
+            user_edited=bool(r["user_edited"]),
+            paused=bool(r["paused"]),
+        )
 
     def replace_scheduled_items(self, business_id: int, items: list[ScheduledItem]) -> None:
         """Used when a scenario is saved as the plan. Statement lines linked to an item stay linked
@@ -475,6 +477,59 @@ class Repository:
             ),
         )
         return cur.lastrowid
+
+    # ------------------------------------------------------- the forecast's basis (roadmap 2.6)
+    def scheduled_item(self, item_id: int) -> ScheduledItem | None:
+        row = self._conn.execute("SELECT * FROM scheduled_items WHERE id=?", (item_id,)).fetchone()
+        return self._scheduled_from_row(row) if row else None
+
+    def update_scheduled_item(self, item_id: int, **fields) -> None:
+        """Change an item the owner edited (label, amount, due_date, end_date, paused, active,
+        status, user_edited)."""
+        allowed = {"label", "amount", "due_date", "end_date", "paused", "active", "status", "user_edited"}
+        bad = set(fields) - allowed
+        if bad:
+            raise ValueError(f"Can't change {', '.join(sorted(bad))}")
+        values = {
+            k: (v.isoformat() if hasattr(v, "isoformat") else int(v) if isinstance(v, bool) else v)
+            for k, v in fields.items()
+        }
+        sets = ", ".join(f"{k}=?" for k in values)
+        self._conn.execute(f"UPDATE scheduled_items SET {sets} WHERE id=?", (*values.values(), item_id))
+        self._conn.commit()
+
+    def inactive_items(self, business_id: int) -> list[ScheduledItem]:
+        """Items switched off on purpose: removed by the owner, or invoices too old to count."""
+        rows = self._conn.execute(
+            "SELECT * FROM scheduled_items WHERE business_id=? AND active=0 "
+            "AND (user_edited=1 OR status='doubtful') ORDER BY due_date",
+            (business_id,),
+        )
+        return [self._scheduled_from_row(r) for r in rows]
+
+    def statement_summary(self, business_id: int) -> dict:
+        """How much history there is and how much of it the app could identify."""
+        row = self._conn.execute(
+            "SELECT COUNT(*) AS n, MIN(date) AS first, MAX(date) AS last, "
+            "SUM(CASE WHEN COALESCE(category, 'other')='other' AND COALESCE(is_internal_transfer, 0)=0 "
+            "THEN 1 ELSE 0 END) AS unidentified FROM transactions WHERE business_id=?",
+            (business_id,),
+        ).fetchone()
+        return {"transactions": row["n"], "first": row["first"], "last": row["last"],
+                "unidentified": row["unidentified"] or 0}  # fmt: skip
+
+    def daily_in_out(self, business_id: int) -> pd.DataFrame:
+        """Money in and money out per day, leaving out own-account moves and the lines a scheduled
+        item forecasts on its own dates: the business's normal day-to-day rhythm."""
+        return pd.read_sql_query(
+            "SELECT date, SUM(CASE WHEN amount > 0 THEN amount ELSE 0 END) AS money_in, "
+            "SUM(CASE WHEN amount < 0 THEN -amount ELSE 0 END) AS money_out FROM transactions "
+            "WHERE business_id=? AND COALESCE(is_internal_transfer, 0)=0 AND scheduled_item_id IS NULL "
+            "GROUP BY date ORDER BY date",
+            self._conn,
+            params=(business_id,),
+            parse_dates=["date"],
+        )
 
     # ------------------------------------------------------- recurring (roadmap 2.3)
     def recurring_lines(self, business_id: int) -> list[tuple]:

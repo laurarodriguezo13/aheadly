@@ -8,7 +8,7 @@ an LLM or a bank API directly.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -16,7 +16,12 @@ import pandas as pd
 
 from aheadly.ai import categorizer, plan_text, recurring
 from aheadly.ai.plan_text import ProposedItem
-from aheadly.ai.forecast_engine import ForecastEngine, expand_scheduled_items, history_balances
+from aheadly.ai.forecast_engine import (
+    ForecastEngine,
+    expand_scheduled_items,
+    history_balances,
+    uncertain_income,
+)
 from aheadly.ai.insight_translator import InsightTranslator
 from aheadly.ai.llm_client import create_llm_client
 from aheadly.ai.scenarios import apply_adjustments, parse_adjustment
@@ -248,6 +253,215 @@ class AppCore:
             sales = self.repo.flow_totals(business.id, start)["money_in"]
         return round(sales / weeks, 2)
 
+    # ------------------------------------------------------------ the forecast's basis (roadmap 2.6)
+    def forecast_basis(self) -> dict:
+        """Everything the forecast counts on, in the order the "How we built your forecast" page
+        shows it: where it starts, the normal rhythm, regular payments, one-offs, what it leaves out,
+        and next month at a glance."""
+        business = self._business()
+        items = self.repo.list_scheduled_items(business.id)
+        found = {r.match_key: r for r in self.detected_recurring()}
+        summary = self.repo.statement_summary(business.id)
+        regular = [self._basis_item(i, found) for i in items if i.recurrence]
+        one_offs = [self._basis_item(i, found) for i in items if not i.recurrence]
+        return {
+            "start": {
+                "balance": self.repo.current_balance(business.id),
+                "statement_end": self.statement_end(),
+                "today": self.today,
+                "history_from": date.fromisoformat(summary["first"]) if summary["first"] else None,
+                "transactions": summary["transactions"],
+                "unidentified": summary["unidentified"],
+                "accounts": len(self.repo.list_accounts(business.id)),
+            },
+            "rhythm": self._rhythm(business.id),
+            "regular": sorted(regular, key=lambda r: (r["next"] or date.max, r["label"])),
+            "one_offs": sorted(one_offs, key=lambda r: (r["due"], r["label"])),
+            "suggestions": self._update_suggestions(items, found),
+            "not_counted": self._not_counted(business.id, found),
+            "next_month": self._next_month(),
+        }
+
+    def update_plan_item(self, item_id: int, **changes) -> dict:
+        """The owner changes an item (amount, label, next date, end date). From now on it's theirs:
+        a later upload suggests changes but never overwrites them. Returns the effect."""
+        item = self._own_item(item_id)
+        if "amount" in changes and changes["amount"] is not None:
+            amount = abs(float(changes["amount"]))
+            changes["amount"] = amount if item.amount > 0 else -amount
+        changes = {k: v for k, v in changes.items() if v is not None or k == "end_date"}
+        status = "confirmed" if item.status == "detected" else item.status
+        if "amount" in changes:
+            self._remember_edit(item_id)
+        return self._change(item_id, user_edited=True, status=status, **changes)
+
+    def _remember_edit(self, item_id: int) -> None:
+        """Which statement the owner had when they set an amount: only a newer statement can suggest
+        a different one (otherwise the page would argue with them right after they changed it)."""
+        business = self._business()
+        seen = dict(self.repo.get_profile(business.id).get("amount_set_with_statement", {}))
+        end = self.statement_end()
+        seen[str(item_id)] = end.isoformat() if end else None
+        self.repo.save_profile(business.id, {"amount_set_with_statement": seen})
+
+    def confirm_plan_item(self, item_id: int) -> None:
+        """The owner says a payment found in the statement is right as it is."""
+        self._own_item(item_id)
+        self.repo.update_scheduled_item(item_id, status="confirmed", user_edited=True)
+
+    def pause_plan_item(self, item_id: int, paused: bool = True) -> dict:
+        self._own_item(item_id)
+        return self._change(item_id, paused=paused, user_edited=True)
+
+    def end_plan_item(self, item_id: int, end: date | None) -> dict:
+        """It stops after `end` (None: it goes on again)."""
+        self._own_item(item_id)
+        return self._change(item_id, end_date=end, user_edited=True)
+
+    def delete_plan_item(self, item_id: int) -> dict:
+        """Removed from the forecast and kept switched off, so a later upload doesn't bring it back."""
+        self._own_item(item_id)
+        return self._change(item_id, active=False, user_edited=True)
+
+    def _own_item(self, item_id: int) -> ScheduledItem:
+        item = self.repo.scheduled_item(item_id)
+        if item is None or item.id is None:
+            raise ValueError("That payment isn't in your plan any more.")
+        return item
+
+    def _change(self, item_id: int, **fields) -> dict:
+        """Apply a change and rerun the forecast; the effect is the lowest balance before and after."""
+        before = self.get_dashboard().forecast
+        self.repo.update_scheduled_item(item_id, **fields)
+        self.run_daily_check(force=True)
+        after = self.get_dashboard().forecast
+        line = self._business().low_cash_line
+        return {
+            "before": round(before.lowest_with_today()[0]) if before else None,
+            "after": round(after.lowest_with_today()[0]) if after else None,
+            "risk_before": before.risk_level(line) if before else None,
+            "risk_after": after.risk_level(line) if after else None,
+        }
+
+    def _basis_item(self, item: ScheduledItem, found: dict) -> dict:
+        source = item.source or ""
+        badge = (
+            "file" if source.startswith("file:")
+            else "example" if source == "example"
+            else "confirmed" if item.status == "detected" and item.user_edited or item.status == "confirmed"
+            else "statement" if item.status == "detected"
+            else "owner"
+        )  # fmt: skip
+        detected = found.get(item.match_key) if item.match_key else None
+        upcoming = expand_scheduled_items(
+            [replace(item, paused=False)], self.today, self.today + timedelta(days=400)
+        )
+        return {
+            "id": item.id,
+            "label": item.label,
+            "amount": item.amount,
+            "direction": "in" if item.amount > 0 else "out",
+            "how_often": recurring.describe(item.recurrence, item.due_date),
+            "next": upcoming[0][0] if upcoming else None,
+            "due": item.due_date,
+            "badge": badge,
+            "varies": bool(detected and detected.amount_varies),
+            "maybe": item.certainty == "maybe",
+            "paused": item.paused,
+            "end_date": item.end_date,
+            "past_due": not item.recurrence and item.due_date < self.today,
+            "category": item.category,
+        }
+
+    def _update_suggestions(self, items: list[ScheduledItem], found: dict) -> list[dict]:
+        """A payment the owner set themselves whose recent amount in the statement is different:
+        suggested, never applied ("Rent was $950 the last 2 months, not $900. Update?")."""
+        out = []
+        seen = self.repo.get_profile(self._business().id).get("amount_set_with_statement", {})
+        end = self.statement_end()
+        for item in items:
+            detected = found.get(item.match_key) if item.match_key else None
+            if not (item.user_edited and detected) or detected.amount_varies:
+                continue
+            set_with = seen.get(str(item.id))
+            if set_with and end and end <= date.fromisoformat(set_with):
+                continue  # no newer statement since the owner set this amount
+            if abs(detected.amount - item.amount) > 0.05 * abs(item.amount):
+                out.append(
+                    {"id": item.id, "label": item.label, "planned": item.amount, "found": detected.amount}
+                )
+        return out
+
+    def _rhythm(self, business_id: int) -> dict:
+        """A typical week of money in and out apart from the payments listed on the page (last 12
+        weeks): the middle half of the weeks, and the busiest and slowest days for money in."""
+        flows = self.repo.daily_in_out(business_id)
+        if flows.empty:
+            return {}
+        flows = flows[flows["date"] >= pd.Timestamp(self.today - timedelta(weeks=12))]
+        weeks = flows.set_index("date").resample("W").sum()
+        weeks = weeks.iloc[1:-1] if len(weeks) > 4 else weeks  # drop the partial first and last weeks
+        by_day = flows.assign(day=flows["date"].dt.dayofweek).groupby("day")["money_in"].mean()
+        names = recurring.WEEKDAY_NAMES
+        return {
+            "in_low": round(float(weeks["money_in"].quantile(0.25)), 2),
+            "in_high": round(float(weeks["money_in"].quantile(0.75)), 2),
+            "out_low": round(float(weeks["money_out"].quantile(0.25)), 2),
+            "out_high": round(float(weeks["money_out"].quantile(0.75)), 2),
+            "busiest_day": names[int(by_day.idxmax())] if len(by_day) else None,
+            "slowest_day": names[int(by_day.idxmin())] if len(by_day) > 1 else None,
+            "weeks": len(weeks),
+        }
+
+    def _not_counted(self, business_id: int, found: dict) -> dict:
+        moves = self.repo.internal_transfer_counts(business_id)
+        return {
+            "own_account_moves": moves.get("transfers", 0),
+            "card_payments": moves.get("card_payments", 0),
+            "some_months_only": [r.label for r in found.values() if r.seasonal],
+            "paused": [i.label for i in self.repo.list_scheduled_items(business_id) if i.paused],
+            "switched_off": [
+                {
+                    "label": i.label,
+                    "amount": i.amount,
+                    "why": "doubtful" if i.status == "doubtful" else "removed",
+                }
+                for i in self.repo.inactive_items(business_id)
+            ],
+        }
+
+    def _next_month(self) -> dict:
+        """Next calendar month (as far as the forecast reaches), split into the normal rhythm, regular
+        payments and one-offs; the parts add up to the forecast's own total for those days."""
+        forecast = self.get_dashboard().forecast
+        if forecast is None:
+            return {}
+        first = (self.today.replace(day=1) + timedelta(days=32)).replace(day=1)
+        last = (first + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        last = min(last, forecast.horizon_end)
+        days = [p for p in forecast.points if first <= p.date <= last]
+        total = sum(p.net_flow_p50 for p in days)
+        events = self._dated_events(self.repo.list_scheduled_items(self._business().id), last)
+        parts = {"recurring_in": 0.0, "recurring_out": 0.0, "one_off_in": 0.0, "one_off_out": 0.0}
+        maybe_in = 0.0
+        for e, item in events:
+            if not first <= e.due_date <= last:
+                continue
+            if uncertain_income(e):  # only in some of the forecast's paths: shown apart, not added in
+                maybe_in += e.amount
+                continue
+            kind = "recurring" if item.recurrence else "one_off"
+            parts[f"{kind}_{'in' if e.amount > 0 else 'out'}"] += e.amount
+        parts = {k: round(v, 2) for k, v in parts.items()}
+        return {
+            "first": first,
+            "last": last,
+            **parts,
+            "maybe_in": round(maybe_in, 2),
+            "rhythm": round(total - sum(parts.values()), 2),
+            "total": round(total, 2),
+        }
+
     # ------------------------------------------------------------ owner's files (roadmap 2.5)
     def read_owner_file(
         self, content: bytes, filename: str, kind: str | None = None, columns: dict[str, str] | None = None
@@ -266,7 +480,7 @@ class AppCore:
             read.details["payroll_found_per_month"] = self._payroll_per_month()
         if read.items:
             planned = [
-                i for i in self.repo.list_scheduled_items(self._business().id) if i.status != "detected"
+                i for i in self.repo.list_scheduled_items(self._business().id) if not _from_statement(i)
             ]
             read.details["already_planned"] = sum(1 for i in read.items if _already_planned(i, planned))
         return read
@@ -277,7 +491,7 @@ class AppCore:
         if read.problem or read.kind is None:
             raise ValueError(read.problem or "Pick what this file is first.")
         business = self._business()
-        planned = [i for i in self.repo.list_scheduled_items(business.id) if i.status != "detected"]
+        planned = [i for i in self.repo.list_scheduled_items(business.id) if not _from_statement(i)]
         new = [i for i in read.items if not _already_planned(i, planned)]
         self.repo.add_scheduled_items(business.id, new)
         self.repo.record_uploaded_file(business.id, read.name, read.kind, read.columns)
@@ -378,7 +592,7 @@ class AppCore:
         found = self.detected_recurring()
         existing = self.repo.list_scheduled_items(business_id)
         # the demo data (and an owner who typed their payroll) already has items for these kinds
-        covered = {i.kind for i in existing if i.status != "detected" and i.recurrence} & SCHEDULED_CATEGORIES
+        covered = {i.kind for i in existing if not _from_statement(i) and i.recurrence} & SCHEDULED_CATEGORIES
         edited = self.repo.edited_items_by_key(business_id)
         items, keep_links = [], {}
         for found_item in found:
@@ -668,7 +882,7 @@ class AppCore:
                 "repeats": item.recurrence or "once",
             }
             for item in self.repo.list_scheduled_items(self._business().id)
-            if item.status != "detected"
+            if not _from_statement(item)
         ]
 
     def upcoming_outflows(self, weeks: int = 8) -> list[dict]:
@@ -709,8 +923,9 @@ class AppCore:
         Demo data has payroll/rent/bills as scheduled items, so they leave the history; a plain
         bank export has no scheduled items, so everything stays in and is forecast from the past.
         """
+        # items found in the statement (even once the owner edits them) take out only their own lines
         covered = {
-            item.kind for item in self.repo.list_scheduled_items(business.id) if item.status != "detected"
+            item.kind for item in self.repo.list_scheduled_items(business.id) if not _from_statement(item)
         } & SCHEDULED_CATEGORIES
         return self.repo.daily_net_flow(business.id, exclude_categories=covered, exclude_linked=True)
 
@@ -741,16 +956,34 @@ class AppCore:
 
     def _without_duplicates(self, items: list[ScheduledItem], end: date | None = None) -> list[ScheduledItem]:
         """A payment the owner told us about that is also one of the recurring ones found in the
-        statement (the quarterly flour order, an insurer's claim) is counted once."""
+        statement (the quarterly flour order, an insurer's claim) is counted once. Each dated event
+        keeps how sure it is (a "maybe" income arrives in only some of the forecast's paths)."""
+        return [event for event, _item in self._dated_events(items, end)]
+
+    def _dated_events(
+        self, items: list[ScheduledItem], end: date | None = None
+    ) -> list[tuple[ScheduledItem, ScheduledItem]]:
+        """Each dated payment once, next to the plan item it came from."""
         end = end or self.today + timedelta(days=self.settings.horizon_days - 1)
         events = [
-            (when, amount, label, item.status == "detected")
+            (when, amount, label, _from_statement(item), item)
             for item in items
             for when, amount, label in expand_scheduled_items([item], self.today, end)
         ]
         return [
-            ScheduledItem(label, amount, when, source="forecast")
-            for when, amount, label in recurring.drop_duplicates(events)
+            (
+                ScheduledItem(
+                    label,
+                    amount,
+                    when,
+                    kind=item.kind,
+                    source="forecast",
+                    certainty=item.certainty,
+                    likelihood=item.likelihood,
+                ),
+                item,
+            )
+            for when, amount, label, item in recurring.drop_duplicates(events)
         ]
 
     def _avg_monthly_outflow(self) -> float:
@@ -773,6 +1006,11 @@ class AppCore:
             "low_cash_line": round(business.low_cash_line),
             "scheduled_labels": labels or "none",
         }
+
+
+def _from_statement(item: ScheduledItem) -> bool:
+    """Found in the bank statement (still true once the owner confirms or edits it)."""
+    return item.status == "detected" or bool(item.match_key)
 
 
 def _already_planned(item: ScheduledItem, planned: list[ScheduledItem]) -> bool:

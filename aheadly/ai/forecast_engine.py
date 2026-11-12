@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import zlib
+from dataclasses import replace
 from datetime import date, timedelta
 
 import numpy as np
@@ -31,7 +33,11 @@ def expand_scheduled_items(
     """Turn (possibly recurring) scheduled items into dated cash events in [start, end]."""
     events: list[tuple[date, float, str]] = []
     for item in items:
-        if not item.active:
+        if not item.active or item.paused:
+            continue
+        if item.end_date is not None:
+            end_here = min(end, item.end_date)  # the owner ended it on a date (roadmap 2.6)
+            events.extend(expand_scheduled_items([replace(item, end_date=None)], start, end_here))
             continue
         if item.recurrence and item.recurrence.startswith("month_day:"):
             # a day of the month every N months, weekends moved (roadmap 2.3)
@@ -52,6 +58,15 @@ def expand_scheduled_items(
             else:
                 break
     return sorted(events)
+
+
+MAYBE_SHARE = 0.75  # "maybe" money arrives in 3 of 4 paths (DECISIONS #33)
+
+
+def uncertain_income(item: ScheduledItem) -> bool:
+    """Income that may not come. A "maybe" payment out still counts in full: being cautious with
+    cash means planning for the bill and doubting the income (DECISIONS #33)."""
+    return item.amount > 0 and (item.certainty == "maybe" or item.likelihood < 1)
 
 
 def _add_month(d: date) -> date:
@@ -92,12 +107,22 @@ class ForecastEngine:
         dates = [start + timedelta(days=i) for i in range(horizon_days)]
         residual_paths = self._residual_paths(history, horizon_days)  # (n_paths, horizon)
 
+        sure = [i for i in scheduled_items if not uncertain_income(i)]
+        unsure = [i for i in scheduled_items if uncertain_income(i)]
         events = expand_scheduled_items(scheduled_items, start, dates[-1])
         scheduled_flow = np.zeros(horizon_days)
-        for event_date, amount, _label in events:
+        for event_date, amount, _label in expand_scheduled_items(sure, start, dates[-1]):
             scheduled_flow[(event_date - start).days] += amount
 
         daily_flow = residual_paths + scheduled_flow
+        # money that may not come (an overdue invoice, an order the owner isn't sure of) arrives in
+        # only a share of the paths, so the worst case goes without some of it (roadmap 2.6)
+        for item in unsure:
+            share = item.likelihood if item.likelihood < 1 else MAYBE_SHARE
+            seed = zlib.crc32(f"{item.label}|{item.due_date}".encode())
+            arrives = np.random.default_rng(seed).random(daily_flow.shape[0]) < share
+            for event_date, amount, _label in expand_scheduled_items([item], start, dates[-1]):
+                daily_flow[arrives, (event_date - start).days] += amount
         balances = opening_balance + np.cumsum(daily_flow, axis=1)
         p10, p50, p90 = np.percentile(balances, [10, 50, 90], axis=0)
         flow_p50 = np.median(daily_flow, axis=0)

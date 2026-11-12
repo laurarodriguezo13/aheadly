@@ -442,9 +442,9 @@ def drop_duplicates(events: list[tuple[date, float, str, bool]]) -> list[tuple[d
     detected = [e for e in events if e[3]]
     known = [e for e in events if not e[3]]
     removed: set[int] = set()
-    for when, amount, _label, _ in known:
+    for when, amount, *_rest in known:
         best, best_gap = None, None
-        for i, (d_when, d_amount, _l, _) in enumerate(detected):
+        for i, (d_when, d_amount, *_rest) in enumerate(detected):
             if i in removed or (d_amount > 0) != (amount > 0):
                 continue
             gap = abs((d_when - when).days)
@@ -457,4 +457,32 @@ def drop_duplicates(events: list[tuple[date, float, str, bool]]) -> list[tuple[d
         if best is not None:
             removed.add(best)
     kept = [e for i, e in enumerate(detected) if i not in removed] + known
-    return sorted((d, a, label) for d, a, label, _ in kept)
+    # (date, amount, label) plus whatever the caller added after the detected flag
+    return sorted(((e[0], e[1], e[2], *e[4:]) for e in kept), key=lambda e: (e[0], e[1], e[2]))
+
+
+ORDINAL = {1: "1st", 2: "2nd", 3: "3rd", 21: "21st", 22: "22nd", 23: "23rd", 31: "31st"}
+
+
+def describe(recurrence: str | None, due: date) -> str:
+    """How often, in plain words: 'weekly (Fridays)', 'monthly on the 15th', 'quarterly on the 15th'."""
+    if not recurrence:
+        return "once"
+    if recurrence == "weekly":
+        return f"weekly ({WEEKDAY_NAMES[due.weekday()]}s)"
+    if recurrence == "biweekly":
+        return f"every two weeks ({WEEKDAY_NAMES[due.weekday()]}s)"
+    if recurrence == "monthly":
+        return f"monthly on the {ORDINAL.get(due.day, f'{due.day}th')}"
+    if recurrence.startswith("every:"):
+        return f"about every {recurrence.split(':')[1]} days"
+    if recurrence.startswith("month_day:"):
+        day, _shift, every = parse_month_rule(recurrence)
+        when = (
+            "on the last business day" if day == "last_bd"
+            else "on the last day" if day == "last"
+            else f"on the {ORDINAL.get(int(day), f'{day}th')}"
+        )  # fmt: skip
+        how_often = {1: "monthly"}.get(every) or EVERY_N_MONTHS.get(every, f"every {every} months")
+        return f"{how_often} {when}"
+    return recurrence
