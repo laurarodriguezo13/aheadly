@@ -29,11 +29,10 @@ UPLOAD_HELP = (
 BUSINESS_NAME = "Business name"
 OWNER_NAME = "Your name (optional)"
 STATEMENT_FILE = "Bank statements (CSV or Excel, one or more)"
-UPCOMING_FILE = "Upcoming payments (optional, CSV or Excel)"
+UPCOMING_FILE = "Other files you keep (optional, CSV or Excel, one or more)"
 UPCOMING_HELP = (
-    "Only one-off things your bank can't know yet: a planned purchase, a big supplier order, a customer "
-    "payment you expect. Columns: Date, Description, Amount (minus for money going out). Regular payments "
-    "like payroll and rent are learned from your statement, so don't list them here."
+    "Upcoming payments, money customers owe you, your employee list, a ledger or your inventory, in "
+    "whatever layout you use. We'll show you what we found in each before using it."
 )
 LOW_CASH_LINE_INPUT = "Lowest balance you're comfortable with ($)"
 BALANCE_INPUT = "Current balance ($, only if your statement has no Balance column)"
@@ -64,6 +63,60 @@ RECURRING_HELP = (
     "(card sales, weekly supplier orders), so the forecast learns it with the rest of your daily ups and downs. "
     "≈ means the amount varies; we use a typical recent amount."
 )
+OWNER_FILES_TITLE = "Files you keep"
+OWNER_FILES_HELP = (
+    "Upcoming payments, money customers owe you, your employee list, a ledger or your inventory. Any layout: "
+    "we read the column titles and show you what we found before using anything."
+)
+OWNER_FILES_UPLOAD = "Add files you keep (CSV or Excel)"
+OWNER_FILE_KIND = "This file is"
+OWNER_FILE_USE = "Use this file"
+OWNER_FILE_SKIP = "Skip"
+OWNER_FILE_USED = "{name}: added {n} item(s) to your plan."
+OWNER_FILE_NOTED = "{name}: noted. It doesn't change the forecast."
+OWNER_FILE_AI = (
+    "We weren't sure from the column titles; our assistant suggested this kind (it saw only the titles)."
+)
+OWNER_FILE_ALREADY = "{n} of these are already in your plan and won't be added twice."
+OWNER_FILES_USED_LIST = "Files you've added: {names}"
+OWNER_COLUMN_PICK = "Which column has the {role}?"
+OWNER_SKIPPED = "{n} row(s) skipped: we couldn't read their date or amount."
+OWNER_TOTAL_ROWS = "{n} total row(s) left out (they add up the others)."
+OWNER_ROLE_NAMES = {
+    "date": "date", "due": "due date", "issued": "issue date", "label": "description", "payee": "supplier",
+    "customer": "customer", "invoice": "invoice number", "amount": "amount", "type": "in/out type",
+    "name": "name", "pay": "pay", "position": "position", "account": "account code", "item": "item",
+    "quantity": "quantity", "unit_cost": "unit cost", "reorder": "reorder level",
+}  # fmt: skip
+OWNER_KIND_NAMES = {
+    "upcoming_payments": "Upcoming payments",
+    "receivables": "Money customers owe you",
+    "employees": "Employee list",
+    "ledger": "Accounting ledger",
+    "inventory": "Inventory",
+}
+OWNER_SUMMARY = {
+    "upcoming_payments": (
+        "{rows} payment(s) or income: {n_in} coming in, {n_out} going out, {first} to {last}. "
+        "{past} already past are left out."
+    ),
+    "receivables": (
+        "{rows} invoice(s), {total} owed to you. {overdue} overdue: the ones up to 60 days late are counted "
+        "as a maybe in two weeks; {doubtful} older than that are listed but not counted."
+    ),
+    "employees": (
+        "{rows} people, {total} {period} (about {per_month} a month). The payroll in your statement is about "
+        "{found} a month. Payroll is already in the forecast from your statement, so this file adds nothing to it."
+    ),
+    "employees_mismatch": (
+        "These don't match by more than 10%. Did someone join or leave, or is part of the pay made another way?"
+    ),
+    "ledger": (
+        "{rows} line(s), balance {total}. Not added to the forecast: this money already shows in your bank "
+        "statement."
+    ),
+    "inventory": "{rows} item(s) worth {total} at cost. {low} below their reorder level{names}.",
+}
 CATEGORY_NAMES = {
     "sales": "Sales",
     "other_income": "Other income",
@@ -136,9 +189,6 @@ STATEMENT_OLD = (
 BALANCE_BREAKS = (
     "The Balance column of your statement doesn't add up in {n} place(s), starting {date}. "
     "Some lines may be missing from the file, so check it before trusting the numbers."
-)
-SKIPPED_UPCOMING = (
-    "{n} line(s) of your upcoming payments file had a date or amount we couldn't read, so we left them out."
 )
 SKIPPED_ROWS = "{n} row(s) of your statement had a date or amount we couldn't read, so we left them out. Check the file if that seems wrong."
 

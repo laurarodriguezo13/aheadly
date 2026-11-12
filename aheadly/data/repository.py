@@ -243,6 +243,24 @@ class Repository:
             )
         ]
 
+    def record_uploaded_file(self, business_id: int, name: str, kind: str, mapping: dict) -> None:
+        """An owner's file they confirmed (roadmap 2.5): its name, kind and which column was what."""
+        self._conn.execute(
+            "INSERT INTO uploaded_files (business_id, name, detected_type, mapping_json, confirmed, uploaded_at) "
+            "VALUES (?,?,?,?,1,?)",
+            (business_id, name, kind, json.dumps(mapping, ensure_ascii=False), _now()),
+        )
+        self._conn.commit()
+
+    def uploaded_files(self, business_id: int) -> list[dict]:
+        return [
+            {"name": r["name"], "kind": r["detected_type"], "uploaded_at": r["uploaded_at"]}
+            for r in self._conn.execute(
+                "SELECT name, detected_type, uploaded_at FROM uploaded_files WHERE business_id=? ORDER BY id",
+                (business_id,),
+            )
+        ]
+
     def save_payee_rule(self, business_id: int, match_key: str, category: str, label: str = "") -> None:
         self._conn.execute(
             "INSERT INTO payee_rules (business_id, match_key, category, label, created_at) VALUES (?,?,?,?,?) "

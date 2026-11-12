@@ -187,3 +187,118 @@ def proposal_card(core, items, key: str) -> int:
     except ValueError as exc:
         st.error(copy.ADD_PROBLEM.format(problem=exc))
         return 0
+
+
+def owner_file_card(core, entry: dict, key: str) -> str | None:
+    """Roadmap 2.5: one file the owner keeps: what we found, the kind (they can change it), and
+    Use / Skip. `entry` = {"name", "content", "read"}. Returns "used", "skipped" or None."""
+    read = entry["read"]
+    kinds = list(copy.OWNER_KIND_NAMES)
+    with st.container(border=True):
+        st.markdown(f"**{html.escape(read.name)}**")
+        current = kinds.index(read.kind) if read.kind in kinds else None
+        picked = st.selectbox(
+            copy.OWNER_FILE_KIND,
+            kinds,
+            index=current,
+            format_func=lambda k: copy.OWNER_KIND_NAMES[k],
+            key=f"{key}-kind",
+            placeholder="Pick what this file is",
+        )
+        if picked and picked != read.kind:
+            read = entry["read"] = core.read_owner_file(
+                entry["content"], read.name, picked, entry.get("columns")
+            )
+        if read.details.get("kind_from") == "ai":
+            st.caption(copy.OWNER_FILE_AI)
+        if read.problem:
+            st.warning(read.problem)
+        missing = read.details.get("missing_roles", [])
+        if missing:  # the titles didn't say: the owner points at the columns
+            samples = read.details.get("samples", {})
+            hint = dict(entry.get("columns") or {})
+            for col, role in zip(st.columns(len(missing)), missing):
+                choice = col.selectbox(
+                    copy.OWNER_COLUMN_PICK.format(role=copy.OWNER_ROLE_NAMES.get(role, role)),
+                    read.headers,
+                    index=None,
+                    format_func=lambda h: f"{h} (e.g. {samples[h]})" if samples.get(h) else h,
+                    key=f"{key}-col-{role}",
+                )
+                if choice:
+                    hint[role] = choice
+            if hint != (entry.get("columns") or {}):
+                entry["columns"] = hint
+                entry["read"] = core.read_owner_file(entry["content"], read.name, picked or read.kind, hint)
+                st.rerun()
+        elif read.kind:
+            st.write(owner_file_summary(read))
+            if read.details.get("skipped"):
+                st.caption(copy.OWNER_SKIPPED.format(n=read.details["skipped"]))
+            if read.details.get("total_rows"):
+                st.caption(copy.OWNER_TOTAL_ROWS.format(n=read.details["total_rows"]))
+            if read.items:
+                st.dataframe(
+                    [
+                        {"What": i.label, "Date": day(i.due_date), "Amount": money(i.amount),
+                         "Sure?": "maybe" if i.certainty == "maybe" else "yes"}
+                        for i in read.items
+                    ],
+                    hide_index=True,
+                    width="stretch",
+                )  # fmt: skip
+            if read.details.get("already_planned"):
+                st.caption(copy.OWNER_FILE_ALREADY.format(n=read.details["already_planned"]))
+        use_col, skip_col = st.columns([1, 4])
+        if use_col.button(copy.OWNER_FILE_USE, key=f"{key}-use", type="primary", disabled=bool(read.problem)):
+            added = core.use_owner_file(read)
+            st.session_state.setdefault("owner_file_notes", []).append(
+                copy.OWNER_FILE_USED.format(name=read.name, n=added)
+                if read.items
+                else copy.OWNER_FILE_NOTED.format(name=read.name)
+            )
+            return "used"
+        if skip_col.button(copy.OWNER_FILE_SKIP, key=f"{key}-skip"):
+            return "skipped"
+    return None
+
+
+def owner_file_summary(read) -> str:
+    """One plain sentence or two about what a file holds."""
+    d = read.details
+    if read.kind == "upcoming_payments":
+        dates = sorted(i.due_date for i in read.items) or [None]
+        return copy.OWNER_SUMMARY["upcoming_payments"].format(
+            rows=read.rows,
+            n_in=sum(1 for i in read.items if i.amount > 0),
+            n_out=sum(1 for i in read.items if i.amount < 0),
+            first=day(dates[0]) if dates[0] else "-",
+            last=day(dates[-1]) if dates[-1] else "-",
+            past=d.get("already_past", 0),
+        )
+    if read.kind == "receivables":
+        return copy.OWNER_SUMMARY["receivables"].format(
+            rows=read.rows,
+            total=money(read.total),
+            overdue=read.overdue_rows,
+            doubtful=len(d.get("doubtful", [])),
+        )
+    if read.kind == "employees":
+        text = copy.OWNER_SUMMARY["employees"].format(
+            rows=read.rows,
+            total=money(read.total),
+            period=d["period"],
+            per_month=money(d["per_month"]),
+            found=money(d.get("payroll_found_per_month", 0)),
+        )
+        found = d.get("payroll_found_per_month", 0)
+        if found and abs(found - d["per_month"]) > 0.1 * d["per_month"]:
+            text += " " + copy.OWNER_SUMMARY["employees_mismatch"]
+        return text
+    if read.kind == "ledger":
+        return copy.OWNER_SUMMARY["ledger"].format(rows=read.rows, total=money(read.total))
+    low = d.get("below_reorder", [])
+    names = f": {', '.join(low[:5])}" if low else ""
+    return copy.OWNER_SUMMARY["inventory"].format(
+        rows=read.rows, total=money(read.total), low=len(low), names=names
+    )

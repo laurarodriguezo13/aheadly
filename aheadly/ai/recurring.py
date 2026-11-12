@@ -437,7 +437,8 @@ def recurrence_for(rule: str) -> str:
 def drop_duplicates(events: list[tuple[date, float, str, bool]]) -> list[tuple[date, float, str]]:
     """events: (date, amount, label, detected). A one-off the owner told us about (a quarterly
     flour order, an insurer's claim) that lands within 10 days of a detected occurrence of the
-    same sign and a similar amount (within 30%) replaces it: it is the same money."""
+    same sign and a similar amount (within 40%: an insurer's payments vary a lot) replaces it:
+    it is the same money."""
     detected = [e for e in events if e[3]]
     known = [e for e in events if not e[3]]
     removed: set[int] = set()
@@ -449,7 +450,7 @@ def drop_duplicates(events: list[tuple[date, float, str, bool]]) -> list[tuple[d
             gap = abs((d_when - when).days)
             if (
                 gap <= 10
-                and abs(d_amount - amount) <= 0.3 * abs(amount)
+                and abs(d_amount - amount) <= 0.4 * abs(amount)
                 and (best_gap is None or gap < best_gap)
             ):
                 best, best_gap = i, gap

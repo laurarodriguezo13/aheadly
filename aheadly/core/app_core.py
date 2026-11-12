@@ -26,6 +26,7 @@ from aheadly.core import alert_rules
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
+from aheadly.data.connectors import owner_files
 from aheadly.data.connectors.csv_connector import CsvConnector
 from aheadly.data.repository import Repository
 from aheadly.domain import (
@@ -246,6 +247,57 @@ class AppCore:
         if sales <= 0:
             sales = self.repo.flow_totals(business.id, start)["money_in"]
         return round(sales / weeks, 2)
+
+    # ------------------------------------------------------------ owner's files (roadmap 2.5)
+    def read_owner_file(
+        self, content: bytes, filename: str, kind: str | None = None, columns: dict[str, str] | None = None
+    ) -> owner_files.OwnerFile:
+        """Read a file the owner keeps and say what it is and what it would add. Saves nothing.
+        `kind`: what the owner says it is, when the app guessed wrong or couldn't tell; `columns`:
+        which of the file's columns holds what (role → title), when the titles didn't say."""
+        read = owner_files.read_owner_file(content, filename, self.today, kind, columns)
+        if read.kind is None and kind is None and read.headers:
+            guess = self.translator.classify_owner_file(read.headers)
+            if guess:
+                kind_guess, columns = guess
+                read = owner_files.read_owner_file(content, filename, self.today, kind_guess, columns)
+                read.details["kind_from"] = "ai"
+        if read.kind == "employees" and not read.problem:
+            read.details["payroll_found_per_month"] = self._payroll_per_month()
+        if read.items:
+            planned = [
+                i for i in self.repo.list_scheduled_items(self._business().id) if i.status != "detected"
+            ]
+            read.details["already_planned"] = sum(1 for i in read.items if _already_planned(i, planned))
+        return read
+
+    def use_owner_file(self, read: owner_files.OwnerFile) -> int:
+        """The owner confirmed the file: its payments go into the plan (skipping ones already there)
+        and the file is remembered. Returns how many items were added."""
+        if read.problem or read.kind is None:
+            raise ValueError(read.problem or "Pick what this file is first.")
+        business = self._business()
+        planned = [i for i in self.repo.list_scheduled_items(business.id) if i.status != "detected"]
+        new = [i for i in read.items if not _already_planned(i, planned)]
+        self.repo.add_scheduled_items(business.id, new)
+        self.repo.record_uploaded_file(business.id, read.name, read.kind, read.columns)
+        if new:
+            self.run_daily_check(force=True)
+        return len(new)
+
+    def uploaded_files(self) -> list[dict]:
+        return self.repo.uploaded_files(self._business().id)
+
+    def _payroll_per_month(self) -> float:
+        """Pay found in the statement as payroll (wages, not bonuses or social security), per month."""
+        per_month = {"weekly": 52 / 12, "every two weeks": 26 / 12, "twice a month": 2.0, "monthly": 1.0}
+        total = 0.0
+        for r in self.detected_recurring():
+            wages = any(w in r.match_key for w in ("nomina", "payroll", "salari", "sueldo", "wages"))
+            extra = any(w in r.match_key for w in ("prima", "pila", "aportes", "temporada", "bonus"))
+            if r.category == "payroll" and wages and not extra and not r.seasonal and r.cadence in per_month:
+                total += -r.amount * per_month[r.cadence]
+        return round(total, 2)
 
     # ------------------------------------------------------------ just say it (roadmap 2.4)
     def parse_plan_text(self, text: str) -> list[ProposedItem]:
@@ -721,6 +773,16 @@ class AppCore:
             "low_cash_line": round(business.low_cash_line),
             "scheduled_labels": labels or "none",
         }
+
+
+def _already_planned(item: ScheduledItem, planned: list[ScheduledItem]) -> bool:
+    """The same payment is already in the plan (typed by the owner or from another file)."""
+    return any(
+        (p.amount > 0) == (item.amount > 0)
+        and abs(p.amount - item.amount) <= 0.01 * abs(item.amount)
+        and abs((p.due_date - item.due_date).days) <= 3
+        for p in planned
+    )
 
 
 def _kind(category: str | None, amount: float) -> str:

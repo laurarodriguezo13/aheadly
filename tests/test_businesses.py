@@ -49,7 +49,7 @@ PENDING: dict[str, dict[str, str]] = {
     "categories": {
         "taller-los-pistones": "the key counts a supplier payment the file shows as #¡VALOR! (unreadable line)",
     },
-    "owner_files": {"*": "2.5 any Excel file"},
+    "owner_files": {},
     "internal_transfers": {},
     "insights": {"*": "4.1 things we noticed"},
     "timing_or_structural": {"*": "3.6 financing helper"},
@@ -272,7 +272,12 @@ def test_owner_files(slug):
     for entry in KEYS[slug]["owner_files"]:
         path = BUSINESSES / slug / entry["path"]
         read = core.read_owner_file(path.read_bytes(), path.name)
-        assert (read["kind"], read["rows"]) == (entry["kind"], entry["rows"])
+        assert (read.kind, read.rows, read.overdue_rows) == (
+            entry["kind"],
+            entry["rows"],
+            entry["overdue_rows"],
+        )
+        assert read.total == pytest.approx(entry["total"], rel=0.01, abs=0.01)
 
 
 @pytest.mark.parametrize(

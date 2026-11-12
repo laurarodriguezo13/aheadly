@@ -20,6 +20,8 @@ from aheadly.ai import prompts, templates
 from aheadly.ai.guardrails import check_numbers
 from aheadly.ai.llm_client import LLMError, LLMReply, StubClient
 from aheadly.ai.plan_text import PROPOSE_TOOL, ProposedItem, read_by_rules, read_tool_call
+from aheadly.data.connectors.owner_files import KINDS as FILE_KINDS
+from aheadly.data.connectors.owner_files import ROLES as FILE_ROLES
 from aheadly.ai.tools import ToolDispatcher
 from aheadly.domain import ChatAnswer
 
@@ -87,6 +89,46 @@ class InsightTranslator:
             scenario=self._tools.last_scenario,
             proposals=self._tools.last_proposals,
         )
+
+    # ------------------------------------------------------ owner's files: what kind is it
+    def classify_owner_file(self, headers: list[str]) -> tuple[str, dict[str, str]] | None:
+        """Roadmap 2.5: when the column titles don't say what a file is, the model may know: the kind,
+        and which title is which (role → title). It sees the titles only, never a value (an employee
+        list's names and pay stay here). Titles it names must be real titles of the file."""
+        if isinstance(self._llm, StubClient) or not headers:
+            return None
+        tool = {
+            "name": "classify_owner_file",
+            "description": "Say which kind of file this is and which column title holds what.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "kind": {"type": "string", "enum": [*FILE_KINDS, "other"]},
+                    "columns": {
+                        "type": "object",
+                        "description": "role → the exact column title",
+                        "properties": {role: {"type": "string", "enum": headers} for role in FILE_ROLES},
+                    },
+                },
+                "required": ["kind"],
+            },
+        }
+        messages = [
+            {"role": "system", "content": prompts.FILE_KIND_INSTRUCTIONS},
+            {"role": "user", "content": json.dumps({"column_titles": headers}, ensure_ascii=False)},
+        ]
+        try:
+            reply = self._llm.chat(messages, [tool])
+        except LLMError as exc:
+            logger.warning("file kind: model failed: %s", exc)
+            return None
+        for call in reply.tool_calls:
+            args = call.arguments if isinstance(call.arguments, dict) else {}
+            if call.name == "classify_owner_file" and args.get("kind") in FILE_KINDS:
+                given = args.get("columns") if isinstance(args.get("columns"), dict) else {}
+                columns = {r: h for r, h in given.items() if r in FILE_ROLES and h in headers}
+                return args["kind"], columns
+        return None
 
     # ------------------------------------------------------ job C: just say it
     def extract_plan_items(self, text: str, today) -> tuple[list[ProposedItem], bool]:

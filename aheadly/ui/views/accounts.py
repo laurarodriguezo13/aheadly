@@ -13,6 +13,7 @@ from aheadly.ui.components import (
     hero,
     local_time,
     money,
+    owner_file_card,
     proposal_card,
     section_title,
     statement_notice,
@@ -31,7 +32,7 @@ if not status.connected:
         name = name_col.text_input(copy.BUSINESS_NAME)
         owner = owner_col.text_input(copy.OWNER_NAME)
         statements = st.file_uploader(copy.STATEMENT_FILE, type=["csv", "xlsx"], accept_multiple_files=True)
-        upcoming = st.file_uploader(copy.UPCOMING_FILE, type=["csv", "xlsx"])
+        kept = st.file_uploader(copy.UPCOMING_FILE, type=["csv", "xlsx"], accept_multiple_files=True)
         st.caption(copy.UPCOMING_HELP)
         line_col, balance_col = st.columns(2)
         line = line_col.number_input(
@@ -55,10 +56,8 @@ if not status.connected:
                     None if several else balance,  # a typed balance only makes sense for one file
                     file.name,
                     business_profile=profile,
-                    upcoming=upcoming.getvalue() if upcoming and i == 0 else None,
-                    upcoming_filename=upcoming.name if upcoming else "upcoming.csv",
                 )
-                for i, file in enumerate(statements)
+                for file in statements
             ]
             try:
                 with st.spinner(copy.UPLOAD_SPINNER):
@@ -71,7 +70,15 @@ if not status.connected:
                     st.error(copy.UPLOAD_FAILED.format(error=exc))
             else:
                 st.session_state["skipped_rows"] = sum(c.skipped_rows for c in connectors)
-                st.session_state["skipped_upcoming"] = connectors[0].skipped_upcoming
+                # the owner's other files: read now, shown on the next screen to confirm one by one
+                st.session_state["owner_files"] = [
+                    {
+                        "name": f.name,
+                        "content": f.getvalue(),
+                        "read": core.read_owner_file(f.getvalue(), f.name),
+                    }
+                    for f in kept or []
+                ]
                 st.session_state["balance_breaks"] = [
                     (file.name, c.balance_breaks, c.first_break)
                     for file, c in zip(statements, connectors)
@@ -114,8 +121,6 @@ else:
     )
     if st.session_state.get("skipped_rows"):
         st.warning(copy.SKIPPED_ROWS.format(n=st.session_state["skipped_rows"]))
-    if st.session_state.get("skipped_upcoming"):
-        st.warning(copy.SKIPPED_UPCOMING.format(n=st.session_state["skipped_upcoming"]))
     if any((a.get("kind") or "bank") == "card" for a in status.accounts):
         st.caption(copy.CARD_NOT_CASH)
     moves = core.internal_transfer_counts()
@@ -163,6 +168,32 @@ else:
                     st.session_state.pop("plan_proposals", None)
                     st.session_state["plan_added"] = added
                     st.rerun()
+    with st.container(border=True):
+        section_title(copy.OWNER_FILES_TITLE)
+        st.caption(copy.OWNER_FILES_HELP)
+        for note in st.session_state.pop("owner_file_notes", []):
+            st.success(note)
+        used = core.uploaded_files()
+        if used:
+            st.caption(copy.OWNER_FILES_USED_LIST.format(names=", ".join(f["name"] for f in used)))
+        pending = st.session_state.setdefault("owner_files", [])
+        new_files = st.file_uploader(
+            copy.OWNER_FILES_UPLOAD,
+            type=["csv", "xlsx"],
+            accept_multiple_files=True,
+            key=f"owner-upload-{st.session_state.get('owner_upload_round', 0)}",
+        )
+        if new_files:
+            pending.extend(
+                {"name": f.name, "content": f.getvalue(), "read": core.read_owner_file(f.getvalue(), f.name)}
+                for f in new_files
+            )
+            st.session_state["owner_upload_round"] = st.session_state.get("owner_upload_round", 0) + 1
+            st.rerun()
+        for index, entry in enumerate(list(pending)):
+            if owner_file_card(core, entry, f"owner-{index}-{entry['name']}"):
+                pending.remove(entry)
+                st.rerun()
     regular = core.recurring_table()
     if regular:
         with st.expander(copy.RECURRING_TITLE.format(n=len(regular))):
