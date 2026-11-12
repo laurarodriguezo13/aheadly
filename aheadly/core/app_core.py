@@ -12,9 +12,10 @@ from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+import numpy as np
 import pandas as pd
 
-from aheadly.ai import categorizer, plan_text, recurring, seasons
+from aheadly.ai import categorizer, confidence, plan_text, recurring, seasons
 from aheadly.ai.plan_text import ProposedItem
 from aheadly.ai.forecast_engine import (
     ForecastEngine,
@@ -94,6 +95,7 @@ class AppCore:
         self.settings = settings
         self._today = today
         self._pending_time_zone: str | None = None  # from the browser, kept until a business exists
+        self._backtests: dict = {}  # backtest error per history (roadmap 2.8)
         self.translator = InsightTranslator(llm or create_llm_client(settings), ToolDispatcher(self))
 
     @property
@@ -194,6 +196,8 @@ class AppCore:
         self._detect_recurring(business.id)
         logger.info("connected %s file(s): %s transactions", len(connectors), added)
         self.run_daily_check(force=True)
+        breaks = sum(getattr(c, "balance_breaks", 0) or 0 for c in connectors)
+        self.repo.save_profile(business.id, {"balance_breaks": breaks})  # for the confidence check (2.8)
         return added
 
     def load_example(self, slug: str = DEFAULT_EXAMPLE) -> int:
@@ -253,6 +257,60 @@ class AppCore:
             sales = self.repo.flow_totals(business.id, start)["money_in"]
         return round(sales / weeks, 2)
 
+    # ------------------------------------------------------------ how much to trust it (roadmap 2.8)
+    def forecast_confidence(self) -> dict:
+        """High, medium or low, with the two biggest reasons (see aheadly/ai/confidence.py)."""
+        business = self._business()
+        profile = self.repo.get_profile(business.id)
+        summary = self.repo.statement_summary(business.id)
+        days = (
+            (date.fromisoformat(summary["last"]) - date.fromisoformat(summary["first"])).days + 1
+            if summary["first"]
+            else 0
+        )
+        end = self.statement_end() or self.today
+        recent = self.repo.flow_totals(business.id, end - timedelta(days=90))
+        lines = self.repo.line_count(business.id, end - timedelta(days=90))
+        unplaced = sum(
+            p["count"] for p in self.repo.uncategorized_payees(business.id, end - timedelta(days=90))
+        )
+        checks = [
+            confidence.history_check(days),
+            confidence.unidentified_check(unplaced / lines if lines else 0.0),
+            confidence.statement_check(int(profile.get("balance_breaks", 0))),
+            confidence.backtest_check(self._backtest_error(business, recent)),
+            confidence.answers_check(*self._questions_answered(profile)),
+        ]
+        return confidence.level(checks)
+
+    def _questions_answered(self, profile: dict) -> tuple[int, int]:
+        """(answered, asked): skipped questions count as asked, not answered."""
+        done = profile.get("onboarding_done", [])
+        skipped = set(profile.get("onboarding_skipped", []))
+        left = profile.get("questions_left") or 0
+        return len([q for q in done if q not in skipped]), len(done) + left
+
+    def no_one_offs_planned(self) -> bool:
+        """No one-off payment known in the forecast's window: the dashboard asks about big purchases."""
+        end = self.today + timedelta(days=self.settings.horizon_days - 1)
+        return not any(
+            not i.recurrence and not i.paused and self.today <= i.due_date <= end
+            for i in self.repo.list_scheduled_items(self._business().id)
+        )
+
+    def _backtest_error(self, business, recent: dict) -> float | None:
+        """Forecast the last 4 weeks from the weeks before and compare (cached per history)."""
+        history = self._model_history(business)
+        if len(history) < 84:
+            return None
+        key = (business.id, len(history), round(float(history["net_flow"].sum()), 2))
+        if key not in self._backtests:
+            errors = self.engine.backtest(history)
+            error = errors.get(type(self.engine._model).__name__, min(errors.values()))
+            typical = (recent["money_in"] + recent["money_out"]) / 90
+            self._backtests[key] = round(error / typical, 2) if typical else None
+        return self._backtests[key]
+
     # ------------------------------------------------------------ onboarding questions (roadmap 2.7)
     def onboarding(self) -> dict:
         """The questions still to answer, in order, and how far the owner got. Answered and skipped
@@ -299,16 +357,27 @@ class AppCore:
         return category
 
     def skip_question(self, question_id: str) -> None:
-        self._question_done(question_id)
+        """Skipped: not asked again, but not counted as answered (confidence, roadmap 2.8)."""
+        business = self._business()
+        skipped = list(self.repo.get_profile(business.id).get("onboarding_skipped", []))
+        if question_id not in skipped:
+            self.repo.save_profile(business.id, {"onboarding_skipped": skipped + [question_id]})
+        self._question_done(question_id, skipping=True)
 
     def example_answers(self) -> dict:
         """The example owner's own answers, to pre-fill the questions when trying the example."""
         example = self.example()
         return load_example(example).answers if example else {}
 
-    def _question_done(self, question_id: str) -> None:
+    def _question_done(self, question_id: str, skipping: bool = False) -> None:
         business = self._business()
-        done = list(self.repo.get_profile(business.id).get("onboarding_done", []))
+        profile = self.repo.get_profile(business.id)
+        skipped = profile.get("onboarding_skipped", [])
+        if not skipping and question_id in skipped:  # answered after all (e.g. busy months, later)
+            self.repo.save_profile(
+                business.id, {"onboarding_skipped": [q for q in skipped if q != question_id]}
+            )
+        done = list(profile.get("onboarding_done", []))
         if question_id not in done:
             done.append(question_id)
         left = self.repo.get_profile(business.id).get("questions_left")
@@ -1120,6 +1189,7 @@ class AppCore:
             for item in items
             for when, amount, label in expand_scheduled_items([item], self.today, end)
         ]
+        moves = self._how_items_moved()
         return [
             (
                 ScheduledItem(
@@ -1130,11 +1200,35 @@ class AppCore:
                     source="forecast",
                     certainty=item.certainty,
                     likelihood=item.likelihood,
+                    spread=moves.get(item.id, (0.0, 0))[0],
+                    jitter_days=moves.get(item.id, (0.0, 0))[1],
                 ),
                 item,
             )
             for when, amount, label, item in recurring.drop_duplicates(events)
         ]
+
+    def _how_items_moved(self) -> dict[int, tuple[float, int]]:
+        """For each payment found in the statement (3+ times): how much its amount spread (as a share
+        of the typical amount) and how many days early or late it usually came, from the lines it
+        explains. An amount the owner set themselves is theirs: no spread (roadmap 2.8)."""
+        lines = self.repo.linked_lines(self._business().id)
+        if lines.empty:
+            return {}
+        set_by_owner = self.repo.get_profile(self._business().id).get("amount_set_with_statement", {})
+        edited = {int(k) for k in set_by_owner}
+        out = {}
+        for item_id, group in lines.groupby("scheduled_item_id"):
+            if len(group) < 3:
+                continue
+            amounts = group["amount"].abs().to_numpy()
+            typical = float(np.median(amounts))
+            spread = 0.0 if item_id in edited or typical == 0 else float(np.std(amounts[-6:]) / typical)
+            gaps = np.diff(np.sort(group["date"].to_numpy())).astype("timedelta64[D]").astype(int)
+            jitter = int(min(5, round(float(np.std(gaps[-6:])) / 2))) if len(gaps) >= 2 else 0
+            if spread > 0.02 or jitter:
+                out[int(item_id)] = (round(min(spread, 0.5), 3) if spread > 0.02 else 0.0, jitter)
+        return out
 
     def _avg_monthly_outflow(self) -> float:
         totals = self.repo.flow_totals(self._business().id, self.today - timedelta(days=90))

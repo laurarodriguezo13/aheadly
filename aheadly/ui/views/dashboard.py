@@ -73,6 +73,17 @@ with st.container(border=True):
     )
     if st.button(copy.BASIS_LINK, key="dashboard-basis"):
         go_to("basis")
+    trust = core.forecast_confidence()
+    with st.container(border=True):
+        st.markdown(f"**{copy.CONFIDENCE_TITLE.format(level=copy.CONFIDENCE_LEVELS[trust['level']])}**")
+        st.markdown("\n".join(f"- {reason}" for reason in trust["reasons"]))
+        with st.expander(copy.CONFIDENCE_ALL):
+            st.markdown("\n".join(f"- {'✓' if c.grade == 2 else '•'} {c.text}" for c in trust["checks"]))
+    if core.no_one_offs_planned():
+        note, go = st.columns([4, 1])
+        note.info(copy.NOTHING_PLANNED)
+        if go.button(copy.NOTHING_PLANNED_GO, key="dashboard-nothing-planned"):
+            go_to("basis")
 
 left, right = st.columns([1, 1])
 with left, st.container(border=True):

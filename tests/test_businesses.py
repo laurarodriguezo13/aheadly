@@ -42,7 +42,7 @@ PENDING: dict[str, dict[str, str]] = {
     "risk_level": {},
     "shortfall_alerts": {},
     "hidden_future": {
-        "panaderia-la-esquina": "2.8 band width (this December beat last year's busy month; 2.7 lifts mostly the best case)",
+        "panaderia-la-esquina": "open: this December beat last year's and the bakery's own swings ($259 short on Dec 15 after 2.8)",
     },
     "recurring": {},
     "just_say_it": {},
@@ -50,6 +50,7 @@ PENDING: dict[str, dict[str, str]] = {
         "taller-los-pistones": "the key counts a supplier payment the file shows as #¡VALOR! (unreadable line)",
     },
     "owner_files": {},
+    "band_coverage": {},
     "internal_transfers": {},
     "insights": {"*": "4.1 things we noticed"},
     "timing_or_structural": {"*": "3.6 financing helper"},
@@ -329,3 +330,21 @@ def test_what_ifs(slug):
         result = core.ask(what_if["question"]).scenario
         change = result.summary()["lowest_change"]
         assert change == pytest.approx(what_if["approx_change"], abs=what_if["tolerance"])
+
+
+@pytest.mark.parametrize("slug", _businesses("band_coverage"))
+def test_band_coverage(slug):
+    """Roadmap 2.8: what really happened stays inside the worst-to-best range (10% margin) on at
+    least 80% of the forecast's days, not only on the lowest day."""
+    key = KEYS[slug]
+    core = import_business(slug, with_one_offs=True)
+    forecast = core.get_dashboard().forecast
+    points = {p.date: p for p in forecast.points}
+    margin = 0.10 * abs(forecast.opening_balance)
+    days = [
+        (points[_d(r["date"])], r["balance"])
+        for r in key["hidden_future"]["daily_balance"]
+        if _d(r["date"]) in points
+    ]
+    inside = sum(p.balance_p10 - margin <= real <= p.balance_p90 + margin for p, real in days)
+    assert inside >= 0.8 * len(days)

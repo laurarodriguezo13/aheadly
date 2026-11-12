@@ -111,12 +111,29 @@ class ForecastEngine:
 
         sure = [i for i in scheduled_items if not uncertain_income(i)]
         unsure = [i for i in scheduled_items if uncertain_income(i)]
+        moving = [i for i in sure if i.spread > 0 or i.jitter_days > 0]
+        fixed = [i for i in sure if not (i.spread > 0 or i.jitter_days > 0)]
         events = expand_scheduled_items(scheduled_items, start, dates[-1])
         scheduled_flow = np.zeros(horizon_days)
-        for event_date, amount, _label in expand_scheduled_items(sure, start, dates[-1]):
+        for event_date, amount, _label in expand_scheduled_items(fixed, start, dates[-1]):
             scheduled_flow[(event_date - start).days] += amount
 
-        daily_flow = residual_paths + scheduled_flow + self._seasonal(dates, month_shift or {})
+        daily_flow = (
+            residual_paths
+            + scheduled_flow
+            + self._seasonal(dates, month_shift or {})
+            + self._level_drift(history, set(month_shift or {}))
+        )
+        # payments whose amount varies or that come a few days early or late: each path draws its
+        # own amount and day from how they moved in the past, so the band reflects them (roadmap 2.8)
+        paths = np.arange(daily_flow.shape[0])
+        for item in moving:
+            rng = np.random.default_rng(zlib.crc32(f"{item.label}|{item.due_date}|moving".encode()))
+            for event_date, amount, _label in expand_scheduled_items([item], start, dates[-1]):
+                factor = np.clip(1 + item.spread * rng.standard_normal(paths.size), 0.3, 1.7)
+                shift = rng.integers(-item.jitter_days, item.jitter_days + 1, paths.size)
+                day = np.clip((event_date - start).days + shift, 0, horizon_days - 1)
+                np.add.at(daily_flow, (paths, day), amount * factor)
         # money that may not come (an overdue invoice, an order the owner isn't sure of) arrives in
         # only a share of the paths, so the worst case goes without some of it (roadmap 2.6)
         for item in unsure:
@@ -147,6 +164,24 @@ class ForecastEngine:
         return results
 
     # --------------------------------------------------------------- internals
+    def _level_drift(self, history: pd.DataFrame, skip_months: set[int]) -> np.ndarray:
+        """A business has stronger and weaker stretches, so each path gets its own level for the
+        whole horizon: a steady extra (or missing) amount per day, drawn from how much four-week
+        stretches of the history differed from each other (months the owner called busy or slow
+        left out: those are handled apart). Without it every path sat at the recent level and the
+        band was too narrow (roadmap 2.8, DECISIONS #35)."""
+        flows = history[~history["date"].dt.month.isin(skip_months)]["net_flow"].to_numpy()
+        blocks = [flows[i : i + 28].mean() for i in range(len(flows) % 28, len(flows) - 27, 28)]
+        if len(blocks) < 3:
+            return np.zeros((self.n_paths, 1))
+        # the part of the stretches' differences that is just day-to-day noise is already in the
+        # paths: count only what's left (stretches really above or below each other)
+        excess = float(np.var(blocks, ddof=1)) - float(np.var(flows, ddof=1)) / 28
+        if excess <= 0:
+            return np.zeros((self.n_paths, 1))
+        spread = excess**0.5
+        return np.random.default_rng(self.seed + 2).normal(0, spread, (self.n_paths, 1))
+
     def _seasonal(self, dates: list[date], month_shift: dict[int, float]) -> np.ndarray:
         """Busy and slow months (roadmap 2.7), per path. A slow month's drop counts in every path (the
         cautious side). A busy month's extra money may not repeat: half the paths get none of it, the

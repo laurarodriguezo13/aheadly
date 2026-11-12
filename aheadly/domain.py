@@ -55,6 +55,10 @@ class ScheduledItem:
     end_date: date | None = None
     user_edited: bool = False  # the owner changed it: detection never overwrites it again
     paused: bool = False
+    # how much it moved in the past (roadmap 2.8, worked out at forecast time, not stored): the
+    # amount's spread as a share of it, and how many days early or late it usually comes
+    spread: float = 0.0
+    jitter_days: int = 0
 
 
 @dataclass

@@ -398,3 +398,11 @@ MYSTERY_WORDS = "Or say what it is in your own words"
 MYSTERY_WORDS_PLACEHOLDER = "For example: my accountant's monthly fee"
 MYSTERY_SAVED = "Saved: {payee} is now {category}, in past and future statements."
 NOTHING_ELSE = "Nothing else for now"
+
+
+# ---------------------------------------------------------------- forecast confidence (2.8)
+CONFIDENCE_TITLE = "How much to trust this forecast: {level}"
+CONFIDENCE_LEVELS = {"high": "high", "medium": "medium", "low": "low"}
+CONFIDENCE_ALL = "All the checks"
+NOTHING_PLANNED = "This forecast assumes no big one-off payments in the next 8 weeks. Planning any?"
+NOTHING_PLANNED_GO = "Tell us"

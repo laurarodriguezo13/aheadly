@@ -531,6 +531,23 @@ class Repository:
             parse_dates=["date"],
         )
 
+    def line_count(self, business_id: int, since: date) -> int:
+        """Statement lines since `since`, leaving out moves between the owner's own accounts."""
+        return self._conn.execute(
+            "SELECT COUNT(*) FROM transactions WHERE business_id=? AND date>=? AND COALESCE(is_internal_transfer, 0)=0",
+            (business_id, since.isoformat()),
+        ).fetchone()[0]
+
+    def linked_lines(self, business_id: int) -> pd.DataFrame:
+        """Statement lines explained by a scheduled item (date, amount), oldest first (roadmap 2.8)."""
+        return pd.read_sql_query(
+            "SELECT scheduled_item_id, date, amount FROM transactions "
+            "WHERE business_id=? AND scheduled_item_id IS NOT NULL ORDER BY date",
+            self._conn,
+            params=[business_id],
+            parse_dates=["date"],
+        )
+
     def uncategorized_payees(self, business_id: int, since: date) -> list[dict]:
         """Payees still in "other" since `since` (not moves between own accounts), biggest first:
         what the onboarding questions ask about (roadmap 2.7)."""
