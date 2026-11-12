@@ -65,7 +65,7 @@ class InsightTranslator:
             parsed = json.loads(_strip_code_fence(reply.content or ""))
             # the title says how serious it is, so it follows the numbers (live check, 2026-11-12)
             body = _MINUS_AFTER_DOLLAR.sub(r"-$\1", parsed["body"])
-            text = AlertText(templates.alert_title(facts), body, parsed.get("actions", [])[:3])
+            text = AlertText(templates.alert_title(facts), body, [])  # actions come from code (roadmap 3.2)
             if not check_numbers(f"{text.title} {text.body}", [facts]).passed:
                 raise ValueError("alert used a number that is not in the facts")
             return text
@@ -74,6 +74,26 @@ class InsightTranslator:
             self.guardrail_failures += 1
             fallback = templates.alert_text(facts)
             return AlertText(fallback["title"], fallback["body"], fallback["actions"])
+
+    # ------------------------------------------------- job A2: drafted message (roadmap 3.2)
+    def draft_message(self, facts: dict) -> str:
+        """A message the owner can copy and send; every number checked against the facts."""
+        messages = [
+            {"role": "system", "content": prompts.MESSAGE_INSTRUCTIONS},
+            {"role": "user", "content": prompts.MESSAGE_PROMPT.format(facts_json=json.dumps(facts))},
+        ]
+        try:
+            reply = self._llm.chat(messages)
+            text = _MINUS_AFTER_DOLLAR.sub(
+                r"-$\1", json.loads(_strip_code_fence(reply.content or ""))["message"]
+            )
+            if not text.strip() or not check_numbers(text, [facts]).passed:
+                raise ValueError("message used a number that is not in the facts")
+            return text.strip()
+        except (LLMError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            logger.warning("draft_message fell back to template: %s", exc)
+            self.guardrail_failures += 1
+            return templates.message_text(facts)
 
     # -------------------------------------------------------------- job B: chat
     def answer(self, question: str, history: list[dict], context: dict[str, Any]) -> ChatAnswer:

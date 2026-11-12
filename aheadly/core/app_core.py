@@ -7,6 +7,7 @@ an LLM or a bank API directly.
 
 from __future__ import annotations
 
+import json
 import logging
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
@@ -28,6 +29,8 @@ from aheadly.ai.llm_client import create_llm_client
 from aheadly.ai.scenarios import apply_adjustments, parse_adjustment
 from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
+from aheadly.ai import templates
+from aheadly.core import actions as alert_actions
 from aheadly.core import alert_rules, onboarding
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
@@ -96,6 +99,7 @@ class AppCore:
         self._today = today
         self._pending_time_zone: str | None = None  # from the browser, kept until a business exists
         self._backtests: dict = {}  # backtest error per history (roadmap 2.8)
+        self._messages: dict[str, str] = {}  # drafted messages per facts (roadmap 3.2)
         self.translator = InsightTranslator(llm or create_llm_client(settings), ToolDispatcher(self))
 
     @property
@@ -869,6 +873,7 @@ class AppCore:
         summary = DailyRunSummary(ran=True, forecast=forecast)
         for facts in detected:
             text = self.translator.write_alert(facts.facts)
+            text.actions = self._actions_for(facts.facts, forecast)
             duplicate = alert_rules.find_duplicate(open_alerts, facts)
             if duplicate:
                 self.repo.update_alert(
@@ -961,6 +966,16 @@ class AppCore:
 
     # --------------------------------------------------------------- what-if
     def run_what_if(self, adjustments: list[dict], name: str = "Scenario") -> ScenarioResult:
+        result = self._scenario(adjustments, name)
+        result.scenario_id = self.repo.save_scenario(
+            self._business().id, name, adjustments, result.summary(), False
+        )
+        return result
+
+    def _scenario(
+        self, adjustments: list[dict], name: str = "Scenario", baseline: ForecastResult | None = None
+    ) -> ScenarioResult:
+        """A what-if without keeping it in the owner's history (used to measure actions, roadmap 3.2)."""
         business = self._business()
         parsed = [parse_adjustment(a) for a in adjustments]
         if not parsed:
@@ -969,11 +984,40 @@ class AppCore:
         adjusted = apply_adjustments(
             items, parsed, self.today, self.settings.horizon_days, self.weekly_sales()
         )
-        baseline = self._baseline_forecast()
+        baseline = baseline or self._baseline_forecast()
         scenario = self._forecast_for(adjusted)
-        result = ScenarioResult(name, parsed, baseline, scenario, business.low_cash_line)
-        result.scenario_id = self.repo.save_scenario(business.id, name, adjustments, result.summary(), False)
-        return result
+        return ScenarioResult(name, parsed, baseline, scenario, business.low_cash_line)
+
+    # ------------------------------------------------------------- actions (3.2)
+    def _actions_for(self, facts: dict, forecast: ForecastResult) -> list[dict]:
+        """2–3 actions for an alert: worked out and measured by code when it can, general advice
+        (without a what-if) to fill up to two, and for idle cash."""
+        generic = templates.alert_text(facts)["actions"]
+        if facts["type"] != "shortfall":
+            return generic
+        business = self._business()
+        end = self.today + timedelta(days=self.settings.horizon_days - 1)
+        found = alert_actions.build(
+            facts,
+            self.repo.list_scheduled_items(business.id),
+            self.today,
+            end,
+            lambda adjustments: self._scenario(adjustments, "Action", baseline=forecast),
+        )
+        return found + generic[: max(0, 2 - len(found))]
+
+    def draft_message(self, alert_id: int, index: int) -> str:
+        """A message for the owner to copy and send (the app never sends it). Written once per action."""
+        business = self._business()
+        alert = next(a for a in self.repo.list_alerts(business.id, open_only=False) if a.id == alert_id)
+        action = alert.actions[index]
+        if not action.get("adjustment"):
+            raise ValueError("This action has no message to draft")
+        facts = alert_actions.message_facts(action, business.name, business.owner_name)
+        key = json.dumps(facts, sort_keys=True)
+        if key not in self._messages:
+            self._messages[key] = self.translator.draft_message(facts)
+        return self._messages[key]
 
     def explain_scenario(self, result: ScenarioResult) -> str:
         return self.translator.explain_scenario(result.summary(), self._prompt_context(self._business()))

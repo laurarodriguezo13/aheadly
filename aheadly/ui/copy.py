@@ -407,3 +407,15 @@ def chance_words(pct: int | None) -> str:
     if pct >= 100:
         return "every scenario dips below your line"
     return f"{pct}% chance of dipping below your line"
+
+
+# ---------------------------------------------------------------- actions (3.2)
+ACTIONS_TITLE = "Try one"
+ACTION_IMPACT = "Lowest balance {before} → {after} · {risk_before} → {risk_after} · chance of dipping below your line {chance_before}% → {chance_after}%"
+ACTION_TEST = "Test this"
+ACTION_HOW = "How to do it"
+ACTION_DRAFT = "Draft a message"
+ACTION_DRAFT_NOTE = "Copy it and send it yourself: Aheadly never sends messages."
+ACTION_SAVED = "Plan saved. The forecast and alerts now use it."
+ACTION_AFTER = "Lowest balance after: {after}"
+ACTION_GENERAL = "General advice: we couldn't test this one for you."

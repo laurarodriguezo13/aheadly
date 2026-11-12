@@ -52,6 +52,9 @@ PENDING: dict[str, dict[str, str]] = {
     "owner_files": {},
     "band_coverage": {},
     "chance_below": {},
+    "alert_actions": {
+        "cafe-la-tertulia": "3.3 suggested fixes: its tight week is all monthly payments (rent, payroll, owner pay); what helps is pay or prices"
+    },
     "internal_transfers": {},
     "insights": {"*": "4.1 things we noticed"},
     "timing_or_structural": {"*": "3.6 financing helper"},
@@ -243,6 +246,24 @@ def test_chance_below(slug):
     at most 60% (a "watch" business can sit near a coin flip: its bad days are spread out)."""
     chance = _chance(slug)
     assert (chance >= 0.40) if _really_dipped(KEYS[slug]) else (chance <= 0.60), f"chance {chance:.0%}"
+
+
+def _has_shortfall(key: dict) -> bool:
+    return any(a["type"] == "shortfall" for a in key["expected"]["alerts_must"])
+
+
+@pytest.mark.parametrize("slug", _businesses("alert_actions", _has_shortfall))
+def test_alert_actions(slug):
+    """Roadmap 3.2: a business that must get a shortfall alert gets at least one action that names
+    one of its own payments and, tested as a what-if, raises its lowest balance."""
+    core = import_business(slug, with_one_offs=True)
+    labels = {i.label for i in core.repo.list_scheduled_items(core.status().business.id)}
+    alert = next(a for a in core.get_alerts() if a.type == "shortfall")
+    measured = [a for a in alert.actions if a.get("adjustment")]
+    assert measured, "no action could be tested"
+    best = measured[0]
+    assert best["adjustment"]["label"] in labels
+    assert best["impact"]["lowest_after"] > best["impact"]["lowest_before"]
 
 
 def _said(known: dict, said: list[str]) -> bool:

@@ -93,6 +93,9 @@ def _apply_one(
 
 def _find(items: list[ScheduledItem], label: str) -> ScheduledItem:
     needle = label.lower().strip()
+    for item in items:  # the exact name first: "Inventory" must not move "Inventory restock"
+        if item.label.lower().strip() == needle:
+            return item
     for item in items:
         if needle in item.label.lower() or item.label.lower() in needle:
             return item

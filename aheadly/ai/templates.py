@@ -144,8 +144,22 @@ def alert_text(facts: dict) -> dict:
                 f"8 weeks. That money could work harder for you."
             ),
             "actions": [
-                {"label": "Pay a supplier early", "detail": "Ask for a discount in exchange."},
-                {"label": "Buy inventory in bulk", "detail": "Lock in prices with your main suppliers."},
+                {
+                    "label": "Pay a supplier early",
+                    "detail": "Ask for a discount in exchange.",
+                    "how_to": [
+                        "Pick a supplier you pay every month.",
+                        "Offer to pay early for a small discount.",
+                    ],
+                },
+                {
+                    "label": "Buy inventory in bulk",
+                    "detail": "Lock in prices with your main suppliers.",
+                    "how_to": [
+                        "Ask your main supplier for a bulk price.",
+                        "Buy only what you use in the next months.",
+                    ],
+                },
             ],
         }
     outflows = facts["top_outflows"]
@@ -162,11 +176,67 @@ def alert_text(facts: dict) -> dict:
             {
                 "label": "Delay the planned purchase",
                 "detail": "Moving a big purchase by a few weeks changes a lot.",
+                "how_to": [
+                    "Look at what you plan to buy in the tight week.",
+                    "Ask whether it can wait a few weeks.",
+                ],
             },
             {
                 "label": "Collect invoices early",
                 "detail": "Ask customers who owe you to pay a little sooner.",
+                "how_to": ["List who owes you money.", "Ask the biggest ones to pay a little sooner."],
             },
-            {"label": "Negotiate payment terms", "detail": "Split the big supplier bill in two."},
+            {
+                "label": "Negotiate payment terms",
+                "detail": "Split the big supplier bill in two.",
+                "how_to": [
+                    "Call the supplier before the bill is due.",
+                    "Ask to pay half now and half later.",
+                ],
+            },
         ],
     }
+
+
+# ------------------------------------------------------------- actions (roadmap 3.2)
+def action_words(kind: str, payee: str, amount: float, when: str, new_when: str) -> dict:
+    """Label, detail and how-to steps for an action worked out by code (it names the real payment)."""
+    old, new = _short_date(when), _short_date(new_when)
+    if kind == "move_payment":
+        return {
+            "label": f"Move {payee} to {new}",
+            "detail": f"Ask to pay the {money(amount)} due {old} on {new} instead.",
+            "how_to": [
+                f"Call or message them this week, before {old}.",
+                f"Ask to pay on {new} instead of {old}, and confirm the new date in writing.",
+                "If they agree, press Test this, then Save as my plan so the forecast uses the new date.",
+            ],
+        }
+    return {
+        "label": f"Ask for {payee} by {new}",
+        "detail": f"The {money(amount)} due {old} would arrive before the tight week.",
+        "how_to": [
+            "Message them a few days ahead.",
+            f"Ask whether they could pay by {new} instead of {old}; a small discount for paying early can help.",
+            "If they agree, press Test this, then Save as my plan.",
+        ],
+    }
+
+
+def message_text(facts: dict) -> str:
+    """A short message the owner can copy and send (the app never sends it)."""
+    who = (
+        f"This is {facts['owner']} from {facts['business']}"
+        if facts.get("owner")
+        else f"This is {facts['business']}"
+    )
+    old, new = _short_date(facts["date"]), _short_date(facts["new_date"])
+    if facts["kind"] == "move_payment":
+        return (
+            f"Hi! {who}. Could we move the {facts['payee']} payment of {money(facts['amount'])} from {old} "
+            f"to {new}? It would really help us this month. Thank you!"
+        )
+    return (
+        f"Hi! {who}. About {facts['payee']} ({money(facts['amount'])}, due {old}): would it be possible to "
+        f"pay a little earlier, by {new}? It would really help us this month. Thank you!"
+    )

@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after 3.1** (397 tests: 378 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after 3.2** (412 tests: 392 pass, 19 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#37**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#38**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -29,7 +29,7 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8); 3.1 done. Next: 3.2. Test-business scorecard: 67 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8); 3.1 and 3.2 done. Next: 3.3. Test-business scorecard: 68 checks pass, 19 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`. The owner's own files: `aheadly/data/connectors/owner_files.py` (`read_owner_file`: five kinds from the column titles), `AppCore.read_owner_file` / `use_owner_file` / `uploaded_files`.
@@ -38,7 +38,7 @@
 - **Understanding the business:** `aheadly/core/transfers.py` (moves between own accounts, card payments), `aheadly/ai/categorizer.py` (owner answers → own-account moves → file category → keyword rules → defaults; `set_payee_rule`, `answer_payee`), `aheadly/ai/recurring.py` (calendar rules per payee, `drop_duplicates`), `aheadly/ai/plan_text.py` ("just say it": `read_by_rules`, `check_item`, the `propose_plan_items` tool), `aheadly/core/examples.py` + `aheadly/examples/` (the example bakery).
 - **Forecast:** `aheadly/ai/forecast_engine.py` (Prophet with weekly seasonality on the residual daily flow, 500 paths, p10/p50/p90; `SeasonalNaiveModel` fallback; `month_day:` and `every:` recurrence rules). `_model_history` leaves out lines linked to a scheduled item (`transactions.scheduled_item_id`) and own-account moves; detected items land on their real dates; known one-offs replace matching detected occurrences.
 - **Core:** `aheadly/core/app_core.py`: `today` (day after the statement's end when it's older), `forecast_basis` and `update_plan_item` / `pause_plan_item` / `end_plan_item` / `delete_plan_item` / `confirm_plan_item` (each returns the lowest balance before and after), `detected_recurring`, `monthly_category_totals`, `weekly_sales`, `load_example`, `parse_plan_text` / `add_plan_items`, `scheduled_labels`, `forecast_summary`, `planned_items` (owner's items only), `save_plan` (keeps removed detected items switched off). Database migrations in `Repository.MIGRATIONS` (`PRAGMA user_version`).
-- **AI:** `aheadly/ai/tools.py` (seven tools incl. `propose_plan_items`; `get_transactions` category enum), `insight_translator.extract_plan_items`, `llm_client.py` (stub, Gemini, Anthropic), `prompts.py`, `templates.py` (generic alert actions still), `insight_translator.py`, `guardrails.py`.
+- **AI:** `aheadly/ai/tools.py` (seven tools incl. `propose_plan_items`; `get_transactions` category enum), `insight_translator.extract_plan_items`, `llm_client.py` (stub, Gemini, Anthropic), `prompts.py`, `templates.py` (action words, messages, general advice as fallback), `insight_translator.py` (`draft_message`), `guardrails.py`. Actions: `aheadly/core/actions.py` (3.2), `AppCore._scenario` / `draft_message`.
 - **UI:** `aheadly/ui/views/` questions (one at a time, progress bar, why it matters, Skip; badge with the number left), dashboard (questions banner, statement / example notice, "Next big payment" = soonest payment at least a quarter of the biggest, link to how the forecast was built), alerts, basis ("How we built it": starting point, normal week, regular and one-off payments with badges, change / pause / end / remove / confirm with the effect shown, past-due one-offs, suggestions, "Just say it", what's left out, next month at a glance), ask, whatif (kind picker outside the form), accounts (multi-file upload, "Try the example bakery", accounts and cards, link to the basis page, "Files you keep" (preview, change kind, Use / Skip), recent transactions with category names), settings.
 - **Demo data:** Maria's files are generated outside the repo by `../aheadly-test-data/make_maria_files.py` (statement ends yesterday; regenerate on demo day). The test businesses' generator is outside the repo too (`../aheadly-test-data/test_businesses/`).
 
@@ -50,7 +50,7 @@
 5. ~~Settings shows server time~~ fixed in 1.4.
 6. ~~Weekly-only seasonality smooths monthly/quarterly items~~ fixed in 2.3 (recurring items on their dates).
 7. ~~`revenue_change` hard-codes $5,500/week~~ fixed in 2.2 (real weekly sales).
-8. Template alert actions are generic → 3.2.
+8. ~~Template alert actions are generic~~ 3.2: actions name the business's own payments and are measured; general advice remains only when nothing can be moved (the café: monthly payments only) → 3.3 (owner's pay, prices).
 9. ~~`alerts.type` CHECK~~ insights table added in 1.4 (used by 4.1).
 
 **New since the check-in** (each assigned below):
@@ -92,8 +92,8 @@
 | 2.7 | Onboarding questions (detect first, then ask), with AI category suggestions for leftover payees | Must | L | 2.2, 2.3, 2.4 | Done |
 | 2.8 | Forecast confidence + "no big purchases known" note (+ band width) | Must | S | 1.3, 2.2 | Done |
 | 3.1 | Chance of dipping below the line | Must | S | 1.4 | Done |
-| 3.2 | Actions framework: computed impact, Test this, how-to steps, drafted message | Must | M | 3.1 | **Next** |
-| 3.3 | Suggested fixes (auto-tested what-ifs) | Must | M | 3.2, 2.3 |  |
+| 3.2 | Actions framework: computed impact, Test this, how-to steps, drafted message | Must | M | 3.1 | Done |
+| 3.3 | Suggested fixes (auto-tested what-ifs) | Must | M | 3.2, 2.3 | **Next** |
 | 3.4 | Safe to spend + safe owner's pay | Must | S | 3.1, 2.3 |  |
 | 3.5 | One-click stress tests | Should | S | 2.2, 3.2 |  |
 | 3.6 | Financing helper | Should | L | 3.3, 2.7 |  |
@@ -228,6 +228,7 @@ Score from history length, unidentified share, reconciliation, backtest error on
 #### 3.2 Actions framework · Must · M
 `Action(label, detail, impact, adjustment, how_to, message_draft)` in `domain.py`. `impact` = before/after lowest balance, risk level and chance from actually running `adjustment` (a `run_scenario` dict) through the scenario engine (paths are cached → instant). Actions **name the real item** (from the risk window's top contributors), replacing the generic template actions. UI component: action row with impact line, **Test this** → `AppCore.run_what_if(action.adjustment)` → result card → *Save as my plan*. **How to do it:** 2–3 steps + an optional drafted WhatsApp/email (supplier: move a date; customer: friendly reminder) written by the LLM from facts, guardrail-checked, template fallback, shown with Copy; the app never sends. Applies to alerts, insights (4.1) and tight what-if answers.
 **Done when:** every alert action with an adjustment has a computed impact; tests for impact numbers; drafted messages pass the guardrail.
+**Built (2026-11-12, DECISIONS #37):** actions as dicts on the alert (label, detail, kind, adjustment, impact, how_to; no `Action` class: alerts already store actions as JSON) from `aheadly/core/actions.py`: move a once-only payment in the tight week 1–3 weeks later (smallest of the best), or ask the biggest once-only money coming in after the first day below the line for the day before; measured with `AppCore._scenario` (a what-if not kept in the history), only helpful ones, best first, at most three; general advice (marked untested) fills up to two. The model now writes only the alert's body. Alerts page: "Try one" with each action's effect ("Lowest balance -$926 → $2,751 · act now → on track · chance 100% → 0%"), Test this (chart, best/base/worst, Save as my plan), How to do it (steps, Draft a message → copyable text, written once per action on request, guardrail + template). `scenarios._find` matches the exact name first. New harness check `alert_actions` (businesses with a must-have shortfall): the bakery passes; the café waits for 3.3. Not built here: actions on insights (4.1) and under tight what-if answers in the chat (3.3's suggested fixes cover those); links from alerts to the items on How we built it.
 
 #### 3.3 Suggested fixes · Must · M
 When risk is `act_now` or `watch`, generate candidates: move each movable outflow in the risk window by 1–3 weeks (`move_item`), collect each receivable early (`collect_early`), delay planned purchases, lower the owner's pay for N weeks (`recurring_change` on the 2.3 item). Run each; rank by risk level, then worst case, then smallest change; top 3 as `Action`s. If none fixes it, try pairs of the top 5; if still not, hand to 3.6.

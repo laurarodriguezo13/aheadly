@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 
 from aheadly.ai.plan_text import read_by_rules
-from aheadly.ai.templates import alert_text, answer_from_tool
+from aheadly.ai.templates import alert_text, answer_from_tool, message_text
 from aheadly.domain import end_of_next_month
 from aheadly.config import Settings
 
@@ -210,6 +210,9 @@ class StubClient:
         last = messages[-1]
         if last["role"] == "tool":
             return LLMReply(content=answer_from_tool(last["name"], json.loads(last["content"])))
+        if last["role"] == "user" and last["content"].startswith("DRAFT_MESSAGE"):
+            facts = json.loads(last["content"][len("DRAFT_MESSAGE") :])
+            return LLMReply(content=json.dumps({"message": message_text(facts)}))
         if last["role"] == "user" and last["content"].startswith("WRITE_ALERT"):
             return LLMReply(content=json.dumps(alert_text(json.loads(last["content"][len("WRITE_ALERT") :]))))
         return LLMReply(tool_calls=[self.plan(last["content"], scheduled_labels(messages))])
