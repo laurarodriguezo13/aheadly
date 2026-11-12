@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after the review following Phase 2** (branch `Migue`, 374 tests: 355 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after merging Phase 2 into `main` and checking the live site** (374 tests: 355 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -29,7 +29,7 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (branch `Migue`; `main` is frozen at the Milestone 2 version until after the presentation):** Phase 1 and 2 done (1.1–2.8). Next: 3.1. Test-business scorecard: 61 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8). Next: 3.1. Test-business scorecard: 61 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`. The owner's own files: `aheadly/data/connectors/owner_files.py` (`read_owner_file`: five kinds from the column titles), `AppCore.read_owner_file` / `use_owner_file` / `uploaded_files`.
@@ -64,6 +64,13 @@
 15. `docs/MANUAL_TEST_CHECKLIST.md` (planned in 1.2) was never written → with 5.5.
 16. The team's `aheadly-build-kit/` (34 MB of course material) is in the repo → the team decides whether it stays.
 17. Small UI: the sidebar's question count shows only after the first answer; "last synced" and "Last run" show raw timestamps → nice to have.
+
+**From the live check after the merge (2026-11-12):**
+18. With Gemini on, the alert's title comes from the model: the bakery's alert says "Heads up: you may run low on cash" although its balance goes to −$748 (the "Warning: your cash could run out" fix from the review only covers the template), and the body writes "$-748". The prompt in `prompts.py` even gives "Heads up" as its example. Fix: code picks the title from the risk (like the numbers), the model writes only the body; amounts shown as "−$748" → small, first thing in 3.1.
+19. After a merge to `main` the live app kept the old page list (`KeyError: PAGES["questions"]`) until Laura rebooted it from share.streamlit.io → after every merge, check the live site and ask Laura to reboot if needed (only she can).
+20. Chat: "What if I move the new oven payment to next month?" moved it to Dec 31 (end of next month) rather than about a month later (Dec 14); the answer is still right for the date it picked → check with 3.3's suggested moves.
+21. Questions page: after typing in "Anything coming up?", the first click on "Read it" only saves the text, a second click reads it; Settings' "AI status" shows technical text (`.env`, `LLM_PROVIDER=…`) to owners → nice to have (polish with 5.x).
+22. Does `main` have branch protection (a teammate's approval before merging, as taught in class 17)? This merge needed no approval → the team decides.
 
 ---
 
