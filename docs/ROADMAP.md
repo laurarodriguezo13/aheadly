@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after 3.2** (412 tests: 392 pass, 19 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after 3.3** (421 tests: 402 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#38**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#39**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -29,7 +29,7 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8); 3.1 and 3.2 done. Next: 3.3. Test-business scorecard: 68 checks pass, 19 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8); 3.1–3.3 done. Next: 3.4. Test-business scorecard: 71 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`. The owner's own files: `aheadly/data/connectors/owner_files.py` (`read_owner_file`: five kinds from the column titles), `AppCore.read_owner_file` / `use_owner_file` / `uploaded_files`.
@@ -50,7 +50,7 @@
 5. ~~Settings shows server time~~ fixed in 1.4.
 6. ~~Weekly-only seasonality smooths monthly/quarterly items~~ fixed in 2.3 (recurring items on their dates).
 7. ~~`revenue_change` hard-codes $5,500/week~~ fixed in 2.2 (real weekly sales).
-8. ~~Template alert actions are generic~~ 3.2: actions name the business's own payments and are measured; general advice remains only when nothing can be moved (the café: monthly payments only) → 3.3 (owner's pay, prices).
+8. ~~Template alert actions are generic~~ 3.2: actions name the business's own payments and are measured; 3.3 adds the owner's pay and prices, so the café gets tested suggestions too; general advice remains only when nothing tested helps.
 9. ~~`alerts.type` CHECK~~ insights table added in 1.4 (used by 4.1).
 
 **New since the check-in** (each assigned below):
@@ -93,8 +93,8 @@
 | 2.8 | Forecast confidence + "no big purchases known" note (+ band width) | Must | S | 1.3, 2.2 | Done |
 | 3.1 | Chance of dipping below the line | Must | S | 1.4 | Done |
 | 3.2 | Actions framework: computed impact, Test this, how-to steps, drafted message | Must | M | 3.1 | Done |
-| 3.3 | Suggested fixes (auto-tested what-ifs) | Must | M | 3.2, 2.3 | **Next** |
-| 3.4 | Safe to spend + safe owner's pay | Must | S | 3.1, 2.3 |  |
+| 3.3 | Suggested fixes (auto-tested what-ifs) | Must | M | 3.2, 2.3 | Done |
+| 3.4 | Safe to spend + safe owner's pay | Must | S | 3.1, 2.3 | **Next** |
 | 3.5 | One-click stress tests | Should | S | 2.2, 3.2 |  |
 | 3.6 | Financing helper | Should | L | 3.3, 2.7 |  |
 | 4.1 | Pattern rules ("things we noticed"): small Must, full Should | Must / Should | M | 2.2, 2.3, 3.2 |  |
@@ -233,6 +233,7 @@ Score from history length, unidentified share, reconciliation, backtest error on
 #### 3.3 Suggested fixes · Must · M
 When risk is `act_now` or `watch`, generate candidates: move each movable outflow in the risk window by 1–3 weeks (`move_item`), collect each receivable early (`collect_early`), delay planned purchases, lower the owner's pay for N weeks (`recurring_change` on the 2.3 item). Run each; rank by risk level, then worst case, then smallest change; top 3 as `Action`s. If none fixes it, try pairs of the top 5; if still not, hand to 3.6.
 **Done when:** on Maria, moving the oven is in the top 3; 1.1 keys' expected fixes appear; ranking tests.
+**Built (2026-11-12, DECISIONS #38):** in `aheadly/core/actions.py` (shared with 3.2): moves of any once-only payment due before the low point (1–3 weeks, the day after the low point, the day after later once-only money; weekends → Monday), early collection of the two biggest once-only amounts after the first day below the line, the owner's pay 25/50/100% lower for 8 weeks (`recurring_change`, only with a known owner's pay), prices +5/+10% (`revenue_change`); wages, taxes, loans, utilities and bank charges never moved; smallest option reaching each idea's best status; shown only if the status improves, the chance drops ≥ 5 points or the lowest rises ≥ 10% of the line; ranked by status, then cost to the owner, then worst case (cost before worst case: a deviation, see the decision); pairs of the top five when no single idea changes the status; top three. Actions now carry `adjustments` (a list, for pairs). `AppCore.suggested_fixes()` (cached per run) for "watch" too: shown on the Alerts page when there's no alert, linked from the dashboard; `AppCore.still_short()` gives the gap when even the best leaves the base case below the line (→ 3.6). New harness check `suggested_fixes` against the keys' known fixes: the bakery (move the oven) and the café (raise prices) pass. Not built: splitting a payment in two and staff changes (two of the keys' fixes), suggestions under tight chat answers.
 
 #### 3.4 Safe to spend + safe owner's pay · Must · S
 `AppCore.safe_to_spend(window='week'|'month')`: largest one-off outflow on the next day such that the worst case (p10) stays ≥ the low cash line across the horizon (binary search over cached paths). `safe_owner_pay(weeks=4)`: largest weekly owner pay (replacing the detected owner's-pay item) with the same condition. Dashboard cards + chat tool `safe_to_spend`; facts to the guardrail. If already below the line: 0, and say why.

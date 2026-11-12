@@ -24,8 +24,6 @@ core = start_page(copy.ALERTS_TITLE)
 require_data(core)
 
 alerts = core.get_alerts()
-if not alerts:
-    st.success(copy.NO_ALERTS)
 
 
 def why_it_matters(alert) -> str:
@@ -55,13 +53,13 @@ def impact_line(impact: dict) -> str:
     )
 
 
-def action_rows(alert) -> None:
-    """Roadmap 3.2: each action with what it changes, Test this, how to do it and a message to send."""
-    if not any(a.get("how_to") for a in alert.actions):
+def action_rows(actions: list[dict], key_prefix: str) -> None:
+    """Roadmap 3.2–3.3: each suggestion with what it changes, Test this, how to do it and a message."""
+    if not any(a.get("how_to") for a in actions):
         return
     st.markdown(f"**{copy.ACTIONS_TITLE}**")
-    for i, action in enumerate(alert.actions):
-        key = f"action-{alert.id}-{i}"
+    for i, action in enumerate(actions):
+        key = f"{key_prefix}-{i}"
         with st.container(border=True):
             st.markdown(f"**{action['label']}**  \n{action.get('detail', '')}")
             if action.get("impact"):
@@ -70,16 +68,16 @@ def action_rows(alert) -> None:
                 st.caption(copy.ACTION_GENERAL)
             with st.expander(copy.ACTION_HOW):
                 st.markdown("\n".join(f"{n}. {step}" for n, step in enumerate(action.get("how_to", []), 1)))
-                if action.get("adjustment"):
+                if action.get("kind") in ("move_payment", "collect_early"):
                     if st.button(copy.ACTION_DRAFT, key=f"{key}-draft"):
-                        st.session_state[f"{key}-message"] = core.draft_message(alert.id, i)
+                        st.session_state[f"{key}-message"] = core.draft_message(action)
                     if st.session_state.get(f"{key}-message"):
                         st.code(st.session_state[f"{key}-message"], language=None, wrap_lines=True)
                         st.caption(copy.ACTION_DRAFT_NOTE)
-            if action.get("adjustment"):
+            if action.get("adjustments"):
                 if st.button(copy.ACTION_TEST, key=f"{key}-test", type="primary"):
                     st.session_state[f"{key}-result"] = core.run_what_if(
-                        [action["adjustment"]], name=action["label"]
+                        action["adjustments"], name=action["label"]
                     )
                 result = st.session_state.get(f"{key}-result")
                 if result is not None:
@@ -97,6 +95,20 @@ def action_rows(alert) -> None:
                         st.toast(copy.ACTION_SAVED)
                         st.rerun()
 
+
+def still_short_note() -> None:
+    short = core.still_short()
+    if short:
+        st.warning(copy.STILL_SHORT.format(gap=money(short)))
+
+
+if not alerts:
+    fixes = core.suggested_fixes()
+    if fixes:  # "watch": no alert, but the worst case dips below the line (roadmap 3.3)
+        st.info(copy.WATCH_FIXES)
+        action_rows(fixes, "watch")
+    else:
+        st.success(copy.NO_ALERTS)
 
 for alert in alerts:
     core.mark_alert_read(alert.id)
@@ -128,7 +140,9 @@ for alert in alerts:
             title = copy.TOP_OUTFLOWS.format(weeks=weeks(alert.weeks_ahead))
             info_card(title, rows_html(outflows), "sky")
 
-    action_rows(alert)
+    action_rows(alert.actions, f"action-{alert.id}")
+    if alert.type == "shortfall":
+        still_short_note()
 
     b1, b2, b3, _ = st.columns([1, 1, 1, 3])
     if b1.button(copy.SEE_WHY, key=f"why-{alert.id}", type="primary", width="stretch"):

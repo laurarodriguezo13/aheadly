@@ -99,6 +99,8 @@ with left, st.container(border=True):
         st.warning(
             copy.WATCH_NO_ALERTS.format(worst=money(forecast.min_p10), line=money(business.low_cash_line))
         )
+        if st.button(copy.SEE_FIXES, key="dashboard-fixes"):  # roadmap 3.3
+            go_to("alerts")
     else:
         st.success(copy.NO_ALERTS)
 with right, st.container(border=True):

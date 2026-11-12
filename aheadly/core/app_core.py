@@ -100,6 +100,7 @@ class AppCore:
         self._pending_time_zone: str | None = None  # from the browser, kept until a business exists
         self._backtests: dict = {}  # backtest error per history (roadmap 2.8)
         self._messages: dict[str, str] = {}  # drafted messages per facts (roadmap 3.2)
+        self._fixes_cache: dict = {}  # suggested fixes for the latest forecast run (roadmap 3.3)
         self.translator = InsightTranslator(llm or create_llm_client(settings), ToolDispatcher(self))
 
     @property
@@ -990,29 +991,45 @@ class AppCore:
 
     # ------------------------------------------------------------- actions (3.2)
     def _actions_for(self, facts: dict, forecast: ForecastResult) -> list[dict]:
-        """2–3 actions for an alert: worked out and measured by code when it can, general advice
-        (without a what-if) to fill up to two, and for idle cash."""
+        """2–3 actions for an alert: worked out and measured by code when it can (roadmap 3.2–3.3),
+        general advice (without a what-if) to fill up to two, and for idle cash."""
         generic = templates.alert_text(facts)["actions"]
         if facts["type"] != "shortfall":
             return generic
-        business = self._business()
-        end = self.today + timedelta(days=self.settings.horizon_days - 1)
-        found = alert_actions.build(
-            facts,
-            self.repo.list_scheduled_items(business.id),
-            self.today,
-            end,
-            lambda adjustments: self._scenario(adjustments, "Action", baseline=forecast),
-        )
+        found = self._fixes(forecast)
         return found + generic[: max(0, 2 - len(found))]
 
-    def draft_message(self, alert_id: int, index: int) -> str:
-        """A message for the owner to copy and send (the app never sends it). Written once per action."""
+    def _fixes(self, baseline: ForecastResult) -> list[dict]:
         business = self._business()
-        alert = next(a for a in self.repo.list_alerts(business.id, open_only=False) if a.id == alert_id)
-        action = alert.actions[index]
-        if not action.get("adjustment"):
-            raise ValueError("This action has no message to draft")
+        return alert_actions.build(
+            baseline,
+            business.low_cash_line,
+            self.repo.list_scheduled_items(business.id),
+            self.today,
+            self.today + timedelta(days=self.settings.horizon_days - 1),
+            lambda adjustments: self._scenario(adjustments, "Suggested fix", baseline=baseline),
+            self.weekly_sales(),
+        )
+
+    def suggested_fixes(self) -> list[dict]:
+        """Roadmap 3.3: tested suggestions whenever the status isn't safe (also "watch", which has
+        no alert). Worked out once per forecast run."""
+        business = self._business()
+        run = self.repo.latest_forecast(business.id)
+        key = (run.run_id if run else None, business.low_cash_line)
+        if self._fixes_cache.get("key") != key:
+            self._fixes_cache = {"key": key, "fixes": self._fixes(self._baseline_forecast())}
+        return self._fixes_cache["fixes"]
+
+    def still_short(self) -> int | None:
+        """How much the base case still misses the line even after the best suggestion (3.6 helps then)."""
+        return alert_actions.still_short(self.suggested_fixes(), self._business().low_cash_line)
+
+    def draft_message(self, action: dict) -> str:
+        """A message for the owner to copy and send (the app never sends it). Written once per action."""
+        if action.get("kind") not in alert_actions.MESSAGE_KINDS:
+            raise ValueError("This suggestion has no message to draft")
+        business = self._business()
         facts = alert_actions.message_facts(action, business.name, business.owner_name)
         key = json.dumps(facts, sort_keys=True)
         if key not in self._messages:

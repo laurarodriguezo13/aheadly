@@ -14,6 +14,7 @@ Forecasts here use the seeded naive model (fast, repeatable); the live site uses
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -52,9 +53,8 @@ PENDING: dict[str, dict[str, str]] = {
     "owner_files": {},
     "band_coverage": {},
     "chance_below": {},
-    "alert_actions": {
-        "cafe-la-tertulia": "3.3 suggested fixes: its tight week is all monthly payments (rent, payroll, owner pay); what helps is pay or prices"
-    },
+    "alert_actions": {},
+    "suggested_fixes": {},
     "internal_transfers": {},
     "insights": {"*": "4.1 things we noticed"},
     "timing_or_structural": {"*": "3.6 financing helper"},
@@ -259,11 +259,45 @@ def test_alert_actions(slug):
     core = import_business(slug, with_one_offs=True)
     labels = {i.label for i in core.repo.list_scheduled_items(core.status().business.id)}
     alert = next(a for a in core.get_alerts() if a.type == "shortfall")
-    measured = [a for a in alert.actions if a.get("adjustment")]
+    measured = [a for a in alert.actions if a.get("adjustments")]
     assert measured, "no action could be tested"
-    best = measured[0]
-    assert best["adjustment"]["label"] in labels
-    assert best["impact"]["lowest_after"] > best["impact"]["lowest_before"]
+    own = [a for a in measured if any(adj.get("label") in labels for adj in a["adjustments"])]
+    assert own, "no action names one of the business's payments"
+    assert own[0]["impact"]["lowest_after"] > own[0]["impact"]["lowest_before"]
+
+
+def _key_fix(what: str) -> tuple[str, str] | None:
+    """A fix from the key in the app's terms (kind, payment), or None if the app can't try it
+    (splitting a payment in two, letting a helper go)."""
+    move = re.match(r"move (.+?) to \d{4}-\d{2}-\d{2}", what)
+    if move:
+        return ("move_payment", move.group(1).lower())
+    if "raise prices" in what:
+        return ("price", "")
+    if "owner pay" in what:
+        return ("owner_pay", "")
+    return None
+
+
+def _ours(action: dict) -> tuple[str, str]:
+    label = next((a.get("label", "") for a in action.get("adjustments", []) if a["type"] == "move_item"), "")
+    return (action["kind"], label.lower())
+
+
+@pytest.mark.parametrize(
+    "slug",
+    _businesses(
+        "suggested_fixes", lambda key: any(_key_fix(f["what"]) for f in key["expected"]["fixes_that_work"])
+    ),
+)
+def test_suggested_fixes(slug):
+    """Roadmap 3.3: at least one of the fixes the key knows works is among the app's top three,
+    and the app agrees it lifts the base case above the line."""
+    wanted = {_key_fix(f["what"]) for f in KEYS[slug]["expected"]["fixes_that_work"]} - {None}
+    fixes = import_business(slug, with_one_offs=True).suggested_fixes()
+    matching = [f for f in fixes if _ours(f) in wanted]
+    assert matching, f"wanted one of {wanted}, got {[f['label'] for f in fixes]}"
+    assert matching[0]["impact"]["risk_after"] != "act_now"
 
 
 def _said(known: dict, said: list[str]) -> bool:

@@ -199,8 +199,41 @@ def alert_text(facts: dict) -> dict:
 
 
 # ------------------------------------------------------------- actions (roadmap 3.2)
-def action_words(kind: str, payee: str, amount: float, when: str, new_when: str) -> dict:
-    """Label, detail and how-to steps for an action worked out by code (it names the real payment)."""
+def action_words(
+    kind: str,
+    payee: str = "",
+    amount: float = 0.0,
+    when: str | None = None,
+    new_when: str | None = None,
+    pct: int = 0,
+    weekly: float = 0.0,
+) -> dict:
+    """Label, detail and how-to steps for a suggestion worked out by code (it names the real payment)."""
+    if kind == "owner_pay":
+        label = (
+            "Pause your own pay for the next 8 weeks"
+            if pct >= 100
+            else f"Pay yourself {pct}% less for the next 8 weeks"
+        )
+        return {
+            "label": label,
+            "detail": f"{payee}: {money(amount)} each time, {money(amount * (100 - pct) / 100)} instead.",
+            "how_to": [
+                "Work out what you need to live on for the next weeks.",
+                "Change or skip the transfer to your own account until the tight weeks pass.",
+                "Press Test this, then Save as my plan.",
+            ],
+        }
+    if kind == "price":
+        return {
+            "label": f"Raise prices about {pct}%",
+            "detail": f"If customers keep buying as they do now, about {money(weekly * pct / 100)} more comes in each week.",
+            "how_to": [
+                "Start with your best-selling items.",
+                "Tell regular customers ahead, and keep quality the same.",
+                "Press Test this; check your sales for two weeks before counting on it.",
+            ],
+        }
     old, new = _short_date(when), _short_date(new_when)
     if kind == "move_payment":
         return {

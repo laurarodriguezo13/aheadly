@@ -25,19 +25,22 @@ def _shortfall(core):
 def test_actions_name_real_payments_and_carry_their_effect(connected_core):
     alert = _shortfall(connected_core)
     labels = {i.label for i in connected_core.repo.list_scheduled_items(connected_core.status().business.id)}
-    tested = [a for a in alert.actions if a.get("adjustment")]
+    tested = [a for a in alert.actions if a.get("adjustments")]
     assert 2 <= len(alert.actions) <= 3 and tested
     for action in tested:
-        assert action["adjustment"]["label"] in labels
-        assert action["adjustment"]["label"] in action["label"]
+        for adjustment in action["adjustments"]:
+            if "label" in adjustment:
+                assert adjustment["label"] in labels and adjustment["label"] in action["label"]
         impact = action["impact"]
-        assert impact["lowest_after"] > impact["lowest_before"]  # only actions that help are offered
+        assert (
+            impact["lowest_after"] > impact["lowest_before"] or impact["worst_after"] > impact["worst_before"]
+        )
         assert set(impact) >= {"risk_before", "risk_after", "chance_before", "chance_after"}
 
 
 def test_effect_is_the_same_as_testing_it(connected_core):
-    action = next(a for a in _shortfall(connected_core).actions if a.get("adjustment"))
-    result = connected_core.run_what_if([action["adjustment"]])
+    action = next(a for a in _shortfall(connected_core).actions if a.get("adjustments"))
+    result = connected_core.run_what_if(action["adjustments"])
     numbers = result.summary()
     assert action["impact"]["lowest_after"] == numbers["scenario"]["lowest_base_case"]
     assert action["impact"]["lowest_before"] == numbers["baseline"]["lowest_base_case"]
@@ -50,10 +53,10 @@ def test_working_out_actions_does_not_fill_the_owners_history(connected_core):
 
 
 def test_best_action_first(connected_core):
-    actions = [a for a in _shortfall(connected_core).actions if a.get("adjustment")]
-    order = {"safe": 0, "watch": 1, "act_now": 2}
-    keys = [(order[a["impact"]["risk_after"]], -a["impact"]["lowest_after"]) for a in actions]
-    assert keys == sorted(keys)
+    from aheadly.core.actions import rank_key
+
+    actions = [a for a in _shortfall(connected_core).actions if a.get("adjustments")]
+    assert [rank_key(a) for a in actions] == sorted(rank_key(a) for a in actions)
 
 
 def test_regular_payments_are_never_moved(connected_core):
@@ -65,9 +68,10 @@ def test_regular_payments_are_never_moved(connected_core):
     items = {i.label: i for i in connected_core.repo.list_scheduled_items(business.id)}
     end = TODAY + timedelta(days=connected_core.settings.horizon_days)
     for action in _shortfall(connected_core).actions:
-        if action.get("adjustment"):
-            item = items[action["adjustment"]["label"]]
-            assert len(expand_scheduled_items([item], TODAY, end)) == 1
+        for adjustment in action.get("adjustments", []):
+            if adjustment["type"] == "move_item":
+                item = items[adjustment["label"]]
+                assert len(expand_scheduled_items([item], TODAY, end)) == 1
 
 
 def test_every_action_says_how(connected_core):
@@ -77,10 +81,10 @@ def test_every_action_says_how(connected_core):
 
 def test_draft_message_offline_names_the_payment_and_dates(connected_core):
     alert = _shortfall(connected_core)
-    index, action = next((i, a) for i, a in enumerate(alert.actions) if a.get("adjustment"))
-    message = connected_core.draft_message(alert.id, index)
-    assert action["adjustment"]["label"] in message
-    new = date.fromisoformat(action["adjustment"]["new_date"])
+    action = next(a for a in alert.actions if a.get("kind") in ("move_payment", "collect_early"))
+    message = connected_core.draft_message(action)
+    assert action["adjustments"][0]["label"] in message
+    new = date.fromisoformat(action["adjustments"][0]["new_date"])
     assert f"{new:%b} {new.day}" in message
 
 
@@ -131,12 +135,12 @@ def test_no_owner_name_still_reads_well():
 def test_message_is_asked_for_once(connected_core):
     """Drafting calls the model when the owner asks, not when the alert is written, and only once."""
     alert = _shortfall(connected_core)
-    index = next(i for i, a in enumerate(alert.actions) if a.get("adjustment"))
+    action = next(a for a in alert.actions if a.get("kind") in ("move_payment", "collect_early"))
     calls = []
     original = connected_core.translator.draft_message
     connected_core.translator.draft_message = lambda facts: calls.append(facts) or original(facts)
-    first = connected_core.draft_message(alert.id, index)
-    assert connected_core.draft_message(alert.id, index) == first
+    first = connected_core.draft_message(action)
+    assert connected_core.draft_message(action) == first
     assert len(calls) == 1
 
 
