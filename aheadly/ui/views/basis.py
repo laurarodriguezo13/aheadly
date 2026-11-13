@@ -19,7 +19,7 @@ from aheadly.ui.components import (
 
 core = start_page(copy.BASIS_TITLE)
 require_data(core)
-with st.spinner("Checking your money…"):
+with st.spinner(copy.CHECKING_MONEY):
     core.ensure_fresh()
 st.caption(copy.BASIS_INTRO)
 statement_notice(
@@ -213,9 +213,14 @@ with st.container(border=True):
     said = st.text_area(
         copy.JUST_SAY_IT, placeholder=copy.JUST_SAY_IT_PLACEHOLDER, help=copy.JUST_SAY_IT_HELP
     )
-    if st.button(copy.READ_IT, disabled=not said.strip()):
-        with st.spinner(copy.READING_IT):
-            st.session_state["plan_proposals"] = core.parse_plan_text(said)
+    # never disabled: a button that waits for the typed text loses the first click (the click
+    # only commits the text box)
+    if st.button(copy.READ_IT):
+        if not said.strip():
+            st.warning(copy.WRITE_FIRST)
+        else:
+            with st.spinner(copy.READING_IT):
+                st.session_state["plan_proposals"] = core.parse_plan_text(said)
     proposals = st.session_state.get("plan_proposals")
     if proposals is not None:
         if not proposals:

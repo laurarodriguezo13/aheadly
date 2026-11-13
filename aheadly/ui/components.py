@@ -172,7 +172,9 @@ def proposal_card(core, items, key: str) -> int:
     )
     for item in items:
         if item.problem:
-            st.caption(f"⚠ {item.label or 'An item'}: {item.problem}")
+            st.caption(
+                copy.PROPOSAL_PROBLEM.format(label=item.label or copy.PROPOSAL_UNNAMED, problem=item.problem)
+            )
     if not st.button(copy.ADD_TO_PLAN, key=f"{key}-add", type="primary"):
         return 0
     chosen = [

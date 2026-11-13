@@ -452,17 +452,6 @@ def pair_duplicates(events: list[tuple]) -> dict[int, int]:
     return pairs
 
 
-def drop_duplicates(events: list[tuple[date, float, str, bool]]) -> list[tuple[date, float, str]]:
-    """events: (date, amount, label, detected). A one-off the owner told us about (a quarterly
-    flour order, an insurer's claim) that lands within 10 days of a detected occurrence of the
-    same sign and a similar amount (within 40%: an insurer's payments vary a lot) replaces it:
-    it is the same money."""
-    removed = pair_duplicates(events)
-    kept = [e for i, e in enumerate(events) if e[3] and i not in removed] + [e for e in events if not e[3]]
-    # (date, amount, label) plus whatever the caller added after the detected flag
-    return sorted(((e[0], e[1], e[2], *e[4:]) for e in kept), key=lambda e: (e[0], e[1], e[2]))
-
-
 ORDINAL = {1: "1st", 2: "2nd", 3: "3rd", 21: "21st", 22: "22nd", 23: "23rd", 31: "31st"}
 
 

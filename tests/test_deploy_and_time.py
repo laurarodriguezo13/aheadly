@@ -41,15 +41,15 @@ def test_last_run_is_a_time_with_a_zone(connected_core):
 
 
 def test_a_utc_time_shows_in_the_visitors_zone():
-    assert format_local("2026-11-11T15:03:00+00:00", "America/New_York") == "2026-11-11 10:03"
-    assert format_local("2026-11-11T15:03:00+00:00", "America/Bogota") == "2026-11-11 10:03"
-    assert format_local("2026-11-11T15:03:00+00:00", "Europe/Madrid") == "2026-11-11 16:03"
+    assert format_local("2026-11-11T15:03:00+00:00", "America/New_York") == "Nov 11, 2026, 10:03"
+    assert format_local("2026-11-11T15:03:00+00:00", "America/Bogota") == "Nov 11, 2026, 10:03"
+    assert format_local("2026-11-11T15:03:00+00:00", "Europe/Madrid") == "Nov 11, 2026, 16:03"
 
 
 def test_unknown_zone_falls_back_without_crashing():
-    assert len(format_local("2026-11-11T15:03:00+00:00", "Not/AZone")) == 16
-    assert len(format_local("2026-11-11T15:03:00+00:00", None)) == 16
+    assert format_local("2026-11-11T15:03:00+00:00", "Not/AZone").startswith("Nov 11, 2026, ")
+    assert format_local("2026-11-11T15:03:00+00:00", None).startswith("Nov 11, 2026, ")
 
 
 def test_old_times_without_a_zone_still_show():
-    assert format_local(datetime(2026, 11, 11, 10, 3), None) == "2026-11-11 10:03"
+    assert format_local(datetime(2026, 11, 11, 10, 3), None) == "Nov 11, 2026, 10:03"

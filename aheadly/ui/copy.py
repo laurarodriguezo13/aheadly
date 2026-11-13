@@ -1,6 +1,5 @@
 """All user-facing strings (English for the MVP; es-CO can be added here later)."""
 
-APP_NAME = "Aheadly"
 TAGLINE = "Clarity today. A brighter tomorrow."
 
 NAV = {
@@ -517,3 +516,46 @@ FIN_FIELDS = {
 }
 FIN_SAVE = "Add"
 FIN_ADDED = "Added. The comparison below now includes it."
+
+
+# ---------------------------------------------------------------- moved here in the review after Phase 3
+QUESTIONS_WORKING = "Looking at your statement…"
+CHECKING_MONEY = "Checking your money…"
+OPEN_ALERTS = "Open alerts"
+SAVING_PLAN = "Saving your plan…"
+WRITE_FIRST = "Write what's coming first, then press Read it."
+ANSWER_FIRST = "Type or pick an answer first, or press Skip."
+GO_TO_DASHBOARD = "Go to dashboard"
+LAST_SYNCED = "last synced {when}"
+PROPOSAL_PROBLEM = "⚠ {label}: {problem}"
+PROPOSAL_UNNAMED = "An item"
+WHATIF_PICK = "What do you want to test?"
+WHATIF_WHAT = "What is it?"
+WHATIF_DEFAULT_NAME = "New purchase"
+WHATIF_RUNNING = "Running the forecast again…"
+WHATIF_FAILED = "That scenario did not work: {error}"
+WHATIF_HISTORY = "Scenario history"
+SETTINGS_BUFFER = "Your safety buffer"
+SETTINGS_SAVED = "Saved. Forecast and alerts refreshed."
+SETTINGS_CHECK = "Daily check"
+SETTINGS_LAST_RUN = "Last run: {when}"
+SETTINGS_NEVER_RUN = "Never run yet."
+SETTINGS_RUNNING = "Forecasting the next 8 weeks…"
+SETTINGS_RAN = "Done. Alerts raised: {raised}, updated: {updated}, resolved: {resolved}."
+SETTINGS_AI = "AI status"
+SETTINGS_MODELS = "Writing the words: **{provider}**  ·  Forecast: **{forecast}**"
+FORECAST_NAMES = {"prophet": "Prophet", "seasonal_naive": "same weekday as recent weeks (simple)"}
+PROVIDER_NAMES = {"stub": "built-in templates (no AI)", "gemini": "Gemini", "anthropic": "Claude"}
+SETTINGS_AI_STUB = (
+    "No AI model is connected, so answers and alerts use fixed wording. Every number is worked out the "
+    "same way either way."
+)
+SETTINGS_AI_LIVE = (
+    "The AI only writes the words: every number comes from the app's own calculations and is checked "
+    "before you see it. If the AI doesn't answer, fixed wording is used instead."
+)
+SETTINGS_BACKTESTING = "Backtesting on the last 4 weeks…"
+BACKTEST_MODEL = "Model"
+BACKTEST_ERROR = "Average daily miss ($)"
+BACKTEST_NOTE = "Lower is better: each model forecast your last 4 weeks from the weeks before."
+RESET_HELP = "Deletes the data you uploaded in this session. You go back to the upload page."

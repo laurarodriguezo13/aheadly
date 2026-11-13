@@ -79,12 +79,12 @@ def _apply_one(
         if p["repay_date"] <= p["start_date"]:
             raise ValueError("The money has to be paid back after it comes in.")
         return items + [
-            ScheduledItem(name, amount, p["start_date"], kind="loan", source="scenario"),
+            ScheduledItem(name, amount, p["start_date"], kind="other", source="scenario"),
             ScheduledItem(
                 f"{name} paid back",
                 -round(amount + float(p.get("cost", 0)), 2),
                 p["repay_date"],
-                kind="loan",
+                kind="other",
                 source="scenario",
             ),
         ]

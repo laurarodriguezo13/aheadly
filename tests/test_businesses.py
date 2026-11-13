@@ -103,7 +103,7 @@ def import_business(slug: str, with_one_offs: bool = False) -> AppCore:
     core = AppCore(
         Repository(":memory:"),
         ForecastEngine(SeasonalNaiveModel(), n_paths=300),
-        Settings(demo_mode=True, llm_provider="stub", db_path=":memory:"),
+        Settings(llm_provider="stub", db_path=":memory:"),
         llm=StubClient(start),
         today=start,
     )

@@ -105,7 +105,7 @@ else:
         return (
             f'<div class="ah-row"><span><span class="ah-check">✔</span>&nbsp; <b>{html.escape(a["name"])}</b>'
             f" · {html.escape(copy.ACCOUNT_KIND.get(kind, kind))} · {html.escape(amount)}</span>"
-            f'<span>last synced {local_time(a["last_synced_at"])}</span></div>'
+            f'<span>{html.escape(copy.LAST_SYNCED.format(when=local_time(a["last_synced_at"])))}</span></div>'
         )
 
     rows = "".join(_account_row(a) for a in status.accounts)
@@ -186,5 +186,5 @@ else:
                 "amount": st.column_config.NumberColumn("Amount", format="dollar"),
             },
         )
-    if st.button("Go to dashboard", type="primary"):
+    if st.button(copy.GO_TO_DASHBOARD, type="primary"):
         go_to("dashboard")

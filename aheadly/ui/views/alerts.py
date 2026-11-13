@@ -89,7 +89,7 @@ def action_rows(actions: list[dict], key_prefix: str, title: str = copy.ACTIONS_
                     )
                     scenario_metrics(result)
                     if st.button(copy.SAVE_PLAN, key=f"{key}-save"):
-                        with st.spinner("Saving your plan…"):
+                        with st.spinner(copy.SAVING_PLAN):
                             core.save_plan(result)
                         st.session_state.pop(f"{key}-result", None)
                         st.toast(copy.ACTION_SAVED)

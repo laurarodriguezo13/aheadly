@@ -11,7 +11,8 @@ line, the app says so and how much is missing.
 from datetime import timedelta
 
 from aheadly.core import actions
-from tests.conftest import TODAY
+from tests.test_businesses import BUSINESSES, KEYS, STATEMENTS, import_business
+from aheadly.data.connectors.csv_connector import CsvConnector
 
 
 def _fixes(core):
@@ -87,3 +88,40 @@ def test_pairs_named_with_both_parts():
     )
     assert pair["label"] == "Move New oven to Dec 21 + pause your own pay for the next 8 weeks"
     assert len(pair["how_to"]) == 3
+
+
+def test_results_never_carry_over_to_a_new_business():
+    """Run ids start again at 1 after a reset: the next business must not be shown the last one's
+    suggestions, stress tests or financing (found in the review after Phase 3)."""
+    core = import_business("panaderia-la-esquina", with_one_offs=True)
+    bakery = core.status().business
+    first_run = core.repo.latest_forecast(bakery.id).run_id
+    before = ([a["label"] for a in core.suggested_fixes()], [t["detail"] for t in core.stress_tests()])
+    core.reset()
+    folder = BUSINESSES / "ferreteria-don-perno"
+    profile = {"name": "Hardware", "owner_name": "", "city": "", "low_cash_line": bakery.low_cash_line}
+    core.connect_files(
+        [
+            CsvConnector((folder / f["path"]).read_bytes(), None, f["path"], business_profile=profile)
+            for f in KEYS["ferreteria-don-perno"]["files"]
+            if f["kind"] in STATEMENTS
+        ]
+    )
+    business = core.status().business
+    while core.repo.latest_forecast(business.id).run_id < first_run:  # the same run id as before
+        core.run_daily_check(force=True)
+    after = ([a["label"] for a in core.suggested_fixes()], [t["detail"] for t in core.stress_tests()])
+    assert after != before
+
+
+def test_a_saved_what_if_purchase_is_part_of_the_plan(connected_core):
+    """Saved from the What-if page, a purchase becomes a plan line the suggestions can move."""
+    result = connected_core.run_what_if(
+        [{"type": "one_time_expense", "amount": 900, "date": "2026-12-01", "label": "New mixer"}], "Mixer"
+    )
+    connected_core.save_plan(result)
+    items = connected_core.repo.list_scheduled_items(connected_core.status().business.id)
+    mixer = next(i for i in items if i.label == "New mixer")
+    assert mixer.source == "plan"
+    once = actions._once(items, connected_core.today, connected_core.today + timedelta(days=55))
+    assert "New mixer" in [i.label for i, _ in once]

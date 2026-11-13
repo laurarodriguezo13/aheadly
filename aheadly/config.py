@@ -29,7 +29,6 @@ def _env_bool(name: str, default: bool) -> bool:
 class Settings:
     """Immutable snapshot of the configuration the app runs with."""
 
-    demo_mode: bool = True
     per_visitor_data: bool = True
     llm_provider: str = "stub"
     gemini_api_key: str = ""
@@ -72,7 +71,6 @@ class Settings:
 def load_settings() -> Settings:
     """Build Settings from the environment (call once, cache the result)."""
     return Settings(
-        demo_mode=_env_bool("DEMO_MODE", True),
         per_visitor_data=_env_bool("PER_VISITOR_DATA", True),
         llm_provider=os.getenv("LLM_PROVIDER", "stub").strip().lower(),
         gemini_api_key=os.getenv("GEMINI_API_KEY", ""),

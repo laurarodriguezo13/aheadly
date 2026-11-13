@@ -1,7 +1,7 @@
 """LLM API adapters (component "Generate Text").
 
 Three clients share one `chat(messages, tools)` interface (polymorphism):
-  * StubClient      offline, rule-based; used in DEMO_MODE and in tests
+  * StubClient      offline, rule-based; the default without a key, the fallback, and the tests
   * GeminiClient    the course default, via Google's OpenAI-compatible endpoint
   * AnthropicClient Claude via the official anthropic SDK
 
@@ -224,7 +224,17 @@ class StubClient:
         q = question.lower()
         call_id = f"stub-{uuid.uuid4().hex[:8]}"
         if any(
-            w in q for w in ("safe to spend", "can i spend", "afford", "pay myself", "my own pay", "my pay")
+            w in q
+            for w in (
+                "safe to spend",
+                "safely spend",
+                "can i spend",
+                "afford",
+                "pay myself",
+                "safely pay",
+                "my own pay",
+                "my pay",
+            )
         ):
             return ToolCall(call_id, "safe_to_spend", {})
         if any(

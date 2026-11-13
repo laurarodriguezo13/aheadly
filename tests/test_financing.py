@@ -176,3 +176,38 @@ def test_chat_compares_financing_with_numbers_from_code(bakery):
     assert answer.tool_names == ["compare_financing"]
     assert "timing gap" in answer.text and "financial advice" in answer.text
     assert check_numbers(answer.text, [bakery.financing_summary()]).passed
+
+
+def test_a_financing_action_can_be_saved_as_the_plan():
+    """Save as my plan kept failing on the database's list of kinds (found in the review)."""
+    core = import_business("panaderia-la-esquina", with_one_offs=True)
+    core.add_financing_option({"kind": "card", "limit": 5000, "rate": 30})
+    action = core.compare_financing()["actions"][0]
+    core.save_plan(core.run_what_if(action["adjustments"], action["label"]))
+    assert core.get_dashboard().forecast.lowest.balance_p50 >= core.status().business.low_cash_line
+    assert not [a for a in core.get_alerts() if a.type == "shortfall" and a.severity == "high"]
+
+
+def test_saving_a_moved_payment_keeps_what_was_tested():
+    """The owner's "Quarterly flour order" stands in for the flour payment found in the statement.
+    Tested a month later it lifts the lowest balance; saved as the plan, the forecast must show the
+    same, not bring the statement's copy back (found in the review after Phase 3)."""
+    core = import_business("panaderia-la-esquina", with_one_offs=True)
+    result = core.run_what_if(
+        [{"type": "move_item", "label": "Quarterly flour order", "new_date": "2027-01-14"}], "Flour later"
+    )
+    core.save_plan(result)
+    saved = core.get_dashboard().forecast.lowest.balance_p50
+    assert saved == pytest.approx(result.scenario.lowest.balance_p50, abs=150)
+
+
+def test_moving_it_on_how_we_built_it_also_moves_the_money():
+    core = import_business("panaderia-la-esquina", with_one_offs=True)
+    before = core.get_dashboard().forecast.lowest.balance_p50
+    flour = next(
+        i
+        for i in core.repo.list_scheduled_items(core.status().business.id)
+        if i.label == "Quarterly flour order"
+    )
+    core.update_plan_item(flour.id, due_date=date(2027, 1, 14))
+    assert core.get_dashboard().forecast.lowest.balance_p50 > before + 2000

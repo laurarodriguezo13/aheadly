@@ -35,8 +35,15 @@ def _active(items: list[ScheduledItem]) -> list[ScheduledItem]:
 
 
 def surprises(
-    items: list[ScheduledItem], today: date, end: date, weekly_sales: float, monthly_outflow: float
+    items: list[ScheduledItem],
+    today: date,
+    end: date,
+    weekly_sales: float,
+    monthly_outflow: float,
+    replaced: set | frozenset = frozenset(),
 ) -> list[dict]:
+    """`replaced`: statement occurrences (item id, n-th time) a payment the owner told us about stands
+    in for; a surprise on one of those would change nothing."""
     found = []
     if weekly_sales > 0:
         found.append(
@@ -81,7 +88,14 @@ def surprises(
             }
         )
 
-    suppliers = [i for i in _active(items) if i.category == "suppliers" and i.recurrence and i.amount < 0]
+    suppliers = [
+        i
+        for i in _active(items)
+        if i.category == "suppliers"
+        and i.recurrence
+        and i.amount < 0
+        and any((i.id, k) not in replaced for k, _ in enumerate(expand_scheduled_items([i], today, end)))
+    ]
     if suppliers:
         item = min(suppliers, key=lambda i: i.amount)
         found.append(

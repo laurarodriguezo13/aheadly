@@ -51,6 +51,10 @@ from aheadly.domain import (
 
 logger = logging.getLogger(__name__)
 
+# lines a what-if added (and, once saved, the plan lines they became) are never "the same money" as a
+# payment found in the statement: a surprise bill the size of the rent must not replace the rent (3.5)
+NEVER_PAIRED = ("scenario", "plan")
+
 
 @dataclass
 class AppStatus:
@@ -98,6 +102,12 @@ class AppCore:
         self.settings = settings
         self._today = today
         self._pending_time_zone: str | None = None  # from the browser, kept until a business exists
+        self._clear_caches()
+        self.translator = InsightTranslator(llm or create_llm_client(settings), ToolDispatcher(self))
+
+    def _clear_caches(self) -> None:
+        """Results worked out once per forecast run. Run ids start again at 1 after a reset, so a new
+        business must never meet the old one's results: reset() clears them too."""
         self._backtests: dict = {}  # backtest error per history (roadmap 2.8)
         self._messages: dict[str, str] = {}  # drafted messages per facts (roadmap 3.2)
         self._fixes_cache: dict = {}  # suggested fixes for the latest forecast run (roadmap 3.3)
@@ -105,7 +115,6 @@ class AppCore:
         self._stress_cache: dict = {}  # stress tests for the latest forecast run (roadmap 3.5)
         self._pairs_cache: dict = {}  # which found payments the owner's own items stand in for
         self._financing_cache: dict = {}  # financing comparison per run and options (roadmap 3.6)
-        self.translator = InsightTranslator(llm or create_llm_client(settings), ToolDispatcher(self))
 
     @property
     def today(self) -> date:
@@ -1105,7 +1114,10 @@ class AppCore:
         baseline = self._baseline_forecast()
         weekly = self.weekly_sales()
         tests = []
-        for surprise in stress.surprises(items, self.today, end, weekly, self._avg_monthly_outflow()):
+        replaced, _ = self._saved_pairs(end)
+        for surprise in stress.surprises(
+            items, self.today, end, weekly, self._avg_monthly_outflow(), replaced
+        ):
             result = self._scenario(surprise["adjustments"], surprise["label"], baseline=baseline)
             impact = alert_actions.impact(result)
             short = impact["lowest_after"] < line
@@ -1329,6 +1341,9 @@ class AppCore:
             self.settings.horizon_days,
             self.weekly_sales(),
         )
+        # a what-if's own lines (a purchase, a price change, borrowing) become part of the plan; like
+        # the what-if they came from, they never stand in for a payment found in the statement
+        items = [replace(i, source="plan") if i.source == "scenario" else i for i in items]
         self.repo.replace_scheduled_items(business.id, items)  # removed ones are kept, switched off
         self.repo.save_scenario(
             business.id,
@@ -1354,6 +1369,7 @@ class AppCore:
 
     def reset(self) -> None:
         self.repo.reset()
+        self._clear_caches()
 
     # ---------------------------------------------------- tool-facing queries
     def cash_summary(self) -> dict:
@@ -1506,23 +1522,32 @@ class AppCore:
     def _dated_events(
         self, items: list[ScheduledItem], end: date | None = None
     ) -> list[tuple[ScheduledItem, ScheduledItem]]:
-        """Each dated payment once, next to the plan item it came from."""
+        """Each dated payment once, next to the plan item it came from. A payment the owner told us
+        about that is also one the statement shows (the quarterly flour order) stands in for it."""
         end = end or self.today + timedelta(days=self.settings.horizon_days - 1)
         # a what-if's own lines (a surprise bill, "sales 20% lower") are never "the same money" as a
         # payment found in the statement: only the owner's real plan items may replace one (3.5)
-        trying = [i for i in items if i.source == "scenario"]
+        trying = [i for i in items if i.source in NEVER_PAIRED]
         events = [
-            (when, amount, label, _from_statement(item), item, (item.id, k))
+            (when, amount, label, item, (item.id, k))
             for item in items
-            if item.source != "scenario"
+            if item.source not in NEVER_PAIRED
             for k, (when, amount, label) in enumerate(expand_scheduled_items([item], self.today, end))
         ]
-        # pairs found in the saved plan hold when a what-if moves one side (moving the owner's flour
-        # order a month must move that money, not bring back the statement's copy of it, 3.6)
+        # pairs found in the saved plan hold when a what-if moves one side; new ones are found too
         replaced, standing_in = self._saved_pairs(end)
-        events = [e for e in events if not (e[3] and e[5] in replaced)]
-        settled = [(e[0], e[1], e[2], e[4]) for e in events if not e[3] and e[5] in standing_in]
-        events = [e[:5] for e in events if e[3] or e[5] not in standing_in]
+        found, _ = self._pairs(items, end, replaced, standing_in)
+        dropped = replaced | found
+        kept = [
+            (when, amount, label, item)
+            for when, amount, label, item, key in events
+            if not (_from_statement(item) and key in dropped)
+        ]
+        kept += [
+            (when, amount, label, item)
+            for item in trying
+            for when, amount, label in expand_scheduled_items([item], self.today, end)
+        ]
         moves = self._how_items_moved()
         return [
             (
@@ -1539,36 +1564,44 @@ class AppCore:
                 ),
                 item,
             )
-            for when, amount, label, item in recurring.drop_duplicates(events)
-            + settled
-            + [
-                (when, amount, label, item)
-                for item in trying
-                for when, amount, label in expand_scheduled_items([item], self.today, end)
-            ]
+            for when, amount, label, item in sorted(kept, key=lambda e: (e[0], e[1], e[2]))
         ]
 
+    def _pairs(
+        self, items: list[ScheduledItem], end: date, taken: set = frozenset(), used: set = frozenset()
+    ) -> tuple[set, set]:
+        """Which statement occurrences (item id, n-th time) the owner's payments stand in for, and
+        which owner occurrences do the standing in; `taken`/`used` are already paired. A one-off the
+        owner told us about counts at the day it was first due, wherever it has been moved since, so
+        moving it moves the money (a what-if, a saved plan, How we built it)."""
+        candidates = []
+        for item in items:
+            if item.source in NEVER_PAIRED:
+                continue
+            if not _from_statement(item) and not item.recurrence and item.first_due is not None:
+                if self.today <= item.first_due <= end and (item.id, 0) not in used:
+                    candidates.append((item.first_due, item.amount, item.label, False, (item.id, 0)))
+                continue
+            for k, (when, amount, label) in enumerate(expand_scheduled_items([item], self.today, end)):
+                key = (item.id, k)
+                if key not in taken and key not in used:
+                    candidates.append((when, amount, label, _from_statement(item), key))
+        pairs = recurring.pair_duplicates(candidates)
+        return {candidates[d][4] for d in pairs}, {candidates[k][4] for k in pairs.values()}
+
     def _saved_pairs(self, end: date) -> tuple[set, set]:
-        """In the saved plan: which statement occurrences (item id, n-th time) a payment the owner told
-        us about stands in for, and those owner occurrences. Cached per plan."""
+        """The pairs in the saved plan (cached per plan)."""
         stored = self.repo.list_scheduled_items(self._business().id)
         key = (
             self.today,
             end,
-            tuple((i.id, i.due_date, i.amount, i.recurrence, i.active, i.paused, i.end_date) for i in stored),
+            tuple(
+                (i.id, i.due_date, i.first_due, i.amount, i.recurrence, i.active, i.paused, i.end_date)
+                for i in stored
+            ),
         )
         if self._pairs_cache.get("key") != key:
-            events = [
-                (when, amount, label, _from_statement(item), (item.id, k))
-                for item in stored
-                if item.source != "scenario"
-                for k, (when, amount, label) in enumerate(expand_scheduled_items([item], self.today, end))
-            ]
-            pairs = recurring.pair_duplicates(events)
-            self._pairs_cache = {
-                "key": key,
-                "pairs": ({events[d][4] for d in pairs}, {events[k][4] for k in pairs.values()}),
-            }
+            self._pairs_cache = {"key": key, "pairs": self._pairs(stored, end)}
         return self._pairs_cache["pairs"]
 
     def _how_items_moved(self) -> dict[int, tuple[float, int]]:

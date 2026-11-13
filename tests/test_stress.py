@@ -102,3 +102,12 @@ def test_a_stress_chart_is_not_saved_as_a_what_if():
     result = core.stress_result(test["key"])
     assert round(result.scenario.lowest.balance_p50) == test["impact"]["lowest_after"]
     assert len(core.saved_scenarios()) == before
+
+
+def test_the_supplier_surprise_hits_a_payment_the_forecast_counts():
+    """The bakery's biggest supplier payment in the statement (the quarterly flour) is replaced in the
+    forecast by the owner's own "Quarterly flour order", so raising it changed nothing (found in the
+    review after Phase 3). The surprise must pick a supplier payment that actually counts."""
+    core = import_business("panaderia-la-esquina", with_one_offs=True)
+    test = next(t for t in core.stress_tests() if t["key"] == "supplier_up")
+    assert test["impact"]["lowest_after"] < test["impact"]["lowest_before"]

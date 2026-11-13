@@ -111,3 +111,15 @@ def test_chat_never_says_zero_pay_is_safe():
     }
     text = answer_from_tool("safe_to_spend", data)
     assert "up to $0" not in text and "even pausing it" in text
+
+
+def test_offline_chat_knows_the_usual_ways_to_ask():
+    from aheadly.ai.llm_client import StubClient
+
+    stub = StubClient()
+    for question in (
+        "How much can I safely spend?",
+        "Can I afford a new mixer?",
+        "How much can I safely pay myself?",
+    ):
+        assert stub.plan(question).name == "safe_to_spend", question

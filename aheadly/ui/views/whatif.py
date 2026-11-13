@@ -66,7 +66,7 @@ with st.container(border=True):
                     scenario_metrics(shown)
 
 # outside the form, so the boxes below change as soon as the owner picks another kind
-kind_label = st.selectbox("What do you want to test?", list(copy.WHATIF_TYPES))
+kind_label = st.selectbox(copy.WHATIF_PICK, list(copy.WHATIF_TYPES))
 kind = copy.WHATIF_TYPES[kind_label]
 
 with st.form("whatif"):
@@ -74,7 +74,7 @@ with st.form("whatif"):
     if kind == "one_time_expense":
         amount = c1.number_input("Amount ($)", min_value=1.0, value=2000.0, step=100.0, format="%.0f")
         day = c2.date_input("When?", value=core.today + timedelta(days=7), format="MM/DD/YYYY")
-        label = st.text_input("What is it?", value="New purchase")
+        label = st.text_input(copy.WHATIF_WHAT, value=copy.WHATIF_DEFAULT_NAME)
         adjustment = {"type": kind, "amount": amount, "date": day.isoformat(), "label": label}
         name = f"Buy {label} ({amount:,.0f})"
     elif kind == "move_item":
@@ -90,11 +90,11 @@ with st.form("whatif"):
     submitted = st.form_submit_button(copy.RUN_SCENARIO, type="primary")
 
 if submitted:
-    with st.spinner("Running the forecast again…"):
+    with st.spinner(copy.WHATIF_RUNNING):
         try:
             result = core.run_what_if([adjustment], name)
         except ValueError as exc:
-            st.error(f"That scenario did not work: {exc}")
+            st.error(copy.WHATIF_FAILED.format(error=exc))
             st.stop()
         st.session_state["whatif_result"] = result
         st.session_state["whatif_text"] = core.explain_scenario(result)
@@ -111,14 +111,14 @@ if result is not None:
         scenario_metrics(result)
         banner(html.unescape(st.session_state.get("whatif_text", "")))
         if st.button(copy.SAVE_PLAN, type="primary"):
-            with st.spinner("Saving your plan…"):
+            with st.spinner(copy.SAVING_PLAN):
                 core.save_plan(result)
             st.session_state.pop("whatif_result", None)
             st.success(copy.PLAN_SAVED)
 
 saved = core.saved_scenarios()
 if saved:
-    with st.expander("Scenario history"):
+    with st.expander(copy.WHATIF_HISTORY):
         for row in saved[:10]:
             flag = " · saved as plan" if row["saved_as_plan"] else ""
             st.write(

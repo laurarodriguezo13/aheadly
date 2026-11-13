@@ -56,6 +56,11 @@ MIGRATIONS: list[list[str]] = [
         "CREATE TABLE uploaded_files (id INTEGER PRIMARY KEY, business_id INTEGER, name TEXT, "
         "detected_type TEXT, mapping_json TEXT, confirmed INTEGER DEFAULT 0, uploaded_at TEXT)",
     ],
+    # 2 · review after Phase 3: the date a planned payment was first due, kept when it's moved
+    [
+        "ALTER TABLE scheduled_items ADD COLUMN first_due_date TEXT",
+        "UPDATE scheduled_items SET first_due_date = due_date",
+    ],
 ]
 
 
@@ -387,8 +392,8 @@ class Repository:
     def add_scheduled_items(self, business_id: int, items: list[ScheduledItem]) -> None:
         self._conn.executemany(
             "INSERT INTO scheduled_items (business_id, kind, label, amount, due_date, recurrence, source, "
-            "active, status, certainty, likelihood, category, match_key, end_date, user_edited, paused) "
-            "VALUES (?,?,?,?,?,?,?,1,?,?,?,?,?,?,?,?)",
+            "active, status, certainty, likelihood, category, match_key, end_date, user_edited, paused, "
+            "first_due_date) VALUES (?,?,?,?,?,?,?,1,?,?,?,?,?,?,?,?,?)",
             [
                 (
                     business_id,
@@ -406,6 +411,7 @@ class Repository:
                     i.end_date.isoformat() if i.end_date else None,
                     int(i.user_edited),
                     int(i.paused),
+                    (i.first_due or i.due_date).isoformat(),
                 )
                 for i in items
             ],
@@ -437,6 +443,7 @@ class Repository:
             end_date=date.fromisoformat(r["end_date"]) if r["end_date"] else None,
             user_edited=bool(r["user_edited"]),
             paused=bool(r["paused"]),
+            first_due=date.fromisoformat(r["first_due_date"]) if r["first_due_date"] else None,
         )
 
     def replace_scheduled_items(self, business_id: int, items: list[ScheduledItem]) -> None:
@@ -455,8 +462,8 @@ class Repository:
     def _insert_scheduled_item(self, business_id: int, i: ScheduledItem) -> int:
         cur = self._conn.execute(
             "INSERT INTO scheduled_items (business_id, kind, label, amount, due_date, recurrence, source, "
-            "active, status, certainty, likelihood, category, match_key, end_date, user_edited, paused) "
-            "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "active, status, certainty, likelihood, category, match_key, end_date, user_edited, paused, "
+            "first_due_date) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 business_id,
                 i.kind,
@@ -474,6 +481,7 @@ class Repository:
                 i.end_date.isoformat() if i.end_date else None,
                 int(i.user_edited),
                 int(i.paused),
+                (i.first_due or i.due_date).isoformat(),
             ),
         )
         return cur.lastrowid

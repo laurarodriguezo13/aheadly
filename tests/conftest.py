@@ -17,7 +17,7 @@ TODAY = date(2026, 11, 9)
 
 @pytest.fixture
 def core() -> AppCore:
-    settings = Settings(demo_mode=True, llm_provider="stub", db_path=":memory:")
+    settings = Settings(llm_provider="stub", db_path=":memory:")
     return AppCore(
         Repository(":memory:"),
         ForecastEngine(SeasonalNaiveModel(), n_paths=200),

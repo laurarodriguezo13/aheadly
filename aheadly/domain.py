@@ -55,6 +55,9 @@ class ScheduledItem:
     end_date: date | None = None
     user_edited: bool = False  # the owner changed it: detection never overwrites it again
     paused: bool = False
+    # the date it was first planned for; moving it keeps this, so a payment the owner told us about
+    # still stands in for the statement's copy of it after a move (review after Phase 3)
+    first_due: date | None = None
     # how much it moved in the past (roadmap 2.8, worked out at forecast time, not stored): the
     # amount's spread as a share of it, and how many days early or late it usually comes
     spread: float = 0.0

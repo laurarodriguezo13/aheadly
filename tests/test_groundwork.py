@@ -26,7 +26,7 @@ def _repo_with_business() -> tuple[Repository, int]:
 
 
 def _live_core() -> AppCore:
-    settings = Settings(demo_mode=True, llm_provider="stub", db_path=":memory:")
+    settings = Settings(llm_provider="stub", db_path=":memory:")
     return AppCore(
         Repository(":memory:"),
         ForecastEngine(SeasonalNaiveModel(), n_paths=200),

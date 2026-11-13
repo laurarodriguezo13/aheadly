@@ -7,7 +7,7 @@ from datetime import date, timedelta
 import pytest
 
 from aheadly.ai.forecast_engine import expand_scheduled_items
-from aheadly.ai.recurring import TxLine, detect, drop_duplicates, month_rule_dates
+from aheadly.ai.recurring import TxLine, detect, month_rule_dates, pair_duplicates
 from aheadly.data.connectors.csv_connector import CsvConnector
 from aheadly.domain import ScheduledItem
 
@@ -158,10 +158,10 @@ def test_a_known_payment_replaces_the_detected_one():
         (date(2026, 12, 16), 5500.0, "Christmas order", False),
         (date(2026, 12, 14), 352.58, "Café weekly", True),
     ]
-    kept = drop_duplicates(events)
-    labels = [label for _, _, label in kept]
-    assert "Pago pse harinera" not in labels
-    assert {"Quarterly flour order", "Pago arriendo", "Christmas order", "Café weekly"} == set(labels)
+    pairs = pair_duplicates(events)
+    assert {events[d][2]: events[k][2] for d, k in pairs.items()} == {
+        "Pago pse harinera": "Quarterly flour order"
+    }
 
 
 def test_month_rules_in_the_forecast():

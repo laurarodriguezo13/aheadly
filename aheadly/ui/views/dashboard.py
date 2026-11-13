@@ -19,7 +19,7 @@ from aheadly.ui.components import (
 core = start_page(copy.DASHBOARD_TITLE)
 require_data(core)
 
-with st.spinner("Checking your money…"):
+with st.spinner(copy.CHECKING_MONEY):
     core.ensure_fresh()
 dash = core.get_dashboard()
 forecast, business = dash.forecast, dash.business
@@ -117,7 +117,7 @@ with left, st.container(border=True):
     section_title(copy.UPCOMING_ALERTS)
     if dash.alerts:
         st.markdown(alert_list_html(dash.alerts), unsafe_allow_html=True)
-        if st.button("Open alerts"):
+        if st.button(copy.OPEN_ALERTS):
             go_to("alerts")
     elif forecast and forecast.risk_level(business.low_cash_line) == "watch":
         st.warning(
