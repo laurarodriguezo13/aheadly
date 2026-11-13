@@ -34,7 +34,7 @@ def _statement_ending(last_day: date, days: int = 40) -> str:
 
 def _live_core() -> AppCore:
     """Like the shared fixture, but with no fixed date: it follows the real calendar."""
-    settings = Settings(demo_mode=True, llm_provider="stub", db_path=":memory:")
+    settings = Settings(llm_provider="stub", db_path=":memory:")
     return AppCore(
         Repository(":memory:"),
         ForecastEngine(SeasonalNaiveModel(), n_paths=200),

@@ -150,7 +150,11 @@ class ForecastEngine:
             for i in range(horizon_days)
         ]
         return ForecastResult(
-            opening_balance=opening_balance, points=points, model=self.model_name, scheduled=events
+            opening_balance=opening_balance,
+            points=points,
+            model=self.model_name,
+            scheduled=events,
+            balance_paths=balances,  # for the chance below the line (roadmap 3.1)
         )
 
     def backtest(self, history: pd.DataFrame, holdout_days: int = 28) -> dict[str, float]:

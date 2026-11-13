@@ -10,6 +10,8 @@ SAMPLE_ARGS = {
     "get_upcoming_outflows": {"weeks": 8},
     "get_transactions": {"limit": 5, "category": "sales"},
     "get_alerts": {},
+    "safe_to_spend": {},
+    "compare_financing": {},
     "run_scenario": {
         "name": "t",
         "adjustments": [{"type": "move_item", "label": "oven", "new_date": "2026-12-31"}],

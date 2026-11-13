@@ -1,6 +1,5 @@
 """All user-facing strings (English for the MVP; es-CO can be added here later)."""
 
-APP_NAME = "Aheadly"
 TAGLINE = "Clarity today. A brighter tomorrow."
 
 NAV = {
@@ -234,6 +233,7 @@ SAVE_PLAN = "Save as my plan"
 PLAN_SAVED = "Plan saved. You're on track."
 BEST_CASE, BASE_CASE, WORST_CASE = "Best case", "Base case", "Worst case"
 LOWEST_BALANCE = "lowest balance"
+CHANCE_SCENARIO = "With this change: {after} in the next 8 weeks (today: {before}%)."
 
 SETTINGS_TITLE = "Settings"
 LOW_CASH_LINE = "Low cash line"
@@ -394,3 +394,168 @@ CONFIDENCE_LEVELS = {"high": "high", "medium": "medium", "low": "low"}
 CONFIDENCE_ALL = "All the checks"
 NOTHING_PLANNED = "This forecast assumes no big one-off payments in the next 8 weeks. Planning any?"
 NOTHING_PLANNED_GO = "Tell us"
+
+
+# ---------------------------------------------------------------- chance below the line (3.1)
+def chance_words(pct: int | None) -> str:
+    """64 → '64% chance of dipping below your line' (empty when there's no chance to show)."""
+    if pct is None:
+        return ""
+    if pct <= 0:
+        return "no scenario dips below your line"
+    if pct >= 100:
+        return "every scenario dips below your line"
+    return f"{pct}% chance of dipping below your line"
+
+
+# ---------------------------------------------------------------- actions (3.2)
+ACTIONS_TITLE = "Try one"
+ACTION_IMPACT = "Lowest balance {before} → {after} · {risk_before} → {risk_after} · chance of dipping below your line {chance_before}% → {chance_after}%"
+ACTION_TEST = "Test this"
+ACTION_HOW = "How to do it"
+ACTION_DRAFT = "Draft a message"
+ACTION_DRAFT_NOTE = "Copy it and send it yourself: Aheadly never sends messages."
+ACTION_SAVED = "Plan saved. The forecast and alerts now use it."
+ACTION_AFTER = "Lowest balance after: {after}"
+STILL_SHORT = "Even the best change here leaves your base case about {gap} below your line. Covering that may need money from outside the business: talk to your bank or accountant."
+WATCH_FIXES = "Your base case stays above your line, but a bad month could dip below it. These changes, tested on your numbers, would help."
+SEE_FIXES = "See what would help"
+ACTION_GENERAL = "General advice: we couldn't test this one for you."
+
+
+# ---------------------------------------------------------------- safe to spend (3.4)
+SAFE_SPEND = "Safe to spend today"
+SAFE_SPEND_SUB = "Even a bad month stays above your {line} line for the next 8 weeks"
+SAFE_SPEND_NONE = "A bad month could already dip to {worst}: hold off on extra spending"
+SAFE_PAY = "Safe pay for yourself"
+SAFE_PAY_SUB = "Per payment for the next 8 weeks ({how_often}; now {now})"
+SAFE_PAY_NONE = "Even with no pay, a bad month dips below your line (now {now} per payment)"
+SAFE_PAY_UNKNOWN = "Tell us which payment is your own pay (Questions) to see this"
+
+
+# ---------------------------------------------------------------- stress tests (3.5)
+STRESS_TITLE = "How would you handle a bad surprise?"
+STRESS_INTRO = "Four surprises built from your own numbers, each tested on your forecast. Nothing is saved."
+STRESS_RUN = "Check four surprises"
+STRESS_WORKING = "Testing four surprises on your forecast…"
+STRESS_FINE = "You'd be fine: your lowest balance would be about {lowest}."
+STRESS_SHORT = "You'd need about {gap} more to stay above your line."
+STRESS_SHORT_ALREADY = (
+    "You're already below your line before this surprise; with it you'd need about {gap} more."
+)
+STRESS_IMPACT = (
+    "Lowest balance {before} → {after} · chance of dipping below your line {chance_before}% → {chance_after}%"
+)
+STRESS_HELPS = "What would help:"
+STRESS_FIX_AFTER = "lowest balance {after}"
+STRESS_CHART = "See the chart"
+
+
+# ---------------------------------------------------------------- financing helper (3.6)
+FIN_TITLE = "How could you cover a gap?"
+FIN_WORKING = "Testing your options on your forecast…"
+FIN_NOTE = (
+    "Aheadly compares only the options you tell it you have. It doesn't offer credit or recommend "
+    "lenders, and this isn't financial advice: check rates and terms with your bank or accountant."
+)
+FIN_NONE = "Even a bad month stays above your line in the next 8 weeks, so there's nothing to cover."
+FIN_STRUCTURAL_LOSS = (
+    "This isn't a timing gap. Apart from one-off payments, a normal week takes about {weekly} from your "
+    "cash over the next {weeks} weeks, so borrowing would only delay the problem. Look at prices and "
+    "costs first: the suggestions above show what raising prices or paying yourself less would do."
+)
+FIN_STRUCTURAL_STUCK = (
+    "This isn't a timing gap: your cash doesn't get back above your line within the next {weeks} weeks, "
+    "even after the money you expect comes in, so borrowing would only delay the problem. Look at prices "
+    "and costs first: the suggestions above show what raising prices or paying yourself less would do."
+)
+FIN_TIMING_BASE = (
+    "This looks like a timing gap: your base case is about {short} below your line from {start} and back "
+    "above it by {recovery}. About {need} would bridge it."
+)
+FIN_TIMING_WORST = (
+    "Your base case stays above your line, but a bad month could leave you about {short} short from "
+    "{start}. About {need} would bridge it if that happens."
+)
+FIN_HINT = (
+    "Your statement shows money from a loan or credit line {times} times in the last year (up to {biggest} "
+    "at once). If you can still use it, add it below with its rate."
+)
+FIN_NO_OPTIONS = (
+    "Add the options you already have (a credit line, a card, longer terms from a supplier, getting an "
+    "invoice paid early, or your own money) and Aheadly will work out what each would cost and test it, "
+    "repayment included."
+)
+FIN_BEST = "Cheapest of your options that cover it"
+FIN_NONE_COVER = "None of your options covers the gap as it stands. Each one is listed below with why."
+FIN_ALL = "All your options"
+FIN_ROW = "**{label}**: {amount}, {take} → {repay}, costs {cost} ({rate}% a year). {status}"
+FIN_OK = "Covers it; lowest balance {after}."
+FIN_REASONS = {
+    "limit": "Not enough: you'd need about {need}.",
+    "late": "The money would arrive after the tight days start.",
+    "repay": "Can't be paid back within the next 8 weeks without leaving you short again.",
+    "no_payment": "That payment isn't in the next 8 weeks.",
+    "after_gap": "That payment is due after the tight days, so moving it doesn't help.",
+    "already_early": "That money already arrives before the tight days.",
+    "short": "Helps, but still leaves you below your line (lowest balance {after}).",
+}
+FIN_YOURS = "Options you told us about"
+FIN_REMOVE = "Remove"
+FIN_ADD = "Add an option you have"
+FIN_KIND = "What is it?"
+FIN_FIELDS = {
+    "name": "Name (optional, e.g. your bank's name for it)",
+    "limit": "How much you could get ($)",
+    "rate": "Yearly interest rate (%)",
+    "fee": "Fees ($)",
+    "arrive_days": "Days until the money arrives",
+    "payment": "Which payment?",
+    "extra_days": "How many more days they'd give you",
+    "fee_pct": "Fee (% of the amount)",
+}
+FIN_SAVE = "Add"
+FIN_ADDED = "Added. The comparison below now includes it."
+
+
+# ---------------------------------------------------------------- moved here in the review after Phase 3
+QUESTIONS_WORKING = "Looking at your statement…"
+CHECKING_MONEY = "Checking your money…"
+OPEN_ALERTS = "Open alerts"
+SAVING_PLAN = "Saving your plan…"
+WRITE_FIRST = "Write what's coming first, then press Read it."
+ANSWER_FIRST = "Type or pick an answer first, or press Skip."
+GO_TO_DASHBOARD = "Go to dashboard"
+LAST_SYNCED = "last synced {when}"
+PROPOSAL_PROBLEM = "⚠ {label}: {problem}"
+PROPOSAL_UNNAMED = "An item"
+WHATIF_PICK = "What do you want to test?"
+WHATIF_WHAT = "What is it?"
+WHATIF_DEFAULT_NAME = "New purchase"
+WHATIF_RUNNING = "Running the forecast again…"
+WHATIF_FAILED = "That scenario did not work: {error}"
+WHATIF_HISTORY = "Scenario history"
+SETTINGS_BUFFER = "Your safety buffer"
+SETTINGS_SAVED = "Saved. Forecast and alerts refreshed."
+SETTINGS_CHECK = "Daily check"
+SETTINGS_LAST_RUN = "Last run: {when}"
+SETTINGS_NEVER_RUN = "Never run yet."
+SETTINGS_RUNNING = "Forecasting the next 8 weeks…"
+SETTINGS_RAN = "Done. Alerts raised: {raised}, updated: {updated}, resolved: {resolved}."
+SETTINGS_AI = "AI status"
+SETTINGS_MODELS = "Writing the words: **{provider}**  ·  Forecast: **{forecast}**"
+FORECAST_NAMES = {"prophet": "Prophet", "seasonal_naive": "same weekday as recent weeks (simple)"}
+PROVIDER_NAMES = {"stub": "built-in templates (no AI)", "gemini": "Gemini", "anthropic": "Claude"}
+SETTINGS_AI_STUB = (
+    "No AI model is connected, so answers and alerts use fixed wording. Every number is worked out the "
+    "same way either way."
+)
+SETTINGS_AI_LIVE = (
+    "The AI only writes the words: every number comes from the app's own calculations and is checked "
+    "before you see it. If the AI doesn't answer, fixed wording is used instead."
+)
+SETTINGS_BACKTESTING = "Backtesting on the last 4 weeks…"
+BACKTEST_MODEL = "Model"
+BACKTEST_ERROR = "Average daily miss ($)"
+BACKTEST_NOTE = "Lower is better: each model forecast your last 4 weeks from the weeks before."
+RESET_HELP = "Deletes the data you uploaded in this session. You go back to the upload page."

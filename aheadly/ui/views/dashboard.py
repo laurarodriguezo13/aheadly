@@ -19,7 +19,7 @@ from aheadly.ui.components import (
 core = start_page(copy.DASHBOARD_TITLE)
 require_data(core)
 
-with st.spinner("Checking your money…"):
+with st.spinner(copy.CHECKING_MONEY):
     core.ensure_fresh()
 dash = core.get_dashboard()
 forecast, business = dash.forecast, dash.business
@@ -44,6 +44,9 @@ with col2:
             if low_date is None
             else f"In {weeks(alert_rules.weeks_until(core.today, low_date))}"
         )
+        chance = copy.chance_words(alert_rules.chance_pct(forecast.chance_below(business.low_cash_line)))
+        if chance:  # roadmap 3.1
+            when = f"{when} · {chance}"
         below = value < business.low_cash_line
         stat_card(
             copy.LOWEST_PROJECTED,
@@ -56,6 +59,30 @@ with col3:
     if dash.next_payment:
         due, amount, label = dash.next_payment
         stat_card(copy.NEXT_PAYMENT, money(-amount), f"{label} · {due:%b %d}", "", "sky")
+
+if forecast:  # roadmap 3.4: how much is safe to spend, and to pay yourself
+    spend = core.safe_to_spend()
+    pay = core.safe_owner_pay()
+    col4, col5 = st.columns(2)
+    with col4:
+        if spend["amount"] > 0:
+            sub = copy.SAFE_SPEND_SUB.format(line=money(spend["low_cash_line"]))
+            stat_card(copy.SAFE_SPEND, money(spend["amount"]), sub, "teal", "mint")
+        else:
+            sub = copy.SAFE_SPEND_NONE.format(worst=money(spend["lowest_worst_case"]))
+            stat_card(copy.SAFE_SPEND, money(0), sub, "red", "rose")
+    with col5:
+        if pay is None:
+            stat_card(copy.SAFE_PAY, "?", copy.SAFE_PAY_UNKNOWN, "", "lav")
+            if core.questions_left() and st.button(copy.QUESTIONS_GO, key="dashboard-pay-questions"):
+                go_to("questions")
+        elif pay["safe"] > 0:
+            sub = copy.SAFE_PAY_SUB.format(now=money(pay["now"]), how_often=pay["how_often"])
+            stat_card(copy.SAFE_PAY, money(pay["safe"]), sub, "purple", "lav")
+        else:
+            stat_card(
+                copy.SAFE_PAY, money(0), copy.SAFE_PAY_NONE.format(now=money(pay["now"])), "red", "rose"
+            )
 
 with st.container(border=True):
     section_title(copy.CHART_TITLE)
@@ -90,12 +117,14 @@ with left, st.container(border=True):
     section_title(copy.UPCOMING_ALERTS)
     if dash.alerts:
         st.markdown(alert_list_html(dash.alerts), unsafe_allow_html=True)
-        if st.button("Open alerts"):
+        if st.button(copy.OPEN_ALERTS):
             go_to("alerts")
     elif forecast and forecast.risk_level(business.low_cash_line) == "watch":
         st.warning(
             copy.WATCH_NO_ALERTS.format(worst=money(forecast.min_p10), line=money(business.low_cash_line))
         )
+        if st.button(copy.SEE_FIXES, key="dashboard-fixes"):  # roadmap 3.3
+            go_to("alerts")
     else:
         st.success(copy.NO_ALERTS)
 with right, st.container(border=True):

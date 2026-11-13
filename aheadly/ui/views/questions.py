@@ -15,7 +15,7 @@ example = core.example_answers()
 for note in st.session_state.pop("question_notes", []):
     st.success(note)
 
-with st.spinner("Looking at your statement…"):
+with st.spinner(copy.QUESTIONS_WORKING):
     state = core.onboarding()
 questions, done, total = state["questions"], state["done"], state["total"]
 st.progress(done / total if total else 1.0, text=copy.QUESTIONS_PROGRESS.format(done=done, total=total))
@@ -58,9 +58,12 @@ with st.container(border=True):
             placeholder=copy.CUSTOMERS_PAY_PLACEHOLDER,
         )
         save, skip = st.columns(2)
-        if save.button(copy.SAVE_ANSWER, type="primary", disabled=not (kind.strip() or pay.strip())):
-            core.answer_business(kind, pay)
-            _next()
+        if save.button(copy.SAVE_ANSWER, type="primary"):
+            if kind.strip() or pay.strip():
+                core.answer_business(kind, pay)
+                _next()
+            else:
+                st.warning(copy.ANSWER_FIRST)
 
     elif question.kind == "seasons":
         busy, slow, changes = seasons_editor(
@@ -99,13 +102,16 @@ with st.container(border=True):
         )
         said = st.text_input(copy.MYSTERY_WORDS, value=words, placeholder=copy.MYSTERY_WORDS_PLACEHOLDER)
         save, skip = st.columns(2)
-        if save.button(copy.SAVE_ANSWER, type="primary", disabled=not (picked or said.strip())):
-            category = core.answer_mystery(question.payee, picked, said)
-            _next(
-                copy.MYSTERY_SAVED.format(
-                    payee=question.payee, category=copy.CATEGORY_NAMES.get(category, category)
+        if save.button(copy.SAVE_ANSWER, type="primary"):
+            if not (picked or said.strip()):
+                st.warning(copy.ANSWER_FIRST)  # no st.stop(): the Skip button below must still show
+            else:
+                category = core.answer_mystery(question.payee, picked, said)
+                _next(
+                    copy.MYSTERY_SAVED.format(
+                        payee=question.payee, category=copy.CATEGORY_NAMES.get(category, category)
+                    )
                 )
-            )
 
     else:  # coming_up: "just say it", the same as on How we built it
         if st.session_state.get("plan_added"):
@@ -113,9 +119,12 @@ with st.container(border=True):
         said = st.text_area(
             copy.JUST_SAY_IT, placeholder=copy.JUST_SAY_IT_PLACEHOLDER, help=copy.JUST_SAY_IT_HELP
         )
-        if st.button(copy.READ_IT, disabled=not said.strip()):
-            with st.spinner(copy.READING_IT):
-                st.session_state["plan_proposals"] = core.parse_plan_text(said)
+        if st.button(copy.READ_IT):  # never disabled: see basis.py
+            if not said.strip():
+                st.warning(copy.WRITE_FIRST)
+            else:
+                with st.spinner(copy.READING_IT):
+                    st.session_state["plan_proposals"] = core.parse_plan_text(said)
         proposals = st.session_state.get("plan_proposals")
         if proposals is not None:
             if not proposals:

@@ -14,6 +14,7 @@ Forecasts here use the seeded naive model (fast, repeatable); the live site uses
 from __future__ import annotations
 
 import json
+import re
 from datetime import date, timedelta
 from pathlib import Path
 
@@ -51,9 +52,12 @@ PENDING: dict[str, dict[str, str]] = {
     },
     "owner_files": {},
     "band_coverage": {},
+    "chance_below": {},
+    "alert_actions": {},
+    "suggested_fixes": {},
     "internal_transfers": {},
     "insights": {"*": "4.1 things we noticed"},
-    "timing_or_structural": {"*": "3.6 financing helper"},
+    "timing_or_structural": {},
     "what_ifs": {"*": "5.4 chatbot test set (free-text what-ifs)"},
 }
 
@@ -99,7 +103,7 @@ def import_business(slug: str, with_one_offs: bool = False) -> AppCore:
     core = AppCore(
         Repository(":memory:"),
         ForecastEngine(SeasonalNaiveModel(), n_paths=300),
-        Settings(demo_mode=True, llm_provider="stub", db_path=":memory:"),
+        Settings(llm_provider="stub", db_path=":memory:"),
         llm=StubClient(start),
         today=start,
     )
@@ -219,6 +223,81 @@ def test_hidden_future(slug):
     point = next(p for p in forecast.points if p.date == _d(actual["date"]))
     margin = 0.10 * abs(forecast.opening_balance)
     assert point.balance_p10 - margin <= actual["balance"] <= point.balance_p90 + margin
+
+
+def _really_dipped(key: dict) -> bool:
+    line = key["business"]["low_cash_line"]
+    return any(day["balance"] < line for day in key["hidden_future"]["daily_balance"])
+
+
+def _chance(slug: str) -> float:
+    key = KEYS[slug]
+    return (
+        import_business(slug, with_one_offs=True)
+        .get_dashboard()
+        .forecast.chance_below(key["business"]["low_cash_line"])
+    )
+
+
+@pytest.mark.parametrize("slug", _businesses("chance_below"))
+def test_chance_below(slug):
+    """Roadmap 3.1: the chance of dipping below the line, against what really happened. A business
+    whose real balance went below its line got a chance of at least 40%; one that stayed above got
+    at most 60% (a "watch" business can sit near a coin flip: its bad days are spread out)."""
+    chance = _chance(slug)
+    assert (chance >= 0.40) if _really_dipped(KEYS[slug]) else (chance <= 0.60), f"chance {chance:.0%}"
+
+
+def _has_shortfall(key: dict) -> bool:
+    return any(a["type"] == "shortfall" for a in key["expected"]["alerts_must"])
+
+
+@pytest.mark.parametrize("slug", _businesses("alert_actions", _has_shortfall))
+def test_alert_actions(slug):
+    """Roadmap 3.2: a business that must get a shortfall alert gets at least one action that names
+    one of its own payments and, tested as a what-if, raises its lowest balance."""
+    core = import_business(slug, with_one_offs=True)
+    labels = {i.label for i in core.repo.list_scheduled_items(core.status().business.id)}
+    alert = next(a for a in core.get_alerts() if a.type == "shortfall")
+    measured = [a for a in alert.actions if a.get("adjustments")]
+    assert measured, "no action could be tested"
+    own = [a for a in measured if any(adj.get("label") in labels for adj in a["adjustments"])]
+    assert own, "no action names one of the business's payments"
+    assert own[0]["impact"]["lowest_after"] > own[0]["impact"]["lowest_before"]
+
+
+def _key_fix(what: str) -> tuple[str, str] | None:
+    """A fix from the key in the app's terms (kind, payment), or None if the app can't try it
+    (splitting a payment in two, letting a helper go)."""
+    move = re.match(r"move (.+?) to \d{4}-\d{2}-\d{2}", what)
+    if move:
+        return ("move_payment", move.group(1).lower())
+    if "raise prices" in what:
+        return ("price", "")
+    if "owner pay" in what:
+        return ("owner_pay", "")
+    return None
+
+
+def _ours(action: dict) -> tuple[str, str]:
+    label = next((a.get("label", "") for a in action.get("adjustments", []) if a["type"] == "move_item"), "")
+    return (action["kind"], label.lower())
+
+
+@pytest.mark.parametrize(
+    "slug",
+    _businesses(
+        "suggested_fixes", lambda key: any(_key_fix(f["what"]) for f in key["expected"]["fixes_that_work"])
+    ),
+)
+def test_suggested_fixes(slug):
+    """Roadmap 3.3: at least one of the fixes the key knows works is among the app's top three,
+    and the app agrees it lifts the base case above the line."""
+    wanted = {_key_fix(f["what"]) for f in KEYS[slug]["expected"]["fixes_that_work"]} - {None}
+    fixes = import_business(slug, with_one_offs=True).suggested_fixes()
+    matching = [f for f in fixes if _ours(f) in wanted]
+    assert matching, f"wanted one of {wanted}, got {[f['label'] for f in fixes]}"
+    assert matching[0]["impact"]["risk_after"] != "act_now"
 
 
 def _said(known: dict, said: list[str]) -> bool:

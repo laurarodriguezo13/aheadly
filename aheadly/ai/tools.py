@@ -33,9 +33,13 @@ ADJUSTMENT_SCHEMA = {
                 "recurring_change",
                 "revenue_change",
                 "collect_early",
+                "financing",
             ],
         },
-        "amount": {"type": "number", "description": "one_time_expense: positive amount of the purchase"},
+        "amount": {
+            "type": "number",
+            "description": "one_time_expense: positive amount of the purchase; financing: amount borrowed",
+        },
         "date": {"type": "string", "description": "one_time_expense: ISO date"},
         "label": {
             "type": "string",
@@ -44,7 +48,16 @@ ADJUSTMENT_SCHEMA = {
         "new_date": {"type": "string", "description": "move_item / collect_early: new ISO date"},
         "amount_delta": {"type": "number", "description": "recurring_change: signed change per occurrence"},
         "percent": {"type": "number", "description": "revenue_change: +10 means sales up 10%"},
-        "start_date": {"type": "string", "description": "ISO date the change starts"},
+        "weeks": {
+            "type": "integer",
+            "description": "revenue_change: how many weeks it lasts (leave out: from then on)",
+        },
+        "start_date": {
+            "type": "string",
+            "description": "ISO date the change starts (financing: money comes in)",
+        },
+        "repay_date": {"type": "string", "description": "financing: ISO date it is paid back"},
+        "cost": {"type": "number", "description": "financing: interest and fees in dollars, paid with it"},
     },
     "required": ["type"],
 }
@@ -103,6 +116,23 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "description": "Open alerts with the facts behind them.",
         "parameters": {"type": "object", "properties": {}},
     },
+    {
+        "name": "compare_financing",
+        "description": (
+            "Whether a cash gap is about timing (money is coming, just late) or structural (more goes out "
+            "than comes in), how big it is, and what each of the owner's own options (credit line, card, "
+            "supplier terms, early invoices) would cost, each tested on the forecast. Not financial advice."
+        ),
+        "parameters": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "safe_to_spend",
+        "description": (
+            "How much the owner can spend today, and pay themselves per payment, while even a bad month "
+            "stays above the low cash line."
+        ),
+        "parameters": {"type": "object", "properties": {}},
+    },
     PROPOSE_TOOL,
 ]
 
@@ -152,6 +182,10 @@ class ToolDispatcher:
             return result.summary()
         if name == "get_alerts":
             return {"alerts": core.alerts_as_dicts()}
+        if name == "safe_to_spend":
+            return core.safe_numbers()
+        if name == "compare_financing":
+            return core.financing_summary()
         if name == "propose_plan_items":
             proposals = core.check_proposals(args, self.last_question)
             self.last_proposals = proposals

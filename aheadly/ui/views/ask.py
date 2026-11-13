@@ -42,7 +42,7 @@ for index, message in enumerate(history):
             )
             scenario_metrics(result)
             if st.button(copy.SAVE_PLAN, key=f"save-{index}", type="primary"):
-                with st.spinner("Saving your plan…"):
+                with st.spinner(copy.SAVING_PLAN):
                     core.save_plan(result)
                 st.success(copy.PLAN_SAVED)
         proposals = st.session_state["proposal_cards"].get(index)

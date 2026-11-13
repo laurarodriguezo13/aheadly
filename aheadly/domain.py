@@ -55,6 +55,9 @@ class ScheduledItem:
     end_date: date | None = None
     user_edited: bool = False  # the owner changed it: detection never overwrites it again
     paused: bool = False
+    # the date it was first planned for; moving it keeps this, so a payment the owner told us about
+    # still stands in for the statement's copy of it after a move (review after Phase 3)
+    first_due: date | None = None
     # how much it moved in the past (roadmap 2.8, worked out at forecast time, not stored): the
     # amount's spread as a share of it, and how many days early or late it usually comes
     spread: float = 0.0
@@ -79,6 +82,23 @@ class ForecastResult:
     model: str
     scheduled: list[tuple[date, float, str]] = field(default_factory=list)
     run_id: int | None = None
+    # every path's balance day by day (n_paths × days); kept for this run only, never saved (roadmap 3.1)
+    balance_paths: Any = field(default=None, repr=False, compare=False)
+    # the chance saved with a stored run, for the low cash line at the time (paths aren't saved)
+    saved_chance: float | None = None
+
+    def chance_below(self, line: float, until: date | None = None) -> float | None:
+        """Share of paths whose balance goes below `line` on at least one day up to `until` (default:
+        the whole horizon); today's balance counts too. None when neither paths nor a saved chance exist."""
+        if self.balance_paths is None:
+            return self.saved_chance if until is None else None
+        days = len(self.points) if until is None else sum(1 for p in self.points if p.date <= until)
+        if self.opening_balance < line:
+            return 1.0
+        if days == 0:
+            return 0.0
+        dips = (self.balance_paths[:, :days] < line).any(axis=1)
+        return float(dips.mean())
 
     @property
     def lowest(self) -> ForecastPoint:
@@ -178,12 +198,14 @@ class ScenarioResult:
                 "lowest_date": base.lowest.date.isoformat(),
                 "lowest_worst_case": round(base.min_p10),
                 "lowest_best_case": round(base.min_p90),
+                "chance_below_line_pct": chance_pct(base.chance_below(self.low_cash_line)),
             },
             "scenario": {
                 "lowest_base_case": round(scen.lowest.balance_p50),
                 "lowest_date": scen.lowest.date.isoformat(),
                 "lowest_worst_case": round(scen.min_p10),
                 "lowest_best_case": round(scen.min_p90),
+                "chance_below_line_pct": chance_pct(scen.chance_below(self.low_cash_line)),
             },
             "adjustments": [
                 {
@@ -205,6 +227,19 @@ class ChatAnswer:
     scenario: ScenarioResult | None = None
     used_fallback: bool = False
     proposals: list = field(default_factory=list)  # plan items to confirm (roadmap 2.4), never saved yet
+
+
+def chance_pct(chance: float | None) -> int | None:
+    """0.6421 → 64. 0 only when no path dips and 100 only when every path does (0.3% → 1, 99.8% → 99),
+    so "none" and "every" in the words are always true (roadmap 3.1)."""
+    if chance is None:
+        return None
+    pct = round(100 * chance)
+    if 0 < chance and pct == 0:
+        return 1
+    if chance < 1 and pct == 100:
+        return 99
+    return pct
 
 
 def end_of_next_month(today: date) -> date:

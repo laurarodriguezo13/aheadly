@@ -1,7 +1,7 @@
 """LLM API adapters (component "Generate Text").
 
 Three clients share one `chat(messages, tools)` interface (polymorphism):
-  * StubClient      offline, rule-based; used in DEMO_MODE and in tests
+  * StubClient      offline, rule-based; the default without a key, the fallback, and the tests
   * GeminiClient    the course default, via Google's OpenAI-compatible endpoint
   * AnthropicClient Claude via the official anthropic SDK
 
@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 
 from aheadly.ai.plan_text import read_by_rules
-from aheadly.ai.templates import alert_text, answer_from_tool
+from aheadly.ai.templates import alert_text, answer_from_tool, message_text
 from aheadly.domain import end_of_next_month
 from aheadly.config import Settings
 
@@ -210,6 +210,9 @@ class StubClient:
         last = messages[-1]
         if last["role"] == "tool":
             return LLMReply(content=answer_from_tool(last["name"], json.loads(last["content"])))
+        if last["role"] == "user" and last["content"].startswith("DRAFT_MESSAGE"):
+            facts = json.loads(last["content"][len("DRAFT_MESSAGE") :])
+            return LLMReply(content=json.dumps({"message": message_text(facts)}))
         if last["role"] == "user" and last["content"].startswith("WRITE_ALERT"):
             return LLMReply(content=json.dumps(alert_text(json.loads(last["content"][len("WRITE_ALERT") :]))))
         return LLMReply(tool_calls=[self.plan(last["content"], scheduled_labels(messages))])
@@ -220,6 +223,25 @@ class StubClient:
         `labels` = the business's scheduled items, so "move the flour order" finds the right one."""
         q = question.lower()
         call_id = f"stub-{uuid.uuid4().hex[:8]}"
+        if any(
+            w in q
+            for w in (
+                "safe to spend",
+                "safely spend",
+                "can i spend",
+                "afford",
+                "pay myself",
+                "safely pay",
+                "my own pay",
+                "my pay",
+            )
+        ):
+            return ToolCall(call_id, "safe_to_spend", {})
+        if any(
+            w in q
+            for w in ("cover this", "cover the gap", "cover it", "borrow", "loan", "financ", "credit line")
+        ):
+            return ToolCall(call_id, "compare_financing", {})
         if "what if" in q or "instead" in q:
             return ToolCall(call_id, "run_scenario", self._scenario_args(q, labels or []))
         proposals = self._plan_items(question)
