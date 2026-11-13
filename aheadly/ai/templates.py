@@ -99,6 +99,8 @@ def answer_from_tool(tool: str, data: dict) -> str:
                 f"8 weeks (now {money(pay['now_per_payment'])})."
             )
         return text
+    if tool == "compare_financing":
+        return financing_answer(data)
     if tool == "get_alerts":
         if not data["alerts"]:
             return "You have no open alerts right now. Things look calm."
@@ -279,6 +281,86 @@ def action_words(
             "If they agree, press Test this, then Save as my plan.",
         ],
     }
+
+
+def financing_words(plan: dict) -> dict:
+    """Label, detail and how-to steps for one of the owner's own ways to cover a gap (roadmap 3.6)."""
+    kind, name = plan["kind"], plan["label"]
+    take, repay = _short_date(plan["take"].isoformat()), _short_date(plan["repay"].isoformat())
+    cost = money(plan["cost"])
+    if kind == "supplier_terms":
+        return {
+            "label": f"Ask {plan['option']['payment']} for {int(plan['days'])} more days",
+            "detail": f"Pay the {money(plan['amount'])} on {repay} instead of {take}; costs {cost}.",
+            "how_to": [
+                f"Call them before {take} and ask for the {int(plan['days'])} extra days they offer.",
+                "Get the new date (and any fee) in writing.",
+                "Press Test this, then Save as my plan.",
+            ],
+        }
+    if kind == "invoice_early":
+        return {
+            "label": f"Get {plan['option']['payment']} paid early",
+            "detail": f"The {money(plan['amount'])} due {repay} would arrive by {take}, less a {cost} fee.",
+            "how_to": [
+                "Ask your customer, or the service that pays invoices early, a week ahead.",
+                "Check the fee in dollars before you accept.",
+                "Press Test this, then Save as my plan.",
+            ],
+        }
+    if kind == "own_money":
+        return {
+            "label": f"Put in {money(plan['amount'])} of your own money",
+            "detail": f"From {take}, taken back on {repay}, when the business can afford it.",
+            "how_to": [
+                "Only use money you won't need yourself in these weeks.",
+                "Write down the date and amount, so it's clear the business owes it to you.",
+                "Press Test this, then Save as my plan.",
+            ],
+        }
+    return {
+        "label": f"Use your {name.lower()}: {money(plan['amount'])}",
+        "detail": (
+            f"Take it on {take} and pay it back on {repay} ({plan['days']} days): about {cost} in "
+            f"interest and fees ({plan['yearly_rate']:g}% a year)."
+        ),
+        "how_to": [
+            f"Check with your bank that the {money(plan['amount'])} is available by {take}.",
+            f"Pay it back on {repay}: the forecast checks the repayment doesn't leave you short again.",
+            "Press Test this, then Save as my plan.",
+        ],
+    }
+
+
+def financing_answer(data: dict) -> str:
+    """The chat's answer from the compare_financing tool."""
+    line = money(data["low_cash_line"])
+    if data["verdict"] == "none":
+        return f"You don't need to cover anything: even a bad month stays above your {line} line."
+    if data["verdict"] == "structural":
+        return (
+            f"This doesn't look like a timing gap. A normal week changes your cash by about "
+            f"{money(data['normal_week'])} over the next {data['weeks']} weeks, so borrowing would only delay "
+            "the problem. Look at your prices and costs first (the suggested fixes on Alerts show what they'd do)."
+        )
+    short = data["base_short"] or data["worst_short"]
+    case = "your base case" if data["base_short"] else "a bad month"
+    text = f"It looks like a timing gap: {case} could be about {money(short)} below your {line} line"
+    if data.get("recovery"):
+        text += f", and it's back above it by {day(data['recovery'])}"
+    text += "."
+    usable = [o for o in data["options"] if o["usable"]]
+    if usable:
+        best = usable[0]
+        text += (
+            f" Of the options you told me about, the cheapest that covers it is {best['label']}: about "
+            f"{money(best['cost'])} ({best['yearly_rate']:g}% a year)."
+        )
+    elif data["options"]:
+        text += " None of the options you told me about covers it as it stands."
+    else:
+        text += " Tell me what you have (a credit line, a card, longer supplier terms) on the Alerts page and I'll compare what each would cost."
+    return text + " This isn't financial advice."
 
 
 def message_text(facts: dict) -> str:

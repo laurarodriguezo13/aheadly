@@ -428,18 +428,17 @@ def recurrence_for(rule: str) -> str:
 
 
 # ------------------------------------------------------------- no double counting
-def drop_duplicates(events: list[tuple[date, float, str, bool]]) -> list[tuple[date, float, str]]:
-    """events: (date, amount, label, detected). A one-off the owner told us about (a quarterly
-    flour order, an insurer's claim) that lands within 10 days of a detected occurrence of the
-    same sign and a similar amount (within 40%: an insurer's payments vary a lot) replaces it:
-    it is the same money."""
-    detected = [e for e in events if e[3]]
-    known = [e for e in events if not e[3]]
-    removed: set[int] = set()
-    for when, amount, *_rest in known:
+def pair_duplicates(events: list[tuple]) -> dict[int, int]:
+    """events: (date, amount, label, detected, ...). Which detected event (index) each one-off the
+    owner told us about (index) stands in for: the closest within 10 days, same sign, amount within
+    40% (an insurer's payments vary a lot)."""
+    pairs: dict[int, int] = {}
+    for k, (when, amount, _label, is_detected, *_rest) in enumerate(events):
+        if is_detected:
+            continue
         best, best_gap = None, None
-        for i, (d_when, d_amount, *_rest) in enumerate(detected):
-            if i in removed or (d_amount > 0) != (amount > 0):
+        for i, (d_when, d_amount, _l, d_detected, *_r) in enumerate(events):
+            if not d_detected or i in pairs or (d_amount > 0) != (amount > 0):
                 continue
             gap = abs((d_when - when).days)
             if (
@@ -449,8 +448,17 @@ def drop_duplicates(events: list[tuple[date, float, str, bool]]) -> list[tuple[d
             ):
                 best, best_gap = i, gap
         if best is not None:
-            removed.add(best)
-    kept = [e for i, e in enumerate(detected) if i not in removed] + known
+            pairs[best] = k
+    return pairs
+
+
+def drop_duplicates(events: list[tuple[date, float, str, bool]]) -> list[tuple[date, float, str]]:
+    """events: (date, amount, label, detected). A one-off the owner told us about (a quarterly
+    flour order, an insurer's claim) that lands within 10 days of a detected occurrence of the
+    same sign and a similar amount (within 40%: an insurer's payments vary a lot) replaces it:
+    it is the same money."""
+    removed = pair_duplicates(events)
+    kept = [e for i, e in enumerate(events) if e[3] and i not in removed] + [e for e in events if not e[3]]
     # (date, amount, label) plus whatever the caller added after the detected flag
     return sorted(((e[0], e[1], e[2], *e[4:]) for e in kept), key=lambda e: (e[0], e[1], e[2]))
 

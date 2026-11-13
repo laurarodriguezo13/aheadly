@@ -450,3 +450,70 @@ STRESS_IMPACT = (
 STRESS_HELPS = "What would help:"
 STRESS_FIX_AFTER = "lowest balance {after}"
 STRESS_CHART = "See the chart"
+
+
+# ---------------------------------------------------------------- financing helper (3.6)
+FIN_TITLE = "How could you cover a gap?"
+FIN_WORKING = "Testing your options on your forecast…"
+FIN_NOTE = (
+    "Aheadly compares only the options you tell it you have. It doesn't offer credit or recommend "
+    "lenders, and this isn't financial advice: check rates and terms with your bank or accountant."
+)
+FIN_NONE = "Even a bad month stays above your line in the next 8 weeks, so there's nothing to cover."
+FIN_STRUCTURAL_LOSS = (
+    "This isn't a timing gap. Apart from one-off payments, a normal week takes about {weekly} from your "
+    "cash over the next {weeks} weeks, so borrowing would only delay the problem. Look at prices and "
+    "costs first: the suggestions above show what raising prices or paying yourself less would do."
+)
+FIN_STRUCTURAL_STUCK = (
+    "This isn't a timing gap: your cash doesn't get back above your line within the next {weeks} weeks, "
+    "even after the money you expect comes in, so borrowing would only delay the problem. Look at prices "
+    "and costs first: the suggestions above show what raising prices or paying yourself less would do."
+)
+FIN_TIMING_BASE = (
+    "This looks like a timing gap: your base case is about {short} below your line from {start} and back "
+    "above it by {recovery}. About {need} would bridge it."
+)
+FIN_TIMING_WORST = (
+    "Your base case stays above your line, but a bad month could leave you about {short} short from "
+    "{start}. About {need} would bridge it if that happens."
+)
+FIN_HINT = (
+    "Your statement shows money from a loan or credit line {times} times in the last year (up to {biggest} "
+    "at once). If you can still use it, add it below with its rate."
+)
+FIN_NO_OPTIONS = (
+    "Add the options you already have (a credit line, a card, longer terms from a supplier, getting an "
+    "invoice paid early, or your own money) and Aheadly will work out what each would cost and test it, "
+    "repayment included."
+)
+FIN_BEST = "Cheapest of your options that cover it"
+FIN_NONE_COVER = "None of your options covers the gap as it stands. Each one is listed below with why."
+FIN_ALL = "All your options"
+FIN_ROW = "**{label}**: {amount}, {take} → {repay}, costs {cost} ({rate}% a year). {status}"
+FIN_OK = "Covers it; lowest balance {after}."
+FIN_REASONS = {
+    "limit": "Not enough: you'd need about {need}.",
+    "late": "The money would arrive after the tight days start.",
+    "repay": "Can't be paid back within the next 8 weeks without leaving you short again.",
+    "no_payment": "That payment isn't in the next 8 weeks.",
+    "after_gap": "That payment is due after the tight days, so moving it doesn't help.",
+    "already_early": "That money already arrives before the tight days.",
+    "short": "Helps, but still leaves you below your line (lowest balance {after}).",
+}
+FIN_YOURS = "Options you told us about"
+FIN_REMOVE = "Remove"
+FIN_ADD = "Add an option you have"
+FIN_KIND = "What is it?"
+FIN_FIELDS = {
+    "name": "Name (optional, e.g. your bank's name for it)",
+    "limit": "How much you could get ($)",
+    "rate": "Yearly interest rate (%)",
+    "fee": "Fees ($)",
+    "arrive_days": "Days until the money arrives",
+    "payment": "Which payment?",
+    "extra_days": "How many more days they'd give you",
+    "fee_pct": "Fee (% of the amount)",
+}
+FIN_SAVE = "Add"
+FIN_ADDED = "Added. The comparison below now includes it."

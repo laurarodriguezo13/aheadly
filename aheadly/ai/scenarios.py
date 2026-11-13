@@ -18,6 +18,7 @@ ADJUSTMENT_TYPES = (
     "recurring_change",  # {label, amount_delta, recurrence, start_date}
     "revenue_change",  # {percent, start_date, weeks?}  (a weekly line; `weeks` ends it, roadmap 3.5)
     "collect_early",  # {label, new_date}
+    "financing",  # {amount, start_date, repay_date, cost, label}  (money in, then back with its cost; 3.6)
 )
 
 
@@ -31,7 +32,14 @@ def parse_adjustment(raw: dict) -> Adjustment:
         raise ValueError("one_time_expense needs a positive amount")
     if kind in ("move_item", "collect_early", "remove_item", "recurring_change") and not params.get("label"):
         raise ValueError(f"{kind} needs a label")
-    for key in ("date", "new_date", "start_date"):
+    if kind == "financing":
+        if float(params.get("amount", 0)) <= 0:
+            raise ValueError("financing needs a positive amount")
+        if not params.get("start_date") or not params.get("repay_date"):
+            raise ValueError("financing needs the day the money comes in and the day it's paid back")
+        if float(params.get("cost", 0)) < 0:
+            raise ValueError("financing can't cost less than nothing")
+    for key in ("date", "new_date", "start_date", "repay_date"):
         if key in params and params[key]:
             params[key] = date.fromisoformat(str(params[key]))
     return Adjustment(type=kind, params=params)
@@ -64,6 +72,21 @@ def _apply_one(
                 kind="planned_purchase",
                 source="scenario",
             )
+        ]
+    if adj.type == "financing":
+        name = p.get("label", "Financing")
+        amount = abs(float(p["amount"]))
+        if p["repay_date"] <= p["start_date"]:
+            raise ValueError("The money has to be paid back after it comes in.")
+        return items + [
+            ScheduledItem(name, amount, p["start_date"], kind="loan", source="scenario"),
+            ScheduledItem(
+                f"{name} paid back",
+                -round(amount + float(p.get("cost", 0)), 2),
+                p["repay_date"],
+                kind="loan",
+                source="scenario",
+            ),
         ]
     if adj.type in ("move_item", "collect_early"):
         target = _find(items, p["label"])

@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after 3.5** (440 tests: 421 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after 3.6** (453 tests: 438 pass, 14 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#41**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#42**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -29,7 +29,7 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8); 3.1–3.5 done (all of Phase 3's Musts, and stress tests). Next: 3.6 (Should). Test-business scorecard: 71 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8); Phase 3 done (3.1–3.6). Next: 4.1 (Must). Test-business scorecard: 75 checks pass, 14 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`. The owner's own files: `aheadly/data/connectors/owner_files.py` (`read_owner_file`: five kinds from the column titles), `AppCore.read_owner_file` / `use_owner_file` / `uploaded_files`.
@@ -96,8 +96,8 @@
 | 3.3 | Suggested fixes (auto-tested what-ifs) | Must | M | 3.2, 2.3 | Done |
 | 3.4 | Safe to spend + safe owner's pay | Must | S | 3.1, 2.3 | Done |
 | 3.5 | One-click stress tests | Should | S | 2.2, 3.2 | Done |
-| 3.6 | Financing helper | Should | L | 3.3, 2.7 | **Next** |
-| 4.1 | Pattern rules ("things we noticed"): small Must, full Should | Must / Should | M | 2.2, 2.3, 3.2 |  |
+| 3.6 | Financing helper | Should | L | 3.3, 2.7 | Done |
+| 4.1 | Pattern rules ("things we noticed"): small Must, full Should | Must / Should | M | 2.2, 2.3, 3.2 | **Next** |
 | 4.2 | Insight text + chart summaries | Must (small) | S | 4.1 |  |
 | 4.3 | Insights page + dashboard cards: small Must, full Should | Must / Should | M | 4.2, 3.4 |  |
 | 5.1 | Download / Load my data | Must | M | 1.4, 1.3 |  |
@@ -251,6 +251,7 @@ Presets as adjustments: sales −20% for 4 weeks (needs 2.2 sales), biggest cust
 4. Per option: feasible (limit ≥ amount, money arrives before the gap), cost in dollars (amount × rate × days / 365 + fees), effective annual rate.
 5. New adjustment `financing {amount, start_date, repay_date, cost, label}` in `scenarios.py` (+ `ADJUSTMENT_TYPES`, `parse_adjustment`, `tools.ADJUSTMENT_SCHEMA`); **check the repayment doesn't create a new gap.**
 6. Top 2 feasible options by cost as `Action`s. Rates come from the owner or are labelled examples; never hard-code real bank rates. Chat tool `compare_financing`; template fallback.
+**Built (2026-11-12, DECISIONS #41):** `aheadly/core/financing.py` (rules, so in core) + `AppCore.compare_financing()` (cached per run and options), `financing_options` / `add_financing_option` / `remove_financing_option` (kept in the profile), `financing_payments`, `financing_hint`, `financing_summary` (chat). Verdict: none (a bad month stays above the line) / structural (a normal week loses money, or the base case isn't back above the line within 8 weeks) / timing; a normal week = the base case's change over the horizon minus the one-offs it counts on (forecast, not 12 weeks of history: history misjudged the hardware store and the seasons). New harness check `timing_or_structural` passes for all four businesses with a verdict in their key. Six kinds of option, the owner's rates only (none built in): credit line, card, short-term loan (with days until the money arrives), longer supplier terms (`move_item` + fee), an invoice paid early (`collect_early` + fee), own money. Borrowing: taken the day before the gap, paid back on the first day the base case less the cost stays above the line; cost and yearly rate; each run as a what-if with the new `financing` adjustment (money in, then back with its cost), so the repayment is checked; why an option doesn't work said plainly (limit, too late, can't be paid back in 8 weeks, payment after the tight days…). Alerts page: "How could you cover a gap?" (open when `still_short`, also in the watch view), verdict, not-advice note, a hint when the statement shows a credit line (the costume shop: 9 times, up to $9,000), the two cheapest that cover it as actions, every option with its cost and status, a form to add and remove options. Chat tool `compare_financing` (offline planner: "cover this", "borrow", "loan", "credit line", "financ…") with a template answer; chat rule 11. Fixed on the way: a what-if that moved a payment the owner listed by more than 10 days brought back the statement's copy (the saved plan's pairs now hold). Not built: owner's options asked among the onboarding questions (they're added where they're used), a stress test → financing link.
 
 ### Phase 4: insights (week 4)
 

@@ -31,7 +31,7 @@ from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
 from aheadly.ai import templates
 from aheadly.core import actions as alert_actions
-from aheadly.core import alert_rules, onboarding, safe, stress
+from aheadly.core import alert_rules, financing, onboarding, safe, stress
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
@@ -103,6 +103,8 @@ class AppCore:
         self._fixes_cache: dict = {}  # suggested fixes for the latest forecast run (roadmap 3.3)
         self._pay_cache: dict = {}  # safe owner's pay for the latest forecast run (roadmap 3.4)
         self._stress_cache: dict = {}  # stress tests for the latest forecast run (roadmap 3.5)
+        self._pairs_cache: dict = {}  # which found payments the owner's own items stand in for
+        self._financing_cache: dict = {}  # financing comparison per run and options (roadmap 3.6)
         self.translator = InsightTranslator(llm or create_llm_client(settings), ToolDispatcher(self))
 
     @property
@@ -1161,6 +1163,159 @@ class AppCore:
         test = next(t for t in self.stress_tests() if t["key"] == key)
         return self._scenario(test["adjustments"], test["label"])
 
+    # -------------------------------------------------------------- financing helper (3.6)
+    def financing_options(self) -> list[dict]:
+        """The ways to cover a gap the owner says they have (nothing is offered by the app)."""
+        return list(self.repo.get_profile(self._business().id).get("financing_options", []))
+
+    def add_financing_option(self, raw: dict) -> dict:
+        option = financing.check_option(raw)
+        options = self.financing_options() + [option]
+        self.repo.save_profile(self._business().id, {"financing_options": options})
+        return option
+
+    def remove_financing_option(self, index: int) -> None:
+        options = self.financing_options()
+        if 0 <= index < len(options):
+            del options[index]
+            self.repo.save_profile(self._business().id, {"financing_options": options})
+
+    @staticmethod
+    def financing_kinds() -> dict[str, dict]:
+        return financing.KINDS
+
+    @staticmethod
+    def financing_label(option: dict) -> str:
+        """How a saved option reads in the list: its name and the numbers the owner gave."""
+        parts = [financing.label(option)]
+        if "limit" in option:
+            parts.append(f"up to ${option['limit']:,.0f}")
+        if option.get("rate"):
+            parts.append(f"{option['rate']:g}% a year")
+        if option.get("fee"):
+            parts.append(f"${option['fee']:,.0f} fees")
+        if option.get("extra_days"):
+            parts.append(f"{option['extra_days']:g} more days")
+        if option.get("fee_pct"):
+            parts.append(f"{option['fee_pct']:g}% fee")
+        if option.get("arrive_days"):
+            parts.append(f"arrives in {option['arrive_days']:g} days")
+        return " · ".join(parts)
+
+    def financing_payments(self) -> dict[str, list[str]]:
+        """Payments in the forecast's weeks an option can be about: money going out (longer supplier
+        terms) and money coming in (getting an invoice paid early)."""
+        found = self._horizon_payments()
+        return {
+            "out": sorted(k for k, (amount, _) in found.items() if amount < 0),
+            "in": sorted(k for k, (amount, _) in found.items() if amount > 0),
+        }
+
+    def _horizon_payments(self) -> dict[str, tuple[float, date]]:
+        end = self.today + timedelta(days=self.settings.horizon_days - 1)
+        found: dict[str, tuple[float, date]] = {}
+        for when, amount, label in sorted(self._events(end)):
+            found.setdefault(label, (amount, when))  # the next one
+        return found
+
+    def financing_hint(self) -> dict | None:
+        """Money from a loan or credit line in the last year of the statement: the owner may still have
+        it (said as a hint; it's only compared once the owner adds it with its rate)."""
+        lines = self.repo.list_transactions(self._business().id, limit=100000)
+        if lines.empty:
+            return None
+        since = (self.today - timedelta(days=365)).isoformat()
+        drawn = lines[
+            (lines["category"] == "loan") & (lines["amount"] > 0) & (lines["date"].astype(str) >= since)
+        ]
+        if drawn.empty:
+            return None
+        return {"times": int(len(drawn)), "biggest": round(float(drawn["amount"].max()))}
+
+    def compare_financing(self) -> dict:
+        """Timing or structural, how big the gap is, and what each of the owner's own options would
+        cost, each tested as a what-if (repayment included). Worked out once per forecast run and
+        options; nothing is saved in the owner's history."""
+        business = self._business()
+        line = business.low_cash_line
+        options = self.financing_options()
+        run = self.repo.latest_forecast(business.id)
+        key = (run.run_id if run else None, line, json.dumps(options, sort_keys=True))
+        if self._financing_cache.get("key") == key:
+            return self._financing_cache["result"]
+        baseline = self._baseline_forecast()
+        g = financing.gap(baseline, line)
+        items = self.repo.list_scheduled_items(business.id)
+        one_offs = sum(e.amount for e, item in self._dated_events(items) if not item.recurrence)
+        weeks = self.settings.horizon_days // 7
+        normal = financing.regular_weekly(
+            self.repo.current_balance(business.id), baseline.points[-1].balance_p50, one_offs, weeks
+        )
+        verdict = financing.verdict(g, normal)
+        plans = []
+        if verdict == "timing":
+            need = financing.amount_needed(g)
+            payments = self._horizon_payments()
+            for option in options:
+                p = financing.plan(option, need, g, baseline, line, self.today, payments)
+                if p["adjustments"]:
+                    result = self._scenario(p["adjustments"], p["label"], baseline=baseline)
+                    i = alert_actions.impact(result)
+                    i["covers"] = (i["lowest_after"] if g["base_dips"] else i["worst_after"]) >= line
+                    p["impact"] = i
+                plans.append(p)
+            plans.sort(key=financing.rank_key)
+        actions = [
+            {
+                **templates.financing_words(p),
+                "kind": "financing",
+                "adjustments": p["adjustments"],
+                "impact": p["impact"],
+                "cost": p["cost"],
+            }
+            for p in plans
+            if p["feasible"] and p.get("impact", {}).get("covers")
+        ][:2]
+        result = {
+            "verdict": verdict,
+            "gap": g,
+            "normal_week": normal,
+            "weeks": weeks,
+            "low_cash_line": line,
+            "need": financing.amount_needed(g) if verdict != "none" else 0,
+            "options": plans,
+            "actions": actions,
+            "hint": self.financing_hint(),
+        }
+        self._financing_cache = {"key": key, "result": result}
+        return result
+
+    def financing_summary(self) -> dict:
+        """What the chat may say about covering a gap (every number from code)."""
+        c = self.compare_financing()
+        g = c["gap"]
+        return {
+            "verdict": c["verdict"],
+            "low_cash_line": c["low_cash_line"],
+            "base_short": g["base"],
+            "worst_short": g["worst"],
+            "gap_starts": g["start"].isoformat() if g["start"] else None,
+            "recovery": g["recovery"].isoformat() if g["recovery"] else None,
+            "normal_week": c["normal_week"],
+            "weeks": c["weeks"],
+            "amount_to_cover": c["need"],
+            "options": [
+                {
+                    "label": p["label"],
+                    "cost": round(p["cost"]),
+                    "yearly_rate": p.get("yearly_rate", 0.0),
+                    "usable": bool(p["feasible"] and p.get("impact", {}).get("covers")),
+                }
+                for p in c["options"]
+            ],
+            "not_advice": True,
+        }
+
     def explain_scenario(self, result: ScenarioResult) -> str:
         return self.translator.explain_scenario(result.summary(), self._prompt_context(self._business()))
 
@@ -1357,11 +1512,17 @@ class AppCore:
         # payment found in the statement: only the owner's real plan items may replace one (3.5)
         trying = [i for i in items if i.source == "scenario"]
         events = [
-            (when, amount, label, _from_statement(item), item)
+            (when, amount, label, _from_statement(item), item, (item.id, k))
             for item in items
             if item.source != "scenario"
-            for when, amount, label in expand_scheduled_items([item], self.today, end)
+            for k, (when, amount, label) in enumerate(expand_scheduled_items([item], self.today, end))
         ]
+        # pairs found in the saved plan hold when a what-if moves one side (moving the owner's flour
+        # order a month must move that money, not bring back the statement's copy of it, 3.6)
+        replaced, standing_in = self._saved_pairs(end)
+        events = [e for e in events if not (e[3] and e[5] in replaced)]
+        settled = [(e[0], e[1], e[2], e[4]) for e in events if not e[3] and e[5] in standing_in]
+        events = [e[:5] for e in events if e[3] or e[5] not in standing_in]
         moves = self._how_items_moved()
         return [
             (
@@ -1379,12 +1540,36 @@ class AppCore:
                 item,
             )
             for when, amount, label, item in recurring.drop_duplicates(events)
+            + settled
             + [
                 (when, amount, label, item)
                 for item in trying
                 for when, amount, label in expand_scheduled_items([item], self.today, end)
             ]
         ]
+
+    def _saved_pairs(self, end: date) -> tuple[set, set]:
+        """In the saved plan: which statement occurrences (item id, n-th time) a payment the owner told
+        us about stands in for, and those owner occurrences. Cached per plan."""
+        stored = self.repo.list_scheduled_items(self._business().id)
+        key = (
+            self.today,
+            end,
+            tuple((i.id, i.due_date, i.amount, i.recurrence, i.active, i.paused, i.end_date) for i in stored),
+        )
+        if self._pairs_cache.get("key") != key:
+            events = [
+                (when, amount, label, _from_statement(item), (item.id, k))
+                for item in stored
+                if item.source != "scenario"
+                for k, (when, amount, label) in enumerate(expand_scheduled_items([item], self.today, end))
+            ]
+            pairs = recurring.pair_duplicates(events)
+            self._pairs_cache = {
+                "key": key,
+                "pairs": ({events[d][4] for d in pairs}, {events[k][4] for k in pairs.values()}),
+            }
+        return self._pairs_cache["pairs"]
 
     def _how_items_moved(self) -> dict[int, tuple[float, int]]:
         """For each payment found in the statement (3+ times): how much its amount spread (as a share
