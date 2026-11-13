@@ -432,3 +432,21 @@ SAFE_PAY = "Safe pay for yourself"
 SAFE_PAY_SUB = "Per payment for the next 8 weeks ({how_often}; now {now})"
 SAFE_PAY_NONE = "Even with no pay, a bad month dips below your line (now {now} per payment)"
 SAFE_PAY_UNKNOWN = "Tell us which payment is your own pay (Questions) to see this"
+
+
+# ---------------------------------------------------------------- stress tests (3.5)
+STRESS_TITLE = "How would you handle a bad surprise?"
+STRESS_INTRO = "Four surprises built from your own numbers, each tested on your forecast. Nothing is saved."
+STRESS_RUN = "Check four surprises"
+STRESS_WORKING = "Testing four surprises on your forecast…"
+STRESS_FINE = "You'd be fine: your lowest balance would be about {lowest}."
+STRESS_SHORT = "You'd need about {gap} more to stay above your line."
+STRESS_SHORT_ALREADY = (
+    "You're already below your line before this surprise; with it you'd need about {gap} more."
+)
+STRESS_IMPACT = (
+    "Lowest balance {before} → {after} · chance of dipping below your line {chance_before}% → {chance_after}%"
+)
+STRESS_HELPS = "What would help:"
+STRESS_FIX_AFTER = "lowest balance {after}"
+STRESS_CHART = "See the chart"

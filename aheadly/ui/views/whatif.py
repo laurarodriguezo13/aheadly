@@ -16,6 +16,55 @@ st.caption(copy.WHATIF_INTRO)
 
 labels = core.scheduled_labels()
 
+# roadmap 3.5: one click, four bad surprises built from the business's own numbers
+with st.container(border=True):
+    st.markdown(f"**{copy.STRESS_TITLE}**")
+    st.caption(copy.STRESS_INTRO)
+    if st.button(copy.STRESS_RUN, key="stress-run"):
+        st.session_state["stress_open"] = True
+    if st.session_state.get("stress_open"):
+        with st.spinner(copy.STRESS_WORKING):
+            tests = core.stress_tests()
+        for test in tests:
+            impact = test["impact"]
+            with st.container(border=True):
+                st.markdown(f"**{test['label']}**")
+                st.caption(test["detail"])
+                if test["verdict"] == "fine":
+                    st.success(copy.STRESS_FINE.format(lowest=money(impact["lowest_after"])))
+                elif impact["lowest_before"] < test["low_cash_line"]:
+                    st.warning(copy.STRESS_SHORT_ALREADY.format(gap=money(test["gap"])))
+                else:
+                    st.warning(copy.STRESS_SHORT.format(gap=money(test["gap"])))
+                st.caption(
+                    copy.STRESS_IMPACT.format(
+                        before=money(impact["lowest_before"]),
+                        after=money(impact["lowest_after"]),
+                        chance_before=impact["chance_before"],
+                        chance_after=impact["chance_after"],
+                    )
+                )
+                if test["fixes"]:
+                    st.markdown(copy.STRESS_HELPS)
+                    st.markdown(
+                        "\n".join(
+                            f"- {fix['label']}: "
+                            + copy.STRESS_FIX_AFTER.format(after=money(fix["impact"]["lowest_after"]))
+                            for fix in test["fixes"]
+                        )
+                    )
+                if st.button(copy.STRESS_CHART, key=f"stress-chart-{test['key']}"):
+                    st.session_state[f"stress-result-{test['key']}"] = core.stress_result(test["key"])
+                shown = st.session_state.get(f"stress-result-{test['key']}")
+                if shown is not None:
+                    st.plotly_chart(
+                        scenario_chart(shown.baseline, shown.scenario, shown.low_cash_line),
+                        width="stretch",
+                        config={"displayModeBar": False},
+                        key=f"stress-plot-{test['key']}",
+                    )
+                    scenario_metrics(shown)
+
 # outside the form, so the boxes below change as soon as the owner picks another kind
 kind_label = st.selectbox("What do you want to test?", list(copy.WHATIF_TYPES))
 kind = copy.WHATIF_TYPES[kind_label]

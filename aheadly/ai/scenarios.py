@@ -16,7 +16,7 @@ ADJUSTMENT_TYPES = (
     "move_item",  # {label, new_date}
     "remove_item",  # {label}
     "recurring_change",  # {label, amount_delta, recurrence, start_date}
-    "revenue_change",  # {percent, start_date}  (handled by the engine via extra receivables)
+    "revenue_change",  # {percent, start_date, weeks?}  (a weekly line; `weeks` ends it, roadmap 3.5)
     "collect_early",  # {label, new_date}
 )
 
@@ -86,7 +86,12 @@ def _apply_one(
         if weekly_sales <= 0:
             raise ValueError("There are no sales in your statement yet to change.")
         return items + _revenue_change_items(
-            float(p["percent"]), p.get("start_date") or today, today, horizon_days, weekly_sales
+            float(p["percent"]),
+            p.get("start_date") or today,
+            today,
+            horizon_days,
+            weekly_sales,
+            int(p["weeks"]) if p.get("weeks") else None,
         )
     raise ValueError(f"Unhandled adjustment type {adj.type}")
 
@@ -103,9 +108,15 @@ def _find(items: list[ScheduledItem], label: str) -> ScheduledItem:
 
 
 def _revenue_change_items(
-    percent: float, start: date, today: date, horizon_days: int, weekly_sales: float
+    percent: float,
+    start: date,
+    today: date,
+    horizon_days: int,
+    weekly_sales: float,
+    weeks: int | None = None,
 ) -> list[ScheduledItem]:
-    """Model a sales change as one weekly adjustment line (simple, explainable)."""
+    """Model a sales change as one weekly adjustment line (simple, explainable), for `weeks` weeks
+    if given (a stress test's "20% lower for 4 weeks"), else from then on."""
     weekly_delta = weekly_sales * percent / 100.0
     first = max(start, today) + timedelta(days=6)
     return [
@@ -116,5 +127,6 @@ def _revenue_change_items(
             kind="other",
             recurrence="weekly",
             source="scenario",
+            end_date=first + timedelta(days=7 * (weeks - 1)) if weeks else None,
         )
     ]

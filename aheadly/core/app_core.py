@@ -31,7 +31,7 @@ from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
 from aheadly.ai import templates
 from aheadly.core import actions as alert_actions
-from aheadly.core import alert_rules, onboarding, safe
+from aheadly.core import alert_rules, onboarding, safe, stress
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
@@ -102,6 +102,7 @@ class AppCore:
         self._messages: dict[str, str] = {}  # drafted messages per facts (roadmap 3.2)
         self._fixes_cache: dict = {}  # suggested fixes for the latest forecast run (roadmap 3.3)
         self._pay_cache: dict = {}  # safe owner's pay for the latest forecast run (roadmap 3.4)
+        self._stress_cache: dict = {}  # stress tests for the latest forecast run (roadmap 3.5)
         self.translator = InsightTranslator(llm or create_llm_client(settings), ToolDispatcher(self))
 
     @property
@@ -1086,6 +1087,60 @@ class AppCore:
             ),
         }
 
+    # ---------------------------------------------------------- stress tests (3.5)
+    def stress_tests(self) -> list[dict]:
+        """Four bad surprises from the business's own numbers: what each does, whether the base case
+        stays above the line ("fine") or how much is missing ("short"), and what would help.
+        Not kept in the owner's history; worked out once per forecast run."""
+        business = self._business()
+        run = self.repo.latest_forecast(business.id)
+        key = (run.run_id if run else None, business.low_cash_line)
+        if self._stress_cache.get("key") == key:
+            return self._stress_cache["tests"]
+        line = business.low_cash_line
+        items = self.repo.list_scheduled_items(business.id)
+        end = self.today + timedelta(days=self.settings.horizon_days - 1)
+        baseline = self._baseline_forecast()
+        weekly = self.weekly_sales()
+        tests = []
+        for surprise in stress.surprises(items, self.today, end, weekly, self._avg_monthly_outflow()):
+            result = self._scenario(surprise["adjustments"], surprise["label"], baseline=baseline)
+            impact = alert_actions.impact(result)
+            short = impact["lowest_after"] < line
+            fixes = []
+            if short:
+                stressed = apply_adjustments(
+                    items,
+                    [parse_adjustment(a) for a in surprise["adjustments"]],
+                    self.today,
+                    self.settings.horizon_days,
+                    weekly,
+                )
+                fixes = alert_actions.build(
+                    result.scenario,
+                    line,
+                    stressed,
+                    self.today,
+                    end,
+                    lambda adjs, s=surprise, f=result.scenario: self._scenario(
+                        s["adjustments"] + adjs, "Stress fix", baseline=f
+                    ),
+                    weekly,
+                    frozenset(a["label"] for a in surprise["adjustments"] if "label" in a),
+                )[:2]
+            tests.append(
+                {
+                    **surprise,
+                    "impact": impact,
+                    "verdict": "short" if short else "fine",
+                    "low_cash_line": line,
+                    "gap": round(line - impact["lowest_after"]) if short else None,
+                    "fixes": fixes,
+                }
+            )
+        self._stress_cache = {"key": key, "tests": tests}
+        return tests
+
     def still_short(self) -> int | None:
         """How much the base case still misses the line even after the best suggestion (3.6 helps then)."""
         return alert_actions.still_short(self.suggested_fixes(), self._business().low_cash_line)
@@ -1100,6 +1155,11 @@ class AppCore:
         if key not in self._messages:
             self._messages[key] = self.translator.draft_message(facts)
         return self._messages[key]
+
+    def stress_result(self, key: str) -> ScenarioResult:
+        """One stress test's full what-if, for its chart; not saved in the owner's history."""
+        test = next(t for t in self.stress_tests() if t["key"] == key)
+        return self._scenario(test["adjustments"], test["label"])
 
     def explain_scenario(self, result: ScenarioResult) -> str:
         return self.translator.explain_scenario(result.summary(), self._prompt_context(self._business()))
@@ -1293,9 +1353,13 @@ class AppCore:
     ) -> list[tuple[ScheduledItem, ScheduledItem]]:
         """Each dated payment once, next to the plan item it came from."""
         end = end or self.today + timedelta(days=self.settings.horizon_days - 1)
+        # a what-if's own lines (a surprise bill, "sales 20% lower") are never "the same money" as a
+        # payment found in the statement: only the owner's real plan items may replace one (3.5)
+        trying = [i for i in items if i.source == "scenario"]
         events = [
             (when, amount, label, _from_statement(item), item)
             for item in items
+            if item.source != "scenario"
             for when, amount, label in expand_scheduled_items([item], self.today, end)
         ]
         moves = self._how_items_moved()
@@ -1315,6 +1379,11 @@ class AppCore:
                 item,
             )
             for when, amount, label, item in recurring.drop_duplicates(events)
+            + [
+                (when, amount, label, item)
+                for item in trying
+                for when, amount, label in expand_scheduled_items([item], self.today, end)
+            ]
         ]
 
     def _how_items_moved(self) -> dict[int, tuple[float, int]]:

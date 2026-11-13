@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after 3.4** (431 tests: 412 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-12 after 3.5** (440 tests: 421 pass, 18 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#40**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#41**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -29,7 +29,7 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8); 3.1–3.4 done (all of Phase 3's Musts). Next: 3.5 (Should). Test-business scorecard: 71 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1 and 2 done (1.1–2.8); 3.1–3.5 done (all of Phase 3's Musts, and stress tests). Next: 3.6 (Should). Test-business scorecard: 71 checks pass, 18 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`. The owner's own files: `aheadly/data/connectors/owner_files.py` (`read_owner_file`: five kinds from the column titles), `AppCore.read_owner_file` / `use_owner_file` / `uploaded_files`.
@@ -95,8 +95,8 @@
 | 3.2 | Actions framework: computed impact, Test this, how-to steps, drafted message | Must | M | 3.1 | Done |
 | 3.3 | Suggested fixes (auto-tested what-ifs) | Must | M | 3.2, 2.3 | Done |
 | 3.4 | Safe to spend + safe owner's pay | Must | S | 3.1, 2.3 | Done |
-| 3.5 | One-click stress tests | Should | S | 2.2, 3.2 | **Next** |
-| 3.6 | Financing helper | Should | L | 3.3, 2.7 |  |
+| 3.5 | One-click stress tests | Should | S | 2.2, 3.2 | Done |
+| 3.6 | Financing helper | Should | L | 3.3, 2.7 | **Next** |
 | 4.1 | Pattern rules ("things we noticed"): small Must, full Should | Must / Should | M | 2.2, 2.3, 3.2 |  |
 | 4.2 | Insight text + chart summaries | Must (small) | S | 4.1 |  |
 | 4.3 | Insights page + dashboard cards: small Must, full Should | Must / Should | M | 4.2, 3.4 |  |
@@ -241,6 +241,7 @@ When risk is `act_now` or `watch`, generate candidates: move each movable outflo
 
 #### 3.5 Stress tests · Should · S
 Presets as adjustments: sales −20% for 4 weeks (needs 2.2 sales), biggest customer pays 30 days late (largest receivable / top income source), main supplier +10% (top supplier category), surprise expense = one month of rent. Each: "you'd be fine" or "you'd need about $X" (gap size), with actions.
+**Built (2026-11-12, DECISIONS #40):** `aheadly/core/stress.py` + `AppCore.stress_tests()` (cached per run) and `stress_result(key)` (the chart; never saved), a box at the top of the What-if page ("How would you handle a bad surprise?"). The four surprises, each with a plain title and a line naming the business's own payment: sales −20% for 4 weeks (`revenue_change` gained an optional `weeks`), the biggest payment coming in a month late (a once-only payment first; "maybe" money skipped), the biggest regular supplier payment +10%, a surprise bill next week the size of a month's rent (a week of spending without rent); a surprise the numbers can't build is left out. Verdict from the base case: fine, short by $X, or already below the line before it; up to two fixes from 3.3 measured with the surprise in place (never just undoing it). Test businesses: the studio, the auto shop and the costume shop fine with all; the hardware store short with three (a 5–10% price rise helps); the bakery and the café already short (move the oven / collect early; pay or prices). Fixed on the way: a what-if's lines went through the duplicate check, so a bill the size of the rent replaced the rent; now they never replace a known payment (also fixes ordinary what-ifs). Not built: a chat tool for stress tests.
 
 #### 3.6 Financing helper · Should · L
 **Spec note:** spec 2.2 lists "Loans or credit offers" as out of scope. This compares only the options **the owner already has**, offers no credit, names no lenders; `DECISIONS.md` entry + "not financial advice" note in the UI. Runs only when 3.3 finds no free fix, or on request ("How can I cover this?"). `aheadly/ai/financing.py` via `AppCore.compare_financing()`:

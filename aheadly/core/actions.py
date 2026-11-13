@@ -48,7 +48,7 @@ def _once(items: list[ScheduledItem], start: date, end: date) -> list[tuple[Sche
     """Active payments that land exactly once in the horizon, with that day."""
     found = []
     for item in items:
-        if item.active and not item.paused:
+        if item.active and not item.paused and item.source != "scenario":  # not a what-if's own line
             events = expand_scheduled_items([item], start, end)
             if len(events) == 1:
                 found.append((item, events[0][0]))
@@ -98,7 +98,7 @@ def still_short(found: list[dict], low_cash_line: float) -> int | None:
     return round(low_cash_line - found[0]["impact"]["lowest_after"])
 
 
-def _families(baseline, line, items, today, end, weekly_sales) -> list[dict]:
+def _families(baseline, line, items, today, end, weekly_sales, exclude=frozenset()) -> list[dict]:
     risk = baseline.risk_level(line)
     if risk == "act_now":
         below = [p for p in baseline.points if p.balance_p50 < line]
@@ -107,7 +107,7 @@ def _families(baseline, line, items, today, end, weekly_sales) -> list[dict]:
         below = [p for p in baseline.points if p.balance_p10 < line]
         low_date = min(baseline.points, key=lambda p: p.balance_p10).date
     first_below = below[0].date
-    once = _once(items, today, end)
+    once = [(i, d) for i, d in _once(items, today, end) if i.label not in exclude]
     later_in = sorted(d for i, d in once if i.amount > 0 and low_date < d <= end)
     families = []
 
@@ -195,11 +195,14 @@ def build(
     end: date,
     evaluate: Evaluate,
     weekly_sales: float = 0.0,
+    exclude: frozenset[str] = frozenset(),
 ) -> list[dict]:
+    """`exclude`: payments not to touch (a stress test's own surprise: "the customer pays late"
+    isn't fixed by "ask the customer to pay early")."""
     if baseline.risk_level(low_cash_line) == "safe":
         return []
     singles = []
-    for family in _families(baseline, low_cash_line, items, today, end, weekly_sales):
+    for family in _families(baseline, low_cash_line, items, today, end, weekly_sales, exclude):
         tried = [(adjs, size, impact(evaluate(adjs))) for adjs, size in family["options"]]
         best_risk = min(RISK_ORDER[i["risk_after"]] for _, _, i in tried)
         adjs, size, i = min(

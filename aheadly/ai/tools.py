@@ -44,6 +44,10 @@ ADJUSTMENT_SCHEMA = {
         "new_date": {"type": "string", "description": "move_item / collect_early: new ISO date"},
         "amount_delta": {"type": "number", "description": "recurring_change: signed change per occurrence"},
         "percent": {"type": "number", "description": "revenue_change: +10 means sales up 10%"},
+        "weeks": {
+            "type": "integer",
+            "description": "revenue_change: how many weeks it lasts (leave out: from then on)",
+        },
         "start_date": {"type": "string", "description": "ISO date the change starts"},
     },
     "required": ["type"],
