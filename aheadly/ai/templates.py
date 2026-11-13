@@ -74,6 +74,31 @@ def answer_from_tool(tool: str, data: dict) -> str:
             f"{o['label']} {money(o['amount'])} on {day(o['date'])}" for o in data["outflows"][:3]
         )
         return f"The biggest payments coming up are: {lines}. Plan for those first."
+    if tool == "safe_to_spend":
+        line = money(data["low_cash_line"])
+        if data["safe_to_spend_now"] > 0:
+            text = (
+                f"You could spend up to {money(data['safe_to_spend_now'])} today and even a bad month would "
+                f"stay above your {line} line for the next 8 weeks."
+            )
+        else:
+            text = (
+                f"Nothing is safe to spend right now: in a bad month your cash could already dip to "
+                f"{money(data['lowest_worst_case'])}, below your {line} line."
+            )
+        pay = data.get("owner_pay")
+        if pay and pay["safe_per_payment"] <= 0:
+            text += (
+                f" For your own pay ({pay['payment']}, {pay['how_often']}), even pausing it wouldn't keep a bad "
+                f"month above the line (now {money(pay['now_per_payment'])} per payment)."
+            )
+        elif pay:
+            text += (
+                f" For your own pay ({pay['payment']}, {pay['how_often']}), up to "
+                f"{money(pay['safe_per_payment'])} per payment keeps a bad month above the line for the next "
+                f"8 weeks (now {money(pay['now_per_payment'])})."
+            )
+        return text
     if tool == "get_alerts":
         if not data["alerts"]:
             return "You have no open alerts right now. Things look calm."

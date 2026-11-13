@@ -103,6 +103,14 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         "description": "Open alerts with the facts behind them.",
         "parameters": {"type": "object", "properties": {}},
     },
+    {
+        "name": "safe_to_spend",
+        "description": (
+            "How much the owner can spend today, and pay themselves per payment, while even a bad month "
+            "stays above the low cash line."
+        ),
+        "parameters": {"type": "object", "properties": {}},
+    },
     PROPOSE_TOOL,
 ]
 
@@ -152,6 +160,8 @@ class ToolDispatcher:
             return result.summary()
         if name == "get_alerts":
             return {"alerts": core.alerts_as_dicts()}
+        if name == "safe_to_spend":
+            return core.safe_numbers()
         if name == "propose_plan_items":
             proposals = core.check_proposals(args, self.last_question)
             self.last_proposals = proposals

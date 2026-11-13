@@ -60,6 +60,30 @@ with col3:
         due, amount, label = dash.next_payment
         stat_card(copy.NEXT_PAYMENT, money(-amount), f"{label} · {due:%b %d}", "", "sky")
 
+if forecast:  # roadmap 3.4: how much is safe to spend, and to pay yourself
+    spend = core.safe_to_spend()
+    pay = core.safe_owner_pay()
+    col4, col5 = st.columns(2)
+    with col4:
+        if spend["amount"] > 0:
+            sub = copy.SAFE_SPEND_SUB.format(line=money(spend["low_cash_line"]))
+            stat_card(copy.SAFE_SPEND, money(spend["amount"]), sub, "teal", "mint")
+        else:
+            sub = copy.SAFE_SPEND_NONE.format(worst=money(spend["lowest_worst_case"]))
+            stat_card(copy.SAFE_SPEND, money(0), sub, "red", "rose")
+    with col5:
+        if pay is None:
+            stat_card(copy.SAFE_PAY, "?", copy.SAFE_PAY_UNKNOWN, "", "lav")
+            if core.questions_left() and st.button(copy.QUESTIONS_GO, key="dashboard-pay-questions"):
+                go_to("questions")
+        elif pay["safe"] > 0:
+            sub = copy.SAFE_PAY_SUB.format(now=money(pay["now"]), how_often=pay["how_often"])
+            stat_card(copy.SAFE_PAY, money(pay["safe"]), sub, "purple", "lav")
+        else:
+            stat_card(
+                copy.SAFE_PAY, money(0), copy.SAFE_PAY_NONE.format(now=money(pay["now"])), "red", "rose"
+            )
+
 with st.container(border=True):
     section_title(copy.CHART_TITLE)
     st.plotly_chart(

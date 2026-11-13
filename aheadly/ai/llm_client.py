@@ -223,6 +223,10 @@ class StubClient:
         `labels` = the business's scheduled items, so "move the flour order" finds the right one."""
         q = question.lower()
         call_id = f"stub-{uuid.uuid4().hex[:8]}"
+        if any(
+            w in q for w in ("safe to spend", "can i spend", "afford", "pay myself", "my own pay", "my pay")
+        ):
+            return ToolCall(call_id, "safe_to_spend", {})
         if "what if" in q or "instead" in q:
             return ToolCall(call_id, "run_scenario", self._scenario_args(q, labels or []))
         proposals = self._plan_items(question)

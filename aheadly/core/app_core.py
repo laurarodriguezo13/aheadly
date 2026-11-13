@@ -31,7 +31,7 @@ from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
 from aheadly.ai import templates
 from aheadly.core import actions as alert_actions
-from aheadly.core import alert_rules, onboarding
+from aheadly.core import alert_rules, onboarding, safe
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
@@ -101,6 +101,7 @@ class AppCore:
         self._backtests: dict = {}  # backtest error per history (roadmap 2.8)
         self._messages: dict[str, str] = {}  # drafted messages per facts (roadmap 3.2)
         self._fixes_cache: dict = {}  # suggested fixes for the latest forecast run (roadmap 3.3)
+        self._pay_cache: dict = {}  # safe owner's pay for the latest forecast run (roadmap 3.4)
         self.translator = InsightTranslator(llm or create_llm_client(settings), ToolDispatcher(self))
 
     @property
@@ -1020,6 +1021,70 @@ class AppCore:
         if self._fixes_cache.get("key") != key:
             self._fixes_cache = {"key": key, "fixes": self._fixes(self._baseline_forecast())}
         return self._fixes_cache["fixes"]
+
+    # --------------------------------------------------------- safe to spend (3.4)
+    def safe_to_spend(self) -> dict:
+        """The biggest one-off payment today that keeps even a bad month above the line."""
+        business = self._business()
+        forecast = self.repo.latest_forecast(business.id) or self._baseline_forecast()
+        return safe.safe_to_spend(forecast, business.low_cash_line)
+
+    def safe_owner_pay(self) -> dict | None:
+        """The biggest pay per payment for the owner that keeps even a bad month above the line
+        (None until the owner said which transfer is their pay). Worked out once per forecast run."""
+        business = self._business()
+        item = safe.owner_pay_item(self.repo.list_scheduled_items(business.id))
+        if item is None:
+            return None
+        run = self.repo.latest_forecast(business.id)
+        key = (run.run_id if run else None, business.low_cash_line, item.label, item.amount)
+        if self._pay_cache.get("key") != key:
+            baseline = self._baseline_forecast()
+            now = -item.amount
+
+            def worst_after(pay: float) -> float:
+                change = {
+                    "type": "recurring_change",
+                    "label": item.label,
+                    "amount_delta": round(now - pay, 2),
+                    "start_date": self.today.isoformat(),
+                }
+                return self._scenario([change], "Safe pay", baseline=baseline).scenario.min_p10
+
+            amount = safe.safe_owner_pay(
+                item, business.low_cash_line, worst_after, baseline.min_p10 - business.low_cash_line
+            )
+            self._pay_cache = {
+                "key": key,
+                "pay": {
+                    "label": item.label,
+                    "now": round(now),
+                    "safe": amount,
+                    "how_often": recurring.describe(item.recurrence, item.due_date),
+                },
+            }
+        return self._pay_cache["pay"]
+
+    def safe_numbers(self) -> dict:
+        """What the chat may say about safe spending and pay (every number from code)."""
+        spend = self.safe_to_spend()
+        pay = self.safe_owner_pay()
+        return {
+            "horizon_weeks": self.settings.horizon_days // 7,
+            "safe_to_spend_now": spend["amount"],
+            "low_cash_line": spend["low_cash_line"],
+            "lowest_worst_case": spend["lowest_worst_case"],
+            "owner_pay": (
+                {
+                    "payment": pay["label"],
+                    "now_per_payment": pay["now"],
+                    "safe_per_payment": pay["safe"],
+                    "how_often": pay["how_often"],
+                }
+                if pay
+                else None
+            ),
+        }
 
     def still_short(self) -> int | None:
         """How much the base case still misses the line even after the best suggestion (3.6 helps then)."""

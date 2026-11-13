@@ -422,3 +422,13 @@ STILL_SHORT = "Even the best change here leaves your base case about {gap} below
 WATCH_FIXES = "Your base case stays above your line, but a bad month could dip below it. These changes, tested on your numbers, would help."
 SEE_FIXES = "See what would help"
 ACTION_GENERAL = "General advice: we couldn't test this one for you."
+
+
+# ---------------------------------------------------------------- safe to spend (3.4)
+SAFE_SPEND = "Safe to spend today"
+SAFE_SPEND_SUB = "Even a bad month stays above your {line} line for the next 8 weeks"
+SAFE_SPEND_NONE = "A bad month could already dip to {worst}: hold off on extra spending"
+SAFE_PAY = "Safe pay for yourself"
+SAFE_PAY_SUB = "Per payment for the next 8 weeks ({how_often}; now {now})"
+SAFE_PAY_NONE = "Even with no pay, a bad month dips below your line (now {now} per payment)"
+SAFE_PAY_UNKNOWN = "Tell us which payment is your own pay (Questions) to see this"
