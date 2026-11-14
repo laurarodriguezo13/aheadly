@@ -238,3 +238,107 @@ def scenario_chart(baseline: ForecastResult, scenario: ForecastResult, low_cash_
     _regions(fig, low_cash_line, today, scenario.horizon_end, min(values) - pad, max(values) + pad)
     fig.update_layout(**{**_LAYOUT, "height": 330})
     return fig
+
+
+# ------------------------------------------------------------- the Insights page (roadmap 4.3)
+_MONTHLY = dict(
+    _LAYOUT,
+    height=360,
+    hovermode="x unified",
+    xaxis=dict(showgrid=False, tickformat="%b<br>%Y", dtick="M1", ticks="", zeroline=False, tickangle=0),
+    yaxis=dict(
+        gridcolor="#F0EDFA",
+        zeroline=True,
+        zerolinecolor="#D9D3F2",
+        ticks="",
+        tickformat="$,.0f",
+    ),
+)
+_PALETTE = [TOKENS["purple"], TOKENS["blue"], TOKENS["teal"], "#F5A623", TOKENS["red"], "#B9B3D9"]
+
+
+def money_in_out_chart(rows: list[dict]) -> go.Figure:
+    """Bars for money in and out each month, a line for what was left."""
+    frame = pd.DataFrame(rows)
+    fig = go.Figure()
+    fig.add_trace(
+        go.Bar(
+            x=frame["month"], y=frame["money_in"], name="Money in", marker_color=TOKENS["teal"], opacity=0.85
+        )
+    )
+    fig.add_trace(
+        go.Bar(
+            x=frame["month"], y=-frame["money_out"], name="Money out", marker_color=TOKENS["red"], opacity=0.7
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=frame["month"],
+            y=frame["net"],
+            name="Left over",
+            mode="lines+markers",
+            line=dict(color=TOKENS["purple"], width=3),
+            marker=dict(size=7),
+        )
+    )
+    fig.update_layout(**_MONTHLY, barmode="relative")
+    return fig
+
+
+def spending_chart(names: list[str], rows: list[dict]) -> go.Figure:
+    """What goes out each month, stacked by category."""
+    frame = pd.DataFrame(rows)
+    fig = go.Figure()
+    for name, color in zip(names, _PALETTE):
+        fig.add_trace(go.Bar(x=frame["month"], y=frame[name], name=name, marker_color=color))
+    fig.update_layout(**_MONTHLY, barmode="stack")
+    return fig
+
+
+def cushion_chart(rows: list[dict], target_weeks: float) -> go.Figure:
+    """Weeks of normal spending the cash covers at each month's end, and today."""
+    frame = pd.DataFrame(rows)
+    colors = [TOKENS["red"] if w < target_weeks else TOKENS["purple"] for w in frame["weeks"]]
+    fig = go.Figure(
+        go.Bar(
+            x=frame["label"],
+            y=frame["weeks"],
+            marker_color=colors,
+            customdata=frame["cash"],
+            hovertemplate="%{x}: %{y:.1f} weeks (cash %{customdata:$,.0f})<extra></extra>",
+            name="Weeks covered",
+        )
+    )
+    fig.add_hline(y=target_weeks, line=dict(color=TOKENS["red"], dash="dot", width=1.5))
+    layout = dict(_MONTHLY, hovermode="closest", showlegend=False, margin=dict(l=10, r=20, t=20, b=10))
+    layout["xaxis"] = dict(showgrid=False, ticks="", type="category")
+    layout["yaxis"] = dict(gridcolor="#F0EDFA", ticks="", ticksuffix=" wk", zeroline=False)
+    fig.update_layout(**layout)
+    return fig
+
+
+def income_chart(rows: list[dict]) -> go.Figure:
+    """Where the last 6 months' money came from, biggest first."""
+    frame = pd.DataFrame(rows).iloc[::-1]
+    fig = go.Figure(
+        go.Bar(
+            x=frame["amount"],
+            y=frame["source"],
+            orientation="h",
+            marker_color=TOKENS["blue"],
+            text=[f"{p}%" for p in frame["share_pct"]],
+            textposition="outside",
+            hovertemplate="%{y}: %{x:$,.0f}<extra></extra>",
+        )
+    )
+    layout = dict(
+        _LAYOUT,
+        height=max(220, 70 * len(rows)),
+        hovermode="closest",
+        showlegend=False,
+        margin=dict(l=10, r=40, t=20, b=10),
+    )
+    layout["xaxis"] = dict(showgrid=False, ticks="", tickformat="$,.0f", zeroline=False)
+    layout["yaxis"] = dict(ticks="", automargin=True)
+    fig.update_layout(**layout)
+    return fig

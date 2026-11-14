@@ -11,6 +11,10 @@ st.set_page_config(
     page_title="Aheadly", page_icon="assets/favicon_64.png", layout="wide", initial_sidebar_state="expanded"
 )
 
+from aheadly.version import forget_old_code  # noqa: E402
+
+forget_old_code()  # after an update, load the new code everywhere (roadmap issue 19)
+
 from aheadly.ui import copy  # noqa: E402  (imports after set_page_config on purpose)
 from aheadly.ui.bootstrap import PAGES, get_core, get_settings  # noqa: E402
 
@@ -37,6 +41,7 @@ pages = [
     st.Page(PAGES["dashboard"], title=copy.NAV["dashboard"], icon=":material/home:", default=True),
     st.Page(PAGES["questions"], title=questions_badge(), icon=":material/quiz:"),
     st.Page(PAGES["alerts"], title=unread_badge(), icon=":material/notifications:"),
+    st.Page(PAGES["insights"], title=copy.NAV["insights"], icon=":material/insights:"),
     st.Page(PAGES["basis"], title=copy.NAV["basis"], icon=":material/fact_check:"),
     st.Page(PAGES["ask"], title=copy.NAV["ask"], icon=":material/chat:"),
     st.Page(PAGES["whatif"], title=copy.NAV["whatif"], icon=":material/science:"),

@@ -101,6 +101,8 @@ def answer_from_tool(tool: str, data: dict) -> str:
         return text
     if tool == "compare_financing":
         return financing_answer(data)
+    if tool == "get_insights":
+        return insights_answer(data)
     if tool == "get_alerts":
         if not data["alerts"]:
             return "You have no open alerts right now. Things look calm."
@@ -380,3 +382,485 @@ def message_text(facts: dict) -> str:
         f"Hi! {who}. About {facts['payee']} ({money(facts['amount'])}, due {old}): would it be possible to "
         f"pay a little earlier, by {new}? It would really help us this month. Thank you!"
     )
+
+
+# ------------------------------------------------------------- names (roadmap 4.2)
+# bank wording in front of the payee's name ("TRANSF RECIBIDA CAFE MOLIENDA AZUL")
+_BANK_PREFIXES = (
+    "transf recibida",
+    "transf de",
+    "transf a",
+    "transf",
+    "pago pse",
+    "pago recibido",
+    "pago",
+    "compra",
+    "abono",
+    "consignacion",
+)
+# categories whose plain name says more than the bank's wording ("Pago nomina" → "Payroll")
+CATEGORY_WORDS = {
+    "payroll": "Payroll",
+    "owner_pay": "Your own pay",
+    "rent": "Rent",
+    "utilities": "Utilities",
+    "taxes": "Taxes",
+    "loan": "Loan payment",
+    "bank_fees": "Bank fees",
+    "suppliers": "suppliers",
+    "equipment": "equipment",
+    "sales": "sales",
+}
+
+
+def payee_name(description: str) -> str:
+    """'TRANSF RECIBIDA CAFE MOLIENDA AZUL' → 'Cafe Molienda Azul'; a name with nothing left after
+    the bank's words ('TRANSF 0045 REF 88213') stays as it is, only in plain capitals."""
+    text = " ".join(str(description).split())
+    lower = text.lower()
+    rest = text
+    for prefix in _BANK_PREFIXES:
+        if lower.startswith(prefix + " "):
+            rest = text[len(prefix) + 1 :]
+            break
+    if not any(ch.isalpha() for ch in rest.replace("ref", "").replace("REF", "")):
+        rest = text
+    if rest.isupper() or rest.islower():
+        return " ".join(w[:1].upper() + w[1:].lower() for w in rest.split())
+    return rest
+
+
+def payment_name(label: str, category: str | None, from_statement: bool) -> str:
+    """How a payment is called in an alert: a payment found in the statement whose category has a
+    plain name gets that name (live check, 2026-11-13: "Pago nomina" → "Payroll"); the owner's
+    own names stay as they wrote them."""
+    if not from_statement:
+        return label
+    if category in ("payroll", "owner_pay", "rent", "utilities", "taxes", "loan", "bank_fees"):
+        return CATEGORY_WORDS[category]
+    return payee_name(label)
+
+
+# ------------------------------------------------------------- things we noticed (roadmap 4.2)
+def readable_insight(insight: dict) -> dict:
+    """The facts as the words use them: payee names without the bank's wording and a plain
+    category name. Numbers are untouched (the guardrail checks against these facts)."""
+    facts = dict(insight["facts"])
+    for key in ("customer", "payee"):
+        if key in facts:
+            facts[key] = payee_name(facts[key])
+    if "category" in facts:
+        facts["category_name"] = CATEGORY_WORDS.get(facts["category"], facts["category"]).lower()
+    return {"type": insight["type"], **facts}
+
+
+INSIGHT_TITLES = {
+    "thin_cushion": "Your cash cushion is thin",
+    "cost_creeping_up": "Spending on {category} is creeping up",
+    "costs_faster_than_sales": "Costs are growing faster than sales",
+    "net_flow_shrinking": "Less is left over each month",
+    "owner_pay_high": "Your pay takes most of what's left",
+    "few_customers": "One customer brings a big share of your money",
+    "customers_paying_later": "{customer} is paying later",
+    "duplicate_charge": "A charge that looks doubled",
+    "unusual_charge": "A charge worth checking",
+    "new_recurring_charge": "A new regular payment",
+    "sales_slowing": "Sales are slowing",
+    "idle_cash": "You have cash to spare",
+}
+
+
+def insight_title(facts: dict) -> str:
+    """Code picks the title, like an alert's: the model writes only the body."""
+    return INSIGHT_TITLES[facts["type"]].format(
+        category=facts.get("category_name", ""), customer=facts.get("customer", "")
+    )
+
+
+def _pct(value: float) -> str:
+    return f"{abs(round(value))}%"
+
+
+def insight_body(f: dict) -> str:
+    """1–3 sentences: what we saw and why it matters. Every number comes from the facts."""
+    kind = f["type"]
+    if kind == "thin_cushion":
+        return (
+            f"You have {money(f['current_balance'])}, about {f['weeks_covered']:g} weeks of what normally goes "
+            f"out ({money(f['weekly_money_out'])} a week). A cushion of two weeks or more gives you room when a "
+            "customer pays late or a bill comes early."
+        )
+    if kind == "cost_creeping_up":
+        return (
+            f"You spent about {money(f['monthly_now'])} a month on {f['category_name']} over the last three "
+            f"months, up from {money(f['monthly_before'])} in the three before ({_pct(f['change_pct'])} more). "
+            "Worth checking whether prices went up or something new was added."
+        )
+    if kind == "costs_faster_than_sales":
+        sales = (
+            f"sales grew {_pct(f['sales_change_pct'])}"
+            if f["sales_change_pct"] > 0
+            else (
+                f"sales fell {_pct(f['sales_change_pct'])}"
+                if f["sales_change_pct"] < 0
+                else "sales stayed the same"
+            )
+        )
+        return (
+            f"Over the last three months your costs rose {_pct(f['costs_change_pct'])} while {sales}. "
+            f"If that keeps up, less is left each month from the {money(f['monthly_sales_now'])} of sales."
+        )
+    if kind == "net_flow_shrinking":
+        now, before = f["monthly_net_now"], f["monthly_net_before"]
+        if now < 0:
+            first = f"Over the last three months about {money(-now)} more went out than came in each month"
+        else:
+            first = (
+                f"Over the last three months about {money(now)} was left each month after everything went out"
+            )
+        if before < 0:
+            then = f"{money(-before)} more out than in during the three months before"
+        else:
+            then = f"{money(before)} left each month in the three months before"
+        return f"{first}, against {then}. A shrinking margin is easier to fix early."
+    if kind == "owner_pay_high":
+        left = f["monthly_left_before_pay"]
+        if f.get("share_pct") and f["share_pct"] <= 100:
+            return (
+                f"You take about {money(f['monthly_owner_pay'])} a month, {f['share_pct']}% of the "
+                f"{money(left)} the business makes before your pay. That leaves little to build a cushion."
+            )
+        made = (
+            f"made only about {money(left)} a month"
+            if left > 0
+            else "didn't make money over the last 6 months"
+        )
+        return (
+            f"You take about {money(f['monthly_owner_pay'])} a month, but before your pay the business {made}. "
+            "Part of your pay is coming out of the cash you already had."
+        )
+    if kind == "few_customers":
+        return (
+            f"{f['customer']} brought {f['share_pct']}% of the money coming in over the last 6 months "
+            f"({money(f['amount_6_months'])}). If they paid late or left, you'd feel it quickly."
+        )
+    if kind == "customers_paying_later":
+        return (
+            f"{f['customer']} used to pay about every {f['days_between_before']} days; lately it's about every "
+            f"{f['days_between_now']} days (last payment {_short_date(f['last_paid'])}). A friendly reminder now can "
+            "stop it slipping further."
+        )
+    if kind == "duplicate_charge":
+        return (
+            f"{f['payee']} charged {_money2(f['amount'])} twice on {_short_date(f['date'])}. If it was a mistake, you "
+            "can ask for the money back."
+        )
+    if kind == "unusual_charge":
+        return (
+            f"{f['payee']} charged {_money2(f['amount'])} on {_short_date(f['date'])}: a payee you hadn't paid before, "
+            "and bigger than your usual payments. Worth checking it's right."
+        )
+    if kind == "new_recurring_charge":
+        return (
+            f"{f['payee']} has charged {_money2(f['amount'])} {f['how_often']} since {_short_date(f['since'])}. If you "
+            "don't need it any more, cancelling saves money every time."
+        )
+    if kind == "sales_slowing":
+        return (
+            f"Sales averaged {money(f['monthly_sales_now'])} a month over the last three months, "
+            f"{_pct(f['change_pct'])} below the {money(f['monthly_sales_before'])} of the three months before."
+        )
+    if kind == "idle_cash":
+        return (
+            f"Even in a bad case your balance stays above {money(f['lowest_worst_case'])} for the next "
+            f"{f['horizon_weeks']} weeks, more than three months of what goes out "
+            f"({money(f['three_months_of_outflows'])}). That money could work harder for you."
+        )
+    return "Something in your statement is worth a look."
+
+
+def _money2(value: float) -> str:
+    """$4,000 or $39.90: cents only when there are some."""
+    return money(value) if float(value).is_integer() else f"${value:,.2f}"
+
+
+# what could help, per action key from the pattern rules (4.3 shows them and tests the ones it can)
+INSIGHT_ACTIONS = {
+    "build_buffer": (
+        "Build a small cushion",
+        "Set a little aside each week until cash covers two weeks.",
+        [
+            "Pick an amount you won't miss, even $50 a week.",
+            "Move it on the same day each week until you reach two weeks of spending.",
+        ],
+    ),
+    "lower_owner_pay_for_a_while": (
+        "Take a little less for a while",
+        "A smaller pay for a few weeks rebuilds the cushion.",
+        [
+            "Work out what you need to live on for the next weeks.",
+            "Lower the transfer to your own account until the cushion is back.",
+        ],
+    ),
+    "compare_suppliers": (
+        "Compare prices",
+        "Ask one or two other suppliers for a quote.",
+        ["List what you buy most from them.", "Ask two other suppliers for the same list and compare."],
+    ),
+    "raise_prices_to_cover": (
+        "Check your prices",
+        "If the cost stays higher, a small price rise covers it.",
+        [
+            "Start with the items that use this cost the most.",
+            "Raise them a little and watch sales for two weeks.",
+        ],
+    ),
+    "review_prices": (
+        "Review your prices",
+        "See whether your prices kept up with your costs.",
+        [
+            "Compare what you charge with what each item costs you now.",
+            "Raise the ones that no longer leave enough.",
+        ],
+    ),
+    "renegotiate_with_suppliers": (
+        "Talk to your suppliers",
+        "Ask for a better price or longer terms.",
+        [
+            "Start with the supplier you pay the most.",
+            "Ask for a better price for steady orders, or more days to pay.",
+        ],
+    ),
+    "cut_a_cost": (
+        "Trim one cost",
+        "Pick one regular payment you could lower or drop.",
+        [
+            "Look at your regular payments on How we built it.",
+            "Pick one to lower or drop, and test it with a what-if.",
+        ],
+    ),
+    "find_another_customer": (
+        "Find another customer like them",
+        "A second big customer spreads the risk.",
+        [
+            "Ask your best customer who else could use what you sell.",
+            "Offer a first order on the same terms.",
+        ],
+    ),
+    "ask_for_deposits": (
+        "Ask for deposits",
+        "On big orders, ask for part of the money up front.",
+        ["Add a deposit to your next quote, for example a third.", "Start the work once it arrives."],
+    ),
+    "send_reminder": (
+        "Send a friendly reminder",
+        "A short message before the next due date.",
+        ["Send it a few days before the payment is due.", "Thank them, and say the date you expect it."],
+    ),
+    "shorten_terms": (
+        "Agree on a due date",
+        "Put a clear payment date on each invoice.",
+        ["Write the due date on every invoice.", "Agree on it with the customer when they order."],
+    ),
+    "ask_for_refund": (
+        "Ask for a refund",
+        "Call the payee or your bank with the date and amount.",
+        [
+            "Find both charges on your statement.",
+            "Call the payee, or your bank if they don't answer, and ask for one back.",
+        ],
+    ),
+    "check_the_charge": (
+        "Check this charge",
+        "Make sure you recognise it; if not, call your bank.",
+        ["Look for the receipt or the order.", "If you don't recognise it, call your bank the same day."],
+    ),
+    "cancel_if_not_needed": (
+        "Cancel it if you don't need it",
+        "Check what it's for and whether you still use it.",
+        [
+            "Find out what the charge is for.",
+            "If you don't use it, cancel it with them, then test the change.",
+        ],
+    ),
+    "promotion_on_slow_days": (
+        "Bring customers back",
+        "A small offer on your slowest days.",
+        ["Pick your quietest day of the week.", "Try a small offer that day for a month and compare."],
+    ),
+    "pay_supplier_early_for_discount": (
+        "Pay a supplier early",
+        "Ask for a discount in exchange.",
+        ["Pick a supplier you pay every month.", "Offer to pay early for a small discount."],
+    ),
+    "buy_inventory_in_bulk": (
+        "Buy inventory in bulk",
+        "Lock in prices with your main suppliers.",
+        ["Ask your main supplier for a bulk price.", "Buy only what you use in the next months."],
+    ),
+}
+
+
+def insight_actions(keys: list[str]) -> list[dict]:
+    return [
+        {
+            "key": k,
+            "label": INSIGHT_ACTIONS[k][0],
+            "detail": INSIGHT_ACTIONS[k][1],
+            "how_to": INSIGHT_ACTIONS[k][2],
+        }
+        for k in keys
+        if k in INSIGHT_ACTIONS
+    ]
+
+
+# ------------------------------------------------------------- chart summaries (roadmap 4.2)
+def chart_summary(f: dict) -> str:
+    """1–3 sentences under a chart: what it shows, what stands out, why it matters."""
+    if f["chart"] == "forecast":
+        return _forecast_summary(f)
+    if f["chart"] == "scenario":
+        return _scenario_summary(f)
+    if f["chart"] == "money_in_out":
+        return _money_in_out_summary(f)
+    if f["chart"] == "spending":
+        return _spending_summary(f)
+    if f["chart"] == "cushion":
+        return _cushion_summary(f)
+    if f["chart"] == "income_sources":
+        return _income_summary(f)
+    return "Nothing unusual here."
+
+
+def _money_in_out_summary(f: dict) -> str:
+    first = (
+        f"Over the last {f['months']} months about {money(f['average_in'])} came in and "
+        f"{money(f['average_out'])} went out in a typical month."
+    )
+    worst, best = f["worst_month"], f["best_month"]
+    if f["months_more_out"] == 0:
+        return (
+            first
+            + f" Every month ended with more coming in than going out; the best was {best['month']} ({money(best['net'])})."
+        )
+    months = "month" if f["months_more_out"] == 1 else "months"
+    return (
+        first + f" {f['months_more_out']} {months} ended with more going out than coming in, the hardest "
+        f"{worst['month']} ({money(worst['net'])}). The best was {best['month']} ({money(best['net'])})."
+    )
+
+
+def _spending_summary(f: dict) -> str:
+    big = f["biggest"]
+    text = (
+        f"Your biggest cost is {big['category'].lower()}, about {money(big['monthly'])} a month "
+        f"({big['share_pct']}% of what goes out)."
+    )
+    grew = f.get("grew_most")
+    if grew:
+        return text + (
+            f" {grew['category']} grew the most: about {money(grew['monthly_now'])} a month over the last "
+            f"three months against {money(grew['monthly_before'])} before."
+        )
+    return text + " No cost grew much over the last three months."
+
+
+def _cushion_summary(f: dict) -> str:
+    low, high = f["lowest"], f["highest"]
+    text = (
+        f"Today your cash covers about {f['weeks_now']:g} weeks of what normally goes out. Over this time it "
+        f"was lowest at the end of {low['month']} ({low['weeks']:g} weeks) and highest at the end of "
+        f"{high['month']} ({high['weeks']:g} weeks)."
+    )
+    if f["weeks_now"] < f["target_weeks"]:
+        text += " Two weeks or more gives you room when a payment comes in late."
+    return text
+
+
+_GROUPS = ("Card, cash and app sales", "Other money in")
+
+
+def _income_summary(f: dict) -> str:
+    top = f["top"]
+    text = (
+        f"Over the last {f['months']} months {money(f['total'])} came in, and the biggest part came from "
+        f"{top['source'].lower() if top['source'][:1].isupper() and top['source'] in _GROUPS else top['source']} "
+        f"({top['share_pct']}%)."
+    )
+    if top["many_customers"]:
+        return text + " Money from many customers spreads the risk."
+    if top["share_pct"] >= 25:
+        return text + " Leaning on one customer this much means a late payment from them would hurt."
+    return text
+
+
+def _forecast_summary(f: dict) -> str:
+    line = money(f["low_cash_line"])
+    parts = []
+    if f.get("balance_weeks_ago") is not None:
+        then, now = f["balance_weeks_ago"], f["balance_today"]
+        way = "rose" if now > then else "fell" if now < then else "stayed"
+        parts.append(f"Your cash {way} from {money(then)} to {money(now)} over the last {f['weeks']} weeks.")
+    low = f"The forecast's lowest point is about {money(f['lowest_base_case'])} around {_short_date(f['lowest_date'])}"
+    pay = f.get("payment_before_lowest")
+    if pay:
+        low += f", after {pay['label']} ({money(pay['amount'])})"
+    parts.append(low + ".")
+    verdict = {
+        "safe": f"Even a bad month stays above your {line} line",
+        "watch": (
+            f"The base case stays above your {line} line, but a bad month could dip to "
+            f"{money(f['lowest_worst_case'])}"
+        ),
+        "act_now": f"That is below your {line} line, so it's worth acting before then",
+    }[f["risk_level"]]
+    end = f["end_base_case"]
+    if end - f["lowest_base_case"] <= max(1.0, 0.01 * abs(f["lowest_base_case"])):
+        parts.append(f"{verdict}, and it's still there at the end of the {f['weeks']} weeks.")
+    else:
+        parts.append(f"{verdict}; by the end it's back near {money(end)}.")
+    return " ".join(parts)
+
+
+def _scenario_summary(f: dict) -> str:
+    base, scen, line = f["baseline"], f["scenario"], money(f["low_cash_line"])
+    first = (
+        f"With this {f.get('what', 'change')} the lowest point is about {money(scen['lowest_base_case'])} around "
+        f"{_short_date(scen['lowest_date'])}, against {money(base['lowest_base_case'])} without it."
+    )
+    if scen["lowest_base_case"] < f["low_cash_line"]:
+        if base["lowest_base_case"] < f["low_cash_line"]:
+            return first + f" That is still below your {line} line."
+        return first + f" That takes you below your {line} line."
+    if scen["lowest_worst_case"] < f["low_cash_line"]:
+        return first + (
+            f" The base case stays above your {line} line, but a bad month could dip to "
+            f"{money(scen['lowest_worst_case'])}."
+        )
+    return first + f" Even a bad month stays above your {line} line."
+
+
+def cancel_words(name: str, amount: float, how_often: str) -> dict:
+    """A regular charge the owner may not need any more (roadmap 4.3)."""
+    return {
+        "label": f"Cancel {name}",
+        "detail": f"It's {_money2(amount)} {how_often}; cancelling takes it out of the forecast.",
+        "how_to": [
+            "Find out what the charge is for.",
+            "If you don't use it, cancel it with them.",
+            "Press Test this, then Save as my plan so the forecast leaves it out.",
+        ],
+    }
+
+
+def insights_answer(data: dict) -> str:
+    """The chat's answer about things we noticed, from the get_insights tool (roadmap 4.3)."""
+    found = data["insights"]
+    if not found:
+        return "Nothing stands out in your statement right now: no costs creeping up, no doubled charges."
+    first = found[0]
+    text = f"Here's what stands out. {first['title']}: {first['body']}"
+    if len(found) > 1:
+        others = "; ".join(i["title"] for i in found[1:3])
+        text += f" Also worth a look: {others}."
+    return text + " The Insights page has the details and what could help."

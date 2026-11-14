@@ -20,6 +20,8 @@ from pathlib import Path
 
 import pytest
 
+from aheadly.ai import templates
+from aheadly.ai.guardrails import check_numbers
 from aheadly.ai.forecast_engine import ForecastEngine
 from aheadly.ai.llm_client import StubClient
 from aheadly.ai.models import SeasonalNaiveModel
@@ -56,7 +58,8 @@ PENDING: dict[str, dict[str, str]] = {
     "alert_actions": {},
     "suggested_fixes": {},
     "internal_transfers": {},
-    "insights": {"*": "4.1 things we noticed"},
+    "insights": {},
+    "words": {},
     "timing_or_structural": {},
     "what_ifs": {"*": "5.4 chatbot test set (free-text what-ifs)"},
 }
@@ -392,6 +395,30 @@ def test_insights(slug):
     found = {i["type"] for i in import_business(slug, with_one_offs=True).insights()}
     assert set(expected["insights_must"]) <= found
     assert not set(expected["insights_must_not"]) & found
+
+
+@pytest.mark.parametrize("slug", _businesses("words"))
+def test_words(slug):
+    """Roadmap 4.2–4.3: each thing we noticed, the dashboard chart and the Insights page's charts get
+    1–3 short sentences, with only numbers the code worked out and payee names without the bank's wording."""
+    core = import_business(slug, with_one_offs=True)
+    texts = []
+    for insight, card in zip(core.insights(), core.insight_cards()):
+        assert card["title"] and card["actions"]
+        assert check_numbers(card["body"], [templates.readable_insight(insight)]).passed, card["body"]
+        texts.append(card["body"])
+    chart = core.forecast_chart_facts()
+    summary = core.forecast_chart_summary()
+    assert check_numbers(summary, [chart]).passed, summary
+    texts.append(summary)
+    charts = core.insight_charts()  # the Insights page's charts (roadmap 4.3)
+    assert {"money_in_out", "spending", "cushion", "income_sources"} <= set(charts)
+    for kind, page_chart in charts.items():
+        assert check_numbers(page_chart["summary"], [page_chart["facts"]]).passed, page_chart["summary"]
+        texts.append(page_chart["summary"])
+    for text in texts:
+        assert len(text.split()) <= 60 and text.count(". ") <= 2, text
+        assert not re.search(r"\b(TRANSF|Transf recibida|PAGO PSE|Pago pse)\b", text), text
 
 
 @pytest.mark.parametrize(

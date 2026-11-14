@@ -133,6 +133,15 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         ),
         "parameters": {"type": "object", "properties": {}},
     },
+    {
+        "name": "get_insights",
+        "description": (
+            "Things we noticed in the owner's statement even when cash is fine (a thin cushion, a cost "
+            "creeping up, one big customer, a customer paying later, doubled or unusual charges, sales "
+            "slowing...), each with its title, a short explanation and the numbers behind it."
+        ),
+        "parameters": {"type": "object", "properties": {}},
+    },
     PROPOSE_TOOL,
 ]
 
@@ -186,6 +195,8 @@ class ToolDispatcher:
             return core.safe_numbers()
         if name == "compare_financing":
             return core.financing_summary()
+        if name == "get_insights":
+            return core.insights_for_chat()
         if name == "propose_plan_items":
             proposals = core.check_proposals(args, self.last_question)
             self.last_proposals = proposals

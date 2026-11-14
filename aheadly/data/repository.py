@@ -824,6 +824,44 @@ class Repository:
             for r in reversed(rows)
         ]
 
+    # ------------------------------------------------------------- things we noticed (4.1)
+    def replace_insights(self, business_id: int, run_id: int | None, insights: list[dict]) -> None:
+        """The patterns found for the latest forecast run replace the ones before."""
+        self._conn.execute("DELETE FROM insights WHERE business_id=?", (business_id,))
+        self._conn.executemany(
+            "INSERT INTO insights (business_id, run_id, type, severity, facts_json, actions_json, created_at) "
+            "VALUES (?,?,?,?,?,?,?)",
+            [
+                (
+                    business_id,
+                    run_id,
+                    i["type"],
+                    i["severity"],
+                    json.dumps(i["facts"]),
+                    json.dumps(i["actions"]),
+                    _now(),
+                )
+                for i in insights
+            ],
+        )
+        self._conn.commit()
+
+    def list_insights(self, business_id: int) -> list[dict]:
+        rows = self._conn.execute(
+            "SELECT type, severity, facts_json, actions_json FROM insights WHERE business_id=? AND dismissed=0 "
+            "ORDER BY id",
+            (business_id,),
+        ).fetchall()
+        return [
+            {
+                "type": r["type"],
+                "severity": r["severity"],
+                "facts": json.loads(r["facts_json"]),
+                "actions": json.loads(r["actions_json"]),
+            }
+            for r in rows
+        ]
+
     def clear_chat(self, business_id: int) -> None:
         self._conn.execute("DELETE FROM chat_messages WHERE business_id=?", (business_id,))
         self._conn.commit()

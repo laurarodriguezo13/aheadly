@@ -13,6 +13,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 from aheadly.ai.forecast_engine import expand_scheduled_items
+from aheadly.ai.templates import payment_name
 from aheadly.domain import ScheduledItem
 
 SALES_DROP = 20  # percent
@@ -20,6 +21,11 @@ SALES_WEEKS = 4
 LATE_DAYS = 30
 SUPPLIER_RISE = 10  # percent
 BILL_IN_DAYS = 7
+
+
+def _name(item: ScheduledItem) -> str:
+    """The payment as the owner knows it, without the bank's wording (roadmap 4.2)."""
+    return payment_name(item.label, item.category, item.source == "statement")
 
 
 def _day(d: date) -> str:
@@ -76,7 +82,7 @@ def surprises(
             {
                 "key": "late_customer",
                 "label": "Your biggest payment coming in arrives a month late",
-                "detail": f"{item.label}: {_money(item.amount)} due {_day(when)}, arriving "
+                "detail": f"{_name(item)}: {_money(item.amount)} due {_day(when)}, arriving "
                 f"{_day(when + timedelta(days=LATE_DAYS))} instead.",
                 "adjustments": [
                     {
@@ -102,7 +108,7 @@ def surprises(
             {
                 "key": "supplier_up",
                 "label": f"Your main supplier charges {SUPPLIER_RISE}% more",
-                "detail": f"{item.label}: {_money(item.amount)} → "
+                "detail": f"{_name(item)}: {_money(item.amount)} → "
                 f"{_money(item.amount * (1 + SUPPLIER_RISE / 100))} each time.",
                 "adjustments": [
                     {

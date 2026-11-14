@@ -59,7 +59,7 @@ Rules we keep: the UI only calls `AppCore`; only the Insight Translator talks to
 | Folder | What lives there |
 |---|---|
 | `app.py` | Streamlit entry: page config, sidebar logo, `st.navigation` |
-| `aheadly/ui/views/` | the eight page scripts (Dashboard, Questions, Alerts, How we built it, Ask Aheadly, What-if, Accounts, Settings) |
+| `aheadly/ui/views/` | the nine page scripts (Dashboard, Questions, Alerts, Insights, How we built it, Ask Aheadly, What-if, Accounts, Settings) |
 | `aheadly/ui/` | brand CSS on top of `.streamlit/config.toml`, all copy strings, cards, charts (weekly lows), cached bootstrap |
 | `aheadly/core/` | `AppCore`, and the rules it uses: `alert_rules`, `actions` (tested fixes), `safe` (safe to spend / pay), `stress` (bad surprises), `financing`, `onboarding` (questions), `transfers`, `examples`, `session` |
 | `aheadly/ai/` | `ForecastEngine` + models, `scenarios`, `categorizer`, `recurring`, `seasons`, `confidence`, `plan_text`, `InsightTranslator`, `llm_client`, `tools`, `guardrails`, `prompts`, `templates` |
@@ -72,8 +72,9 @@ Rules we keep: the UI only calls `AppCore`; only the Insight Translator talks to
 
 * **Forecast Engine.** Regular payments and income found in the statement (rent on the 15th, payroll on Fridays, taxes every two months…) and the one-offs the owner knows go on their real dates; the rest of the history is fitted with Prophet (weekly seasonality, Colombian holidays, flat trend). 500 sampled future paths are cumulated from today's balance; worst / base / best case are the 10th / 50th / 90th percentiles, and the chance of dipping below the line is the share of paths that do. A seasonal-naive baseline is always available; Settings → *Compare forecast models* runs the backtest (MAE on the last 4 weeks).
 * **Alert rules** are deterministic code: shortfall when the base case drops below the low cash line, idle cash when even the worst case stays above three months of outflows. Rules build a *facts* object; the LLM only writes the words.
+* **Things we noticed** (`aheadly/core/pattern_rules.py`): twelve patterns worth knowing even when cash is fine (thin cushion, a cost creeping up, the owner's pay taking most of what's left, one big customer, a customer paying later, doubled or unusual charges…), found by rules that skip the months the owner calls busy or slow. Each gets a title from code, 1–3 sentences from the LLM and what could help (tested as a what-if when it can be), on the Insights page and the dashboard; every chart gets a short summary the same way. Both are checked by the guardrail, fall back to templates and are written once per set of numbers.
 * **Solving, not just warning.** Every fix the app suggests (move a payment, ask for money earlier, pay yourself less, raise prices, pairs of these) is run as a what-if first and shown with its effect; the same machinery gives safe to spend, the stress tests and the financing comparison (only the owner's own options, with their own rates; not financial advice).
-* **Insight Translator** answers chat questions with function calling over nine tools (`get_cash_summary`, `get_forecast`, `get_upcoming_outflows`, `get_transactions`, `run_scenario`, `get_alerts`, `safe_to_spend`, `compare_financing`, `propose_plan_items`).
+* **Insight Translator** answers chat questions with function calling over ten tools (`get_cash_summary`, `get_forecast`, `get_upcoming_outflows`, `get_transactions`, `run_scenario`, `get_alerts`, `safe_to_spend`, `compare_financing`, `get_insights`, `propose_plan_items`).
 * **Guardrail.** Every number in an answer must appear in the facts or tool outputs of that turn. Otherwise: one retry, then a deterministic template answer. The LLM never invents figures.
 * **Providers.** `LLM_PROVIDER=gemini` (course default, via Google's OpenAI-compatible endpoint), `anthropic` (official SDK), or `stub` (offline rules + templates, used for the demo and the tests). All three expose the same `chat()`.
 
