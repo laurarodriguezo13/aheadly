@@ -9,6 +9,7 @@ from aheadly.ui.charts import forecast_chart
 from aheadly.ui.components import (
     alert_list_html,
     chart_note,
+    insight_heading,
     day,
     money,
     section_title,
@@ -113,6 +114,18 @@ with st.container(border=True):
         note.info(copy.NOTHING_PLANNED)
         if go.button(copy.NOTHING_PLANNED_GO, key="dashboard-nothing-planned"):
             go_to("basis")
+
+if forecast:  # roadmap 4.3: the top things we noticed, the rest on the Insights page
+    cards = core.insight_cards()
+    with st.container(border=True):
+        section_title(copy.NOTICED_TITLE)
+        if not cards:
+            st.caption(copy.NOTICED_DASHBOARD_EMPTY)
+        for card in cards[:3]:
+            st.markdown(insight_heading(card), unsafe_allow_html=True)
+            chart_note(card["body"])
+        if cards and st.button(copy.NOTICED_MORE, key="dashboard-insights"):
+            go_to("insights")
 
 left, right = st.columns([1, 1])
 with left, st.container(border=True):

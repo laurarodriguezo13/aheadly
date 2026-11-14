@@ -399,8 +399,8 @@ def test_insights(slug):
 
 @pytest.mark.parametrize("slug", _businesses("words"))
 def test_words(slug):
-    """Roadmap 4.2: each thing we noticed and the dashboard chart get 1–3 short sentences, with only
-    numbers the code worked out and payee names without the bank's wording."""
+    """Roadmap 4.2–4.3: each thing we noticed, the dashboard chart and the Insights page's charts get
+    1–3 short sentences, with only numbers the code worked out and payee names without the bank's wording."""
     core = import_business(slug, with_one_offs=True)
     texts = []
     for insight, card in zip(core.insights(), core.insight_cards()):
@@ -411,6 +411,11 @@ def test_words(slug):
     summary = core.forecast_chart_summary()
     assert check_numbers(summary, [chart]).passed, summary
     texts.append(summary)
+    charts = core.insight_charts()  # the Insights page's charts (roadmap 4.3)
+    assert {"money_in_out", "spending", "cushion", "income_sources"} <= set(charts)
+    for kind, page_chart in charts.items():
+        assert check_numbers(page_chart["summary"], [page_chart["facts"]]).passed, page_chart["summary"]
+        texts.append(page_chart["summary"])
     for text in texts:
         assert len(text.split()) <= 60 and text.count(". ") <= 2, text
         assert not re.search(r"\b(TRANSF|Transf recibida|PAGO PSE|Pago pse)\b", text), text

@@ -101,6 +101,8 @@ def answer_from_tool(tool: str, data: dict) -> str:
         return text
     if tool == "compare_financing":
         return financing_answer(data)
+    if tool == "get_insights":
+        return insights_answer(data)
     if tool == "get_alerts":
         if not data["alerts"]:
             return "You have no open alerts right now. Things look calm."
@@ -584,35 +586,129 @@ def _money2(value: float) -> str:
 
 # what could help, per action key from the pattern rules (4.3 shows them and tests the ones it can)
 INSIGHT_ACTIONS = {
-    "build_buffer": ("Build a small cushion", "Set a little aside each week until cash covers two weeks."),
+    "build_buffer": (
+        "Build a small cushion",
+        "Set a little aside each week until cash covers two weeks.",
+        [
+            "Pick an amount you won't miss, even $50 a week.",
+            "Move it on the same day each week until you reach two weeks of spending.",
+        ],
+    ),
     "lower_owner_pay_for_a_while": (
         "Take a little less for a while",
         "A smaller pay for a few weeks rebuilds the cushion.",
+        [
+            "Work out what you need to live on for the next weeks.",
+            "Lower the transfer to your own account until the cushion is back.",
+        ],
     ),
-    "compare_suppliers": ("Compare prices", "Ask one or two other suppliers for a quote."),
-    "raise_prices_to_cover": ("Check your prices", "If the cost stays higher, a small price rise covers it."),
-    "review_prices": ("Review your prices", "See whether your prices kept up with your costs."),
-    "renegotiate_with_suppliers": ("Talk to your suppliers", "Ask for a better price or longer terms."),
-    "cut_a_cost": ("Trim one cost", "Pick one regular payment you could lower or drop."),
-    "find_another_customer": ("Find another customer like them", "A second big customer spreads the risk."),
-    "ask_for_deposits": ("Ask for deposits", "On big orders, ask for part of the money up front."),
-    "send_reminder": ("Send a friendly reminder", "A short message before the next due date."),
-    "shorten_terms": ("Agree on a due date", "Put a clear payment date on each invoice."),
-    "ask_for_refund": ("Ask for a refund", "Call the payee or your bank with the date and amount."),
-    "check_the_charge": ("Check this charge", "Make sure you recognise it; if not, call your bank."),
+    "compare_suppliers": (
+        "Compare prices",
+        "Ask one or two other suppliers for a quote.",
+        ["List what you buy most from them.", "Ask two other suppliers for the same list and compare."],
+    ),
+    "raise_prices_to_cover": (
+        "Check your prices",
+        "If the cost stays higher, a small price rise covers it.",
+        [
+            "Start with the items that use this cost the most.",
+            "Raise them a little and watch sales for two weeks.",
+        ],
+    ),
+    "review_prices": (
+        "Review your prices",
+        "See whether your prices kept up with your costs.",
+        [
+            "Compare what you charge with what each item costs you now.",
+            "Raise the ones that no longer leave enough.",
+        ],
+    ),
+    "renegotiate_with_suppliers": (
+        "Talk to your suppliers",
+        "Ask for a better price or longer terms.",
+        [
+            "Start with the supplier you pay the most.",
+            "Ask for a better price for steady orders, or more days to pay.",
+        ],
+    ),
+    "cut_a_cost": (
+        "Trim one cost",
+        "Pick one regular payment you could lower or drop.",
+        [
+            "Look at your regular payments on How we built it.",
+            "Pick one to lower or drop, and test it with a what-if.",
+        ],
+    ),
+    "find_another_customer": (
+        "Find another customer like them",
+        "A second big customer spreads the risk.",
+        [
+            "Ask your best customer who else could use what you sell.",
+            "Offer a first order on the same terms.",
+        ],
+    ),
+    "ask_for_deposits": (
+        "Ask for deposits",
+        "On big orders, ask for part of the money up front.",
+        ["Add a deposit to your next quote, for example a third.", "Start the work once it arrives."],
+    ),
+    "send_reminder": (
+        "Send a friendly reminder",
+        "A short message before the next due date.",
+        ["Send it a few days before the payment is due.", "Thank them, and say the date you expect it."],
+    ),
+    "shorten_terms": (
+        "Agree on a due date",
+        "Put a clear payment date on each invoice.",
+        ["Write the due date on every invoice.", "Agree on it with the customer when they order."],
+    ),
+    "ask_for_refund": (
+        "Ask for a refund",
+        "Call the payee or your bank with the date and amount.",
+        [
+            "Find both charges on your statement.",
+            "Call the payee, or your bank if they don't answer, and ask for one back.",
+        ],
+    ),
+    "check_the_charge": (
+        "Check this charge",
+        "Make sure you recognise it; if not, call your bank.",
+        ["Look for the receipt or the order.", "If you don't recognise it, call your bank the same day."],
+    ),
     "cancel_if_not_needed": (
         "Cancel it if you don't need it",
         "Check what it's for and whether you still use it.",
+        [
+            "Find out what the charge is for.",
+            "If you don't use it, cancel it with them, then test the change.",
+        ],
     ),
-    "promotion_on_slow_days": ("Bring customers back", "A small offer on your slowest days."),
-    "pay_supplier_early_for_discount": ("Pay a supplier early", "Ask for a discount in exchange."),
-    "buy_inventory_in_bulk": ("Buy inventory in bulk", "Lock in prices with your main suppliers."),
+    "promotion_on_slow_days": (
+        "Bring customers back",
+        "A small offer on your slowest days.",
+        ["Pick your quietest day of the week.", "Try a small offer that day for a month and compare."],
+    ),
+    "pay_supplier_early_for_discount": (
+        "Pay a supplier early",
+        "Ask for a discount in exchange.",
+        ["Pick a supplier you pay every month.", "Offer to pay early for a small discount."],
+    ),
+    "buy_inventory_in_bulk": (
+        "Buy inventory in bulk",
+        "Lock in prices with your main suppliers.",
+        ["Ask your main supplier for a bulk price.", "Buy only what you use in the next months."],
+    ),
 }
 
 
 def insight_actions(keys: list[str]) -> list[dict]:
     return [
-        {"key": k, "label": INSIGHT_ACTIONS[k][0], "detail": INSIGHT_ACTIONS[k][1]}
+        {
+            "key": k,
+            "label": INSIGHT_ACTIONS[k][0],
+            "detail": INSIGHT_ACTIONS[k][1],
+            "how_to": INSIGHT_ACTIONS[k][2],
+        }
         for k in keys
         if k in INSIGHT_ACTIONS
     ]
@@ -625,7 +721,77 @@ def chart_summary(f: dict) -> str:
         return _forecast_summary(f)
     if f["chart"] == "scenario":
         return _scenario_summary(f)
+    if f["chart"] == "money_in_out":
+        return _money_in_out_summary(f)
+    if f["chart"] == "spending":
+        return _spending_summary(f)
+    if f["chart"] == "cushion":
+        return _cushion_summary(f)
+    if f["chart"] == "income_sources":
+        return _income_summary(f)
     return "Nothing unusual here."
+
+
+def _money_in_out_summary(f: dict) -> str:
+    first = (
+        f"Over the last {f['months']} months about {money(f['average_in'])} came in and "
+        f"{money(f['average_out'])} went out in a typical month."
+    )
+    worst, best = f["worst_month"], f["best_month"]
+    if f["months_more_out"] == 0:
+        return (
+            first
+            + f" Every month ended with more coming in than going out; the best was {best['month']} ({money(best['net'])})."
+        )
+    months = "month" if f["months_more_out"] == 1 else "months"
+    return (
+        first + f" {f['months_more_out']} {months} ended with more going out than coming in, the hardest "
+        f"{worst['month']} ({money(worst['net'])}). The best was {best['month']} ({money(best['net'])})."
+    )
+
+
+def _spending_summary(f: dict) -> str:
+    big = f["biggest"]
+    text = (
+        f"Your biggest cost is {big['category'].lower()}, about {money(big['monthly'])} a month "
+        f"({big['share_pct']}% of what goes out)."
+    )
+    grew = f.get("grew_most")
+    if grew:
+        return text + (
+            f" {grew['category']} grew the most: about {money(grew['monthly_now'])} a month over the last "
+            f"three months against {money(grew['monthly_before'])} before."
+        )
+    return text + " No cost grew much over the last three months."
+
+
+def _cushion_summary(f: dict) -> str:
+    low, high = f["lowest"], f["highest"]
+    text = (
+        f"Today your cash covers about {f['weeks_now']:g} weeks of what normally goes out. Over this time it "
+        f"was lowest at the end of {low['month']} ({low['weeks']:g} weeks) and highest at the end of "
+        f"{high['month']} ({high['weeks']:g} weeks)."
+    )
+    if f["weeks_now"] < f["target_weeks"]:
+        text += " Two weeks or more gives you room when a payment comes in late."
+    return text
+
+
+_GROUPS = ("Card, cash and app sales", "Other money in")
+
+
+def _income_summary(f: dict) -> str:
+    top = f["top"]
+    text = (
+        f"Over the last {f['months']} months {money(f['total'])} came in, and the biggest part came from "
+        f"{top['source'].lower() if top['source'][:1].isupper() and top['source'] in _GROUPS else top['source']} "
+        f"({top['share_pct']}%)."
+    )
+    if top["many_customers"]:
+        return text + " Money from many customers spreads the risk."
+    if top["share_pct"] >= 25:
+        return text + " Leaning on one customer this much means a late payment from them would hurt."
+    return text
 
 
 def _forecast_summary(f: dict) -> str:
@@ -672,3 +838,29 @@ def _scenario_summary(f: dict) -> str:
             f"{money(scen['lowest_worst_case'])}."
         )
     return first + f" Even a bad month stays above your {line} line."
+
+
+def cancel_words(name: str, amount: float, how_often: str) -> dict:
+    """A regular charge the owner may not need any more (roadmap 4.3)."""
+    return {
+        "label": f"Cancel {name}",
+        "detail": f"It's {_money2(amount)} {how_often}; cancelling takes it out of the forecast.",
+        "how_to": [
+            "Find out what the charge is for.",
+            "If you don't use it, cancel it with them.",
+            "Press Test this, then Save as my plan so the forecast leaves it out.",
+        ],
+    }
+
+
+def insights_answer(data: dict) -> str:
+    """The chat's answer about things we noticed, from the get_insights tool (roadmap 4.3)."""
+    found = data["insights"]
+    if not found:
+        return "Nothing stands out in your statement right now: no costs creeping up, no doubled charges."
+    first = found[0]
+    text = f"Here's what stands out. {first['title']}: {first['body']}"
+    if len(found) > 1:
+        others = "; ".join(i["title"] for i in found[1:3])
+        text += f" Also worth a look: {others}."
+    return text + " The Insights page has the details and what could help."

@@ -41,6 +41,7 @@ pages = [
     st.Page(PAGES["dashboard"], title=copy.NAV["dashboard"], icon=":material/home:", default=True),
     st.Page(PAGES["questions"], title=questions_badge(), icon=":material/quiz:"),
     st.Page(PAGES["alerts"], title=unread_badge(), icon=":material/notifications:"),
+    st.Page(PAGES["insights"], title=copy.NAV["insights"], icon=":material/insights:"),
     st.Page(PAGES["basis"], title=copy.NAV["basis"], icon=":material/fact_check:"),
     st.Page(PAGES["ask"], title=copy.NAV["ask"], icon=":material/chat:"),
     st.Page(PAGES["whatif"], title=copy.NAV["whatif"], icon=":material/science:"),

@@ -248,6 +248,20 @@ class StubClient:
             for w in ("cover this", "cover the gap", "cover it", "borrow", "loan", "financ", "credit line")
         ):
             return ToolCall(call_id, "compare_financing", {})
+        if any(
+            w in q
+            for w in (
+                "noticed",
+                "notice",
+                "insight",
+                "stand out",
+                "stands out",
+                "unusual",
+                "pattern",
+                "anything odd",
+            )
+        ):
+            return ToolCall(call_id, "get_insights", {})
         if "what if" in q or "instead" in q:
             return ToolCall(call_id, "run_scenario", self._scenario_args(q, labels or []))
         proposals = self._plan_items(question)

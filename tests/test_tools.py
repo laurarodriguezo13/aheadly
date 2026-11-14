@@ -12,6 +12,7 @@ SAMPLE_ARGS = {
     "get_alerts": {},
     "safe_to_spend": {},
     "compare_financing": {},
+    "get_insights": {},
     "run_scenario": {
         "name": "t",
         "adjustments": [{"type": "move_item", "label": "oven", "new_date": "2026-12-31"}],

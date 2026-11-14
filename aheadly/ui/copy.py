@@ -10,6 +10,7 @@ NAV = {
     "whatif": "What-if",
     "accounts": "Accounts",
     "basis": "How we built it",
+    "insights": "Insights",
     "settings": "Settings",
 }
 
@@ -559,3 +560,29 @@ BACKTEST_MODEL = "Model"
 BACKTEST_ERROR = "Average daily miss ($)"
 BACKTEST_NOTE = "Lower is better: each model forecast your last 4 weeks from the weeks before."
 RESET_HELP = "Deletes the data you uploaded in this session. You go back to the upload page."
+
+# roadmap 4.3: things we noticed and the Insights page
+INSIGHTS_TITLE = "Insights"
+INSIGHTS_INTRO = (
+    "What stands out in your statement, even when cash is fine, and how your money has moved month by month."
+)
+NOTICED_TITLE = "Things we noticed"
+NOTICED_NONE = "Nothing stands out in your statement right now: no costs creeping up, no doubled charges."
+NOTICED_HELP = "What could help"
+NOTICED_MORE = "See all, and what could help"
+NOTICED_DASHBOARD_EMPTY = "Nothing unusual in your statement."
+INSIGHT_CHARTS_TITLE = "Month by month"
+INSIGHT_TABS = {
+    "money_in_out": "Money in and out",
+    "spending": "Spending",
+    "cushion": "Cash cushion",
+    "income_sources": "Where money comes from",
+}
+INSIGHT_CHART_NOTES = {
+    "money_in_out": "Complete months only. Loans you took or repaid are left out.",
+    "spending": "What went out each month, by kind. Loans and card payments are left out.",
+    "cushion": "Weeks of normal spending your cash covered at the end of each month (red: under two weeks).",
+    "income_sources": "The last 6 months. Card machines, cash deposits and apps count as one: many customers.",
+}
+INSIGHTS_TOO_SHORT = "The charts need at least two complete months of statement."
+INSIGHT_PILLS = {"medium": "Worth a look", "low": "Good to know"}

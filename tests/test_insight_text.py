@@ -221,7 +221,8 @@ def test_insight_cards_have_a_title_words_and_actions(bakery):
     assert [c["type"] for c in cards] == ["owner_pay_high"]
     card = cards[0]
     assert card["title"] == "Your pay takes most of what's left"
-    assert card["body"] and card["actions"][0]["label"] == "Take a little less for a while"
+    assert card["body"] and card["actions"][0]["label"] == "Pay yourself 25% less for the next 8 weeks"
+    assert card["actions"][0]["impact"]["lowest_after"] > card["actions"][0]["impact"]["lowest_before"]
 
 
 def test_dashboard_chart_summary_matches_the_forecast(bakery):

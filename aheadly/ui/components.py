@@ -9,6 +9,7 @@ import streamlit as st
 
 from aheadly.timefmt import format_local
 from aheadly.ui import copy
+from aheadly.ui.charts import scenario_chart
 
 
 def money(value: float) -> str:
@@ -112,6 +113,13 @@ def chart_note(text: str | None) -> None:
     """The 1–3 sentences under a chart (roadmap 4.2)."""
     if text:
         st.markdown(f'<p class="ah-chart-note">{html.escape(text)}</p>', unsafe_allow_html=True)
+
+
+def insight_heading(card: dict) -> str:
+    """A thing we noticed: a pill saying how much it matters, then its title (roadmap 4.3)."""
+    level = "medium" if card["severity"] == "medium" else "low"
+    pill = f'<span class="ah-pill {level}">{html.escape(copy.INSIGHT_PILLS[level].upper())}</span>'
+    return f'{pill} <span style="font-weight:700;color:var(--navy)">{html.escape(card["title"])}</span>'
 
 
 def severity_pill(severity: str) -> str:
@@ -361,3 +369,60 @@ def seasons_editor(core, key: str, busy: list[int], slow: list[int], own: dict[i
             changes[month] = typed / 100
     st.caption(copy.SEASON_HOW)
     return busy, slow, changes
+
+
+def impact_line(impact: dict) -> str:
+    risk = copy.RISK_NAMES
+    return copy.ACTION_IMPACT.format(
+        before=money(impact["lowest_before"]),
+        after=money(impact["lowest_after"]),
+        risk_before=risk[impact["risk_before"]],
+        risk_after=risk[impact["risk_after"]],
+        chance_before=impact["chance_before"],
+        chance_after=impact["chance_after"],
+    )
+
+
+def action_rows(core, actions: list[dict], key_prefix: str, title: str = copy.ACTIONS_TITLE) -> None:
+    """Roadmap 3.2–3.3 (alerts) and 4.3 (insights): each suggestion with what it changes, Test this,
+    how to do it and a message."""
+    if not any(a.get("how_to") for a in actions):
+        return
+    st.markdown(f"**{title}**")
+    for i, action in enumerate(actions):
+        key = f"{key_prefix}-{i}"
+        with st.container(border=True):
+            st.markdown(f"**{action['label']}**  \n{action.get('detail', '')}")
+            if action.get("impact"):
+                st.caption(impact_line(action["impact"]))
+            else:
+                st.caption(copy.ACTION_GENERAL)
+            with st.expander(copy.ACTION_HOW):
+                st.markdown("\n".join(f"{n}. {step}" for n, step in enumerate(action.get("how_to", []), 1)))
+                if action.get("kind") in ("move_payment", "collect_early"):
+                    if st.button(copy.ACTION_DRAFT, key=f"{key}-draft"):
+                        st.session_state[f"{key}-message"] = core.draft_message(action)
+                    if st.session_state.get(f"{key}-message"):
+                        st.code(st.session_state[f"{key}-message"], language=None, wrap_lines=True)
+                        st.caption(copy.ACTION_DRAFT_NOTE)
+            if action.get("adjustments"):
+                if st.button(copy.ACTION_TEST, key=f"{key}-test", type="primary"):
+                    st.session_state[f"{key}-result"] = core.run_what_if(
+                        action["adjustments"], name=action["label"]
+                    )
+                result = st.session_state.get(f"{key}-result")
+                if result is not None:
+                    st.plotly_chart(
+                        scenario_chart(result.baseline, result.scenario, result.low_cash_line),
+                        width="stretch",
+                        config={"displayModeBar": False},
+                        key=f"{key}-chart",
+                    )
+                    chart_note(core.scenario_chart_summary(result))
+                    scenario_metrics(result)
+                    if st.button(copy.SAVE_PLAN, key=f"{key}-save"):
+                        with st.spinner(copy.SAVING_PLAN):
+                            core.save_plan(result)
+                        st.session_state.pop(f"{key}-result", None)
+                        st.toast(copy.ACTION_SAVED)
+                        st.rerun()
