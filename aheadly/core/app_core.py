@@ -31,7 +31,7 @@ from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
 from aheadly.ai import templates
 from aheadly.core import actions as alert_actions
-from aheadly.core import alert_rules, financing, onboarding, safe, stress
+from aheadly.core import alert_rules, financing, onboarding, pattern_rules, safe, stress
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
@@ -115,6 +115,7 @@ class AppCore:
         self._stress_cache: dict = {}  # stress tests for the latest forecast run (roadmap 3.5)
         self._pairs_cache: dict = {}  # which found payments the owner's own items stand in for
         self._financing_cache: dict = {}  # financing comparison per run and options (roadmap 3.6)
+        self._insights_cache: dict = {}  # things we noticed for the latest forecast run (roadmap 4.1)
 
     @property
     def today(self) -> date:
@@ -1099,6 +1100,48 @@ class AppCore:
         }
 
     # ---------------------------------------------------------- stress tests (3.5)
+    # ------------------------------------------------------------- things we noticed (4.1)
+    def insights(self) -> list[dict]:
+        """Patterns worth knowing even when cash is fine (aheadly/core/pattern_rules.py), plus idle
+        cash from the alert rules. Worked out once per forecast run and kept in the insights table."""
+        business = self._business()
+        run = self.repo.latest_forecast(business.id)
+        if run is None:
+            return []
+        if self._insights_cache.get("key") == run.run_id:
+            return self._insights_cache["insights"]
+        rows = self.repo.recurring_lines(business.id)
+        df = pattern_rules.lines_frame(rows)
+        profile = self.repo.get_profile(business.id)
+        seasons = {int(m) for m in profile.get("busy_months", []) + profile.get("slow_months", [])}
+        found = self.detected_recurring()
+        dates = {r[0]: date.fromisoformat(r[1]) for r in rows}
+        first = {
+            f.match_key: min(dates[i] for i in f.transaction_ids if i in dates)
+            for f in found
+            if any(i in dates for i in f.transaction_ids)
+        }
+        insights = [
+            i.as_dict()
+            for i in pattern_rules.find(
+                df, self.today, self.repo.current_balance(business.id), seasons, found, first
+            )
+        ]
+        idle = alert_rules.detect_idle_cash(run, business, self._avg_monthly_outflow(), self.today)
+        if idle:
+            facts = {k: v for k, v in idle.facts.items() if k != "possible_actions"}
+            insights.append(
+                {
+                    "type": "idle_cash",
+                    "severity": "low",
+                    "facts": facts,
+                    "actions": idle.facts["possible_actions"],
+                }
+            )
+        self.repo.replace_insights(business.id, run.run_id, insights)
+        self._insights_cache = {"key": run.run_id, "insights": insights}
+        return insights
+
     def stress_tests(self) -> list[dict]:
         """Four bad surprises from the business's own numbers: what each does, whether the base case
         stays above the line ("fine") or how much is missing ("short"), and what would help.

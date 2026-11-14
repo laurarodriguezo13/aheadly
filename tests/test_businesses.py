@@ -56,7 +56,7 @@ PENDING: dict[str, dict[str, str]] = {
     "alert_actions": {},
     "suggested_fixes": {},
     "internal_transfers": {},
-    "insights": {"*": "4.1 things we noticed"},
+    "insights": {},
     "timing_or_structural": {},
     "what_ifs": {"*": "5.4 chatbot test set (free-text what-ifs)"},
 }

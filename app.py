@@ -11,6 +11,10 @@ st.set_page_config(
     page_title="Aheadly", page_icon="assets/favicon_64.png", layout="wide", initial_sidebar_state="expanded"
 )
 
+from aheadly.version import forget_old_code  # noqa: E402
+
+forget_old_code()  # after an update, load the new code everywhere (roadmap issue 19)
+
 from aheadly.ui import copy  # noqa: E402  (imports after set_page_config on purpose)
 from aheadly.ui.bootstrap import PAGES, get_core, get_settings  # noqa: E402
 

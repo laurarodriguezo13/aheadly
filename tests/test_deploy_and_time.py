@@ -53,3 +53,34 @@ def test_unknown_zone_falls_back_without_crashing():
 
 def test_old_times_without_a_zone_still_show():
     assert format_local(datetime(2026, 11, 11, 10, 3), None) == "Nov 11, 2026, 10:03"
+
+
+def test_after_an_update_the_old_code_is_forgotten(monkeypatch):
+    """Roadmap issue 19: after a merge the live app ran the new pages with the old copy.py still in
+    memory (AttributeError: STRESS_TITLE) until it was rebooted. When the code on disk no longer
+    matches what was loaded, every aheadly module is dropped so the next import loads the new code."""
+    import sys
+    import types
+
+    from aheadly import version
+
+    monkeypatch.setitem(sys.modules, "aheadly.fake_old_page", types.ModuleType("aheadly.fake_old_page"))
+    monkeypatch.setattr(version, "LOADED", "000000000000")  # what was loaded is not what's on disk
+    saved = {k: v for k, v in sys.modules.items() if k == "aheadly" or k.startswith("aheadly.")}
+    try:
+        assert version.forget_old_code() is True
+        assert "aheadly.fake_old_page" not in sys.modules
+        assert not [k for k in sys.modules if k.startswith("aheadly.")]
+    finally:
+        sys.modules.update(saved)  # put this test run's modules back
+    sys.modules.pop("aheadly.fake_old_page", None)
+
+
+def test_nothing_is_forgotten_while_the_code_is_unchanged():
+    import sys
+
+    from aheadly import version
+
+    before = {k for k in sys.modules if k.startswith("aheadly.")}
+    assert version.forget_old_code() is False
+    assert before <= set(sys.modules)
