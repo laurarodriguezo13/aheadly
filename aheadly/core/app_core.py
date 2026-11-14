@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import logging
+import math
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -887,6 +888,9 @@ class AppCore:
         open_alerts = self.repo.list_alerts(business.id)
         summary = DailyRunSummary(ran=True, forecast=forecast)
         for facts in detected:
+            for key in ("top_outflows", "expected_inflows_before"):
+                if key in facts.facts:
+                    facts.facts[key] = self._plain_names(facts.facts[key])
             text = self.translator.write_alert(facts.facts)
             text.actions = self._actions_for(facts.facts, forecast)
             duplicate = alert_rules.find_duplicate(open_alerts, facts)
@@ -1141,6 +1145,81 @@ class AppCore:
         self.repo.replace_insights(business.id, run.run_id, insights)
         self._insights_cache = {"key": run.run_id, "insights": insights}
         return insights
+
+    def insight_cards(self) -> list[dict]:
+        """Roadmap 4.2: each thing we noticed with a title (code), 1–3 sentences (the model, every
+        number checked, template if not) and its actions in words. Shown by 4.3."""
+        cards = []
+        for insight in self.insights():
+            text = self.translator.write_insight(insight)
+            cards.append(
+                {
+                    "type": insight["type"],
+                    "severity": insight["severity"],
+                    "title": text.title,
+                    "body": text.body,
+                    "actions": text.actions,
+                    "facts": insight["facts"],
+                }
+            )
+        return cards
+
+    def forecast_chart_facts(self) -> dict | None:
+        """What the dashboard's chart shows, as numbers (roadmap 4.2)."""
+        business = self._business()
+        run = self.repo.latest_forecast(business.id)
+        if run is None:
+            return None
+        balance = self.repo.current_balance(business.id)
+        history = history_balances(self.repo.daily_net_flow(business.id), balance)
+        line = business.low_cash_line
+        lowest = run.lowest
+        run.scheduled = self._events(run.horizon_end)
+        before = run.top_outflows(lowest.date, limit=1)
+        return {
+            "chart": "forecast",
+            "weeks": math.ceil(len(run.points) / 7),
+            "balance_weeks_ago": round(history["balance"].iloc[0]) if len(history) >= 28 else None,
+            "balance_today": round(balance),
+            "lowest_base_case": round(lowest.balance_p50),
+            "lowest_date": lowest.date.isoformat(),
+            "lowest_worst_case": round(run.min_p10),
+            "end_base_case": round(run.points[-1].balance_p50),
+            "low_cash_line": round(line),
+            "risk_level": run.risk_level(line),
+            "chance_below_line_pct": alert_rules.chance_pct(run.chance_below(line)),
+            "payment_before_lowest": self._plain_names(before)[0] if before else None,
+        }
+
+    def forecast_chart_summary(self) -> str | None:
+        facts = self.forecast_chart_facts()
+        return self.translator.summarize_chart(facts) if facts else None
+
+    def scenario_chart_summary(self, result: ScenarioResult, what: str = "change") -> str:
+        """Under a what-if's chart (Test this, a stress test): with the change (or the surprise)
+        against without it."""
+        summary = result.summary()
+        facts = {
+            "chart": "scenario",
+            "what": what,
+            **{k: summary[k] for k in ("scenario_name", "low_cash_line", "baseline", "scenario")},
+        }
+        return self.translator.summarize_chart(facts)
+
+    def _plain_names(self, payments: list[dict]) -> list[dict]:
+        """Payments found in the statement called by what they are ("Payroll", "Rent") or by the
+        payee without the bank's words; the owner's own names stay (live check, 2026-11-13)."""
+        items = {i.label: i for i in self.repo.list_scheduled_items(self._business().id)}
+        out = []
+        for p in payments:
+            item = items.get(p["label"])
+            name = (
+                templates.payment_name(item.label, item.category, item.source == "statement")
+                if item
+                else p["label"]
+            )
+            out.append({**p, "label": name})
+        return out
 
     def stress_tests(self) -> list[dict]:
         """Four bad surprises from the business's own numbers: what each does, whether the base case

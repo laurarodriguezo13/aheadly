@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-13 after 4.1** (479 tests: 470 pass, 8 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-13 after 4.2** (510 tests: 501 pass, 8 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#44**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#45**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -29,7 +29,7 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1, 2 and 3 done (1.1–3.6) and live (Phase 3 merged by pull request #4 on Nov 13); 4.1 done on `Migue`. Next: 4.2 (Must). Test-business scorecard: 81 checks pass, 8 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1, 2 and 3 done (1.1–3.6) and live (Phase 3 merged by pull request #4 on Nov 13); 4.1 and 4.2 done on `Migue`. Next: 4.3 (Must). Test-business scorecard: 87 checks pass, 8 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`. The owner's own files: `aheadly/data/connectors/owner_files.py` (`read_owner_file`: five kinds from the column titles), `AppCore.read_owner_file` / `use_owner_file` / `uploaded_files`.
@@ -73,7 +73,7 @@
 22. Does `main` have branch protection (a teammate's approval before merging, as taught in class 17)? This merge needed no approval → the team decides.
 
 **From the review after Phase 3 (2026-11-12, DECISIONS #42):** code, documents, GitHub and the app checked again. Fixed then: suggestions, stress tests and financing could carry over to the next business after a reset (run ids start again at 1; `reset()` now clears them); *Save as my plan* on a financing action crashed (the database allows six kinds; the borrowing lines are "other"); a saved what-if's own lines stayed marked as a what-if's, so suggestions and stress tests ignored them (now `source='plan'`); moving a payment the owner listed (the quarterly flour order) out of the 8 weeks and saving it brought the statement's copy back, so the saved plan disagreed with what *Test this* showed (now matched at the day it was first due, new column `first_due_date`, migration 2); the offline chat didn't understand "How much can I safely spend?"; the stress test "main supplier 10% dearer" picked the bakery's flour payment, which the owner's own "Quarterly flour order" replaces in the forecast, so it changed nothing (now only a supplier payment the forecast counts); Save with no answer on Questions hid the Skip button; Settings said "built-in templates (no AI) (template)"; unused `DEMO_MODE` setting, `drop_duplicates` and `APP_NAME` removed; the pages' remaining fixed words moved to `copy.py`; decision #12 back in order; README brought up to date (demo script with the example bakery, nine chat tools, Phase 3). Still open:
-23. ~~Phase 3 is only on `Migue`~~ merged by pull request #4 (2026-11-13); Laura's reboot needed again (issue 19). After the reboot every page was checked on the live site with the example bakery (dashboard, questions answered, alerts and the financing helper, stress tests, a what-if, the chat, how we built it, settings and start over): all fine.
+23. ~~Phase 3 is only on `Migue`~~ merged by pull request #4 (2026-11-13); Laura's reboot needed again (issue 19). After the reboot every page was checked on the live site with the example bakery (dashboard, questions answered, alerts and the financing helper, stress tests, a what-if, the chat, how we built it, settings and start over): all fine. Two small things found there, fixed in 4.2: the alert's "Test a what-if" button was cut off ("Test a wha…") and the alert called payroll by the bank's wording ("Pago nomina").
 24. `docs/screenshots/` are from Milestone 2 → retake with 5.5 (and the check-in document stays as submitted).
 25. GitHub: the repository's About box has no description or website (Laura, as owner: "AI cash-flow co-pilot for small businesses", https://aheadly.streamlit.app); pull request #3 is still titled "DO NOT MERGE until after Milestone 2…" although it was merged on purpose (rename for whoever reads the history).
 26. `AppCore.end_plan_item` and `planned_items` are used only by tests (How we built it sets an end date through `update_plan_item`) → remove or use them when splitting `app_core.py` (issue 14; it's now ~1,700 lines).
@@ -104,8 +104,8 @@
 | 3.5 | One-click stress tests | Should | S | 2.2, 3.2 | Done |
 | 3.6 | Financing helper | Should | L | 3.3, 2.7 | Done |
 | 4.1 | Pattern rules ("things we noticed"): small Must, full Should | Must / Should | M | 2.2, 2.3, 3.2 | Done |
-| 4.2 | Insight text + chart summaries | Must (small) | S | 4.1 | **Next** |
-| 4.3 | Insights page + dashboard cards: small Must, full Should | Must / Should | M | 4.2, 3.4 |  |
+| 4.2 | Insight text + chart summaries | Must (small) | S | 4.1 | Done |
+| 4.3 | Insights page + dashboard cards: small Must, full Should | Must / Should | M | 4.2, 3.4 | **Next** |
 | 5.1 | Download / Load my data | Must | M | 1.4, 1.3 |  |
 | 5.2 | Privacy page + delete my data | Must | S | none |  |
 | 5.3 | Glossary tooltips | Should | S | none |  |
@@ -267,6 +267,7 @@ Presets as adjustments: sales −20% for 4 weeks (needs 2.2 sales), biggest cust
 
 #### 4.2 Insight text + chart summaries · Must (small) · S
 `InsightTranslator.write_insight(facts)` and `summarize_chart(chart_facts)`: facts → JSON → guardrail → template fallback; 1–3 sentences; "nothing unusual here" allowed; cached per facts hash.
+**Built (2026-11-13, DECISIONS #44):** as planned. `AppCore.insight_cards()` (title from code, body from the model, actions worded from their keys; shown by 4.3), `forecast_chart_facts()` / `forecast_chart_summary()` (under the dashboard chart: the last 8 weeks, the lowest point and the payment before it, the verdict, where it ends) and `scenario_chart_summary(result, what)` (under *Test this* and the stress-test charts; the what-if page's result keeps its explanation). Templates for every kind in `templates.py` (also the offline stub's answer); payee names without the bank's wording (`payee_name`), and alerts and the stress tests call statement payments by what they are (`payment_name`: "Payroll", "Your own pay", "Molinos El Trigal"). Fixed from the live check: the alert's three buttons sit in a row as wide as their words. New harness check `words` (all six pass); `tests/test_insight_text.py`. Checked in the browser with the example bakery (built-in wording, no AI key on Miguel's machine): the Gemini wording is seen on the live site after the next merge. Not built: summaries for 4.3's charts (they come with them).
 
 #### 4.3 Insights page + dashboard · small Must · full Should · M
 Dashboard: current cash, lowest point + risk + chance, safe to spend / safe pay (3.4), forecast chart, alerts, top 2–3 "things we noticed" with actions, confidence (2.8). New `aheadly/ui/views/insights.py` (`st.tabs`): small = money in vs out by month (net line), spending by category over time, cash cushion (weeks covered); full adds where income comes from and sales by weekday. Every chart with its 4.2 summary. Chat tool `get_insights`.

@@ -1,7 +1,8 @@
 """Insight Translator (component "Explain Results").
 
 The only component that talks to the LLM. Two jobs:
-  A. write_alert(facts)  → plain-language title, body and actions
+  A. write_alert(facts)  → plain-language title, body and actions (also: drafted messages,
+     things we noticed and chart summaries, roadmap 3.2 and 4.2)
   B. answer(question)    → chat with function calling, including what-ifs
 Every answer passes the number guardrail; on failure we retry once and then
 fall back to a deterministic template. Errors never pass silently (logged),
@@ -11,6 +12,7 @@ but the owner always gets an answer: if the provider is down, the offline planne
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import re
@@ -37,6 +39,13 @@ _MINUS_AFTER_DOLLAR = re.compile(r"\$-(\d)")
 
 
 @dataclass
+class InsightText:
+    title: str
+    body: str
+    actions: list[dict[str, str]]
+
+
+@dataclass
 class AlertText:
     title: str
     body: str
@@ -49,6 +58,7 @@ class InsightTranslator:
         self._tools = tools
         self.max_tool_rounds = max_tool_rounds
         self.guardrail_failures = 0  # simple observability counter
+        self._text_cache: dict[tuple[str, str], str] = {}  # insight and chart words, per facts (4.2)
 
     @property
     def provider_name(self) -> str:
@@ -74,6 +84,63 @@ class InsightTranslator:
             self.guardrail_failures += 1
             fallback = templates.alert_text(facts)
             return AlertText(fallback["title"], fallback["body"], fallback["actions"])
+
+    # ------------------------------------------------- job A3: things we noticed (roadmap 4.2)
+    def write_insight(self, insight: dict) -> InsightText:
+        """Title from code, 1–3 sentences from the model (every number checked), actions worded
+        from their keys. Written once per facts: Streamlit reruns don't call the provider again."""
+        facts = templates.readable_insight(insight)
+        title = templates.insight_title(facts)
+        actions = templates.insight_actions(insight.get("actions", []))
+        body = self._cached("insight", facts, lambda: self._insight_body(facts))
+        return InsightText(title, body, actions)
+
+    def _insight_body(self, facts: dict) -> str:
+        messages = [
+            {"role": "system", "content": prompts.INSIGHT_INSTRUCTIONS},
+            {"role": "user", "content": prompts.INSIGHT_PROMPT.format(facts_json=json.dumps(facts))},
+        ]
+        try:
+            reply = self._llm.chat(messages)
+            body = _MINUS_AFTER_DOLLAR.sub(
+                r"-$\1", json.loads(_strip_code_fence(reply.content or ""))["body"]
+            )
+            if not body.strip() or not check_numbers(body, [facts]).passed:
+                raise ValueError("insight used a number that is not in the facts")
+            return body.strip()
+        except (LLMError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            logger.warning("write_insight fell back to template: %s", exc)
+            self.guardrail_failures += 1
+            return templates.insight_body(facts)
+
+    # ------------------------------------------------- job A4: chart summaries (roadmap 4.2)
+    def summarize_chart(self, facts: dict) -> str:
+        """1–3 sentences under a chart, from numbers the code worked out; once per facts."""
+        return self._cached("chart", facts, lambda: self._chart_text(facts))
+
+    def _chart_text(self, facts: dict) -> str:
+        messages = [
+            {"role": "system", "content": prompts.CHART_INSTRUCTIONS},
+            {"role": "user", "content": prompts.CHART_PROMPT.format(facts_json=json.dumps(facts))},
+        ]
+        try:
+            reply = self._llm.chat(messages)
+            text = _MINUS_AFTER_DOLLAR.sub(
+                r"-$\1", json.loads(_strip_code_fence(reply.content or ""))["summary"]
+            )
+            if not text.strip() or not check_numbers(text, [facts]).passed:
+                raise ValueError("chart summary used a number that is not in the facts")
+            return text.strip()
+        except (LLMError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
+            logger.warning("summarize_chart fell back to template: %s", exc)
+            self.guardrail_failures += 1
+            return templates.chart_summary(facts)
+
+    def _cached(self, job: str, facts: dict, write) -> str:
+        key = (job, hashlib.sha256(json.dumps(facts, sort_keys=True, default=str).encode()).hexdigest())
+        if key not in self._text_cache:
+            self._text_cache[key] = write()
+        return self._text_cache[key]
 
     # ------------------------------------------------- job A2: drafted message (roadmap 3.2)
     def draft_message(self, facts: dict) -> str:

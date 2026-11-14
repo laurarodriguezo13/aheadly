@@ -8,6 +8,7 @@ from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.charts import forecast_chart
 from aheadly.ui.components import (
     alert_list_html,
+    chart_note,
     day,
     money,
     section_title,
@@ -98,6 +99,7 @@ with st.container(border=True):
         width="stretch",
         config={"displayModeBar": False},
     )
+    chart_note(core.forecast_chart_summary())
     if st.button(copy.BASIS_LINK, key="dashboard-basis"):
         go_to("basis")
     trust = core.forecast_confidence()

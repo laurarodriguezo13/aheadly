@@ -108,6 +108,12 @@ def banner(text: str, icon: str = "✦") -> None:
     )
 
 
+def chart_note(text: str | None) -> None:
+    """The 1–3 sentences under a chart (roadmap 4.2)."""
+    if text:
+        st.markdown(f'<p class="ah-chart-note">{html.escape(text)}</p>', unsafe_allow_html=True)
+
+
 def severity_pill(severity: str) -> str:
     return f'<span class="ah-pill {severity}">{severity.upper()}</span>'
 

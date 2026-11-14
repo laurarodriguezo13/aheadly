@@ -8,7 +8,7 @@ import streamlit as st
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import require_data, start_page
 from aheadly.ui.charts import scenario_chart
-from aheadly.ui.components import banner, local_time, money, scenario_metrics
+from aheadly.ui.components import banner, chart_note, local_time, money, scenario_metrics
 
 core = start_page(copy.WHATIF_TITLE)
 require_data(core)
@@ -63,6 +63,7 @@ with st.container(border=True):
                         config={"displayModeBar": False},
                         key=f"stress-plot-{test['key']}",
                     )
+                    chart_note(core.scenario_chart_summary(shown, what="surprise"))
                     scenario_metrics(shown)
 
 # outside the form, so the boxes below change as soon as the owner picks another kind

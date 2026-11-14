@@ -11,6 +11,7 @@ from aheadly.ui.charts import scenario_chart
 from aheadly.ui.components import (
     banner,
     card,
+    chart_note,
     check_list_html,
     info_card,
     money,
@@ -87,6 +88,7 @@ def action_rows(actions: list[dict], key_prefix: str, title: str = copy.ACTIONS_
                         config={"displayModeBar": False},
                         key=f"{key}-chart",
                     )
+                    chart_note(core.scenario_chart_summary(result))
                     scenario_metrics(result)
                     if st.button(copy.SAVE_PLAN, key=f"{key}-save"):
                         with st.spinner(copy.SAVING_PLAN):
@@ -263,12 +265,12 @@ for alert in alerts:
         financing_section(expanded=still_short_note())
         financing_shown = True
 
-    b1, b2, b3, _ = st.columns([1, 1, 1, 3])
-    if b1.button(copy.SEE_WHY, key=f"why-{alert.id}", type="primary", width="stretch"):
-        go_to("ask", f"Why do I have this alert: {alert.title}?")
-    if b2.button(copy.TEST_WHAT_IF, key=f"whatif-{alert.id}", width="stretch"):
-        go_to("whatif")
-    if b3.button(copy.DISMISS, key=f"dismiss-{alert.id}", width="stretch"):
-        core.dismiss_alert(alert.id)
-        st.rerun()
+    with st.container(horizontal=True):  # each button as wide as its words
+        if st.button(copy.SEE_WHY, key=f"why-{alert.id}", type="primary"):
+            go_to("ask", f"Why do I have this alert: {alert.title}?")
+        if st.button(copy.TEST_WHAT_IF, key=f"whatif-{alert.id}"):
+            go_to("whatif")
+        if st.button(copy.DISMISS, key=f"dismiss-{alert.id}"):
+            core.dismiss_alert(alert.id)
+            st.rerun()
     banner(copy.ALERT_FOOTER)

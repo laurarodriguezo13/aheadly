@@ -25,7 +25,7 @@ from dataclasses import dataclass, field
 from datetime import date, timedelta
 
 from aheadly.ai.plan_text import read_by_rules
-from aheadly.ai.templates import alert_text, answer_from_tool, message_text
+from aheadly.ai.templates import alert_text, answer_from_tool, chart_summary, insight_body, message_text
 from aheadly.domain import end_of_next_month
 from aheadly.config import Settings
 
@@ -213,6 +213,12 @@ class StubClient:
         if last["role"] == "user" and last["content"].startswith("DRAFT_MESSAGE"):
             facts = json.loads(last["content"][len("DRAFT_MESSAGE") :])
             return LLMReply(content=json.dumps({"message": message_text(facts)}))
+        if last["role"] == "user" and last["content"].startswith("WRITE_INSIGHT"):
+            facts = json.loads(last["content"][len("WRITE_INSIGHT") :])
+            return LLMReply(content=json.dumps({"body": insight_body(facts)}))
+        if last["role"] == "user" and last["content"].startswith("SUMMARIZE_CHART"):
+            facts = json.loads(last["content"][len("SUMMARIZE_CHART") :])
+            return LLMReply(content=json.dumps({"summary": chart_summary(facts)}))
         if last["role"] == "user" and last["content"].startswith("WRITE_ALERT"):
             return LLMReply(content=json.dumps(alert_text(json.loads(last["content"][len("WRITE_ALERT") :]))))
         return LLMReply(tool_calls=[self.plan(last["content"], scheduled_labels(messages))])

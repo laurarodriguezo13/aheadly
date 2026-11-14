@@ -102,6 +102,7 @@ h2, h3 {{ letter-spacing: -0.02em; }}
   align-items: center; gap: .9rem; font-weight: 600; color: var(--navy); margin: .5rem 0 1rem; }}
 .ah-check {{ color: var(--teal); font-weight: 800; }}
 .ah-muted {{ color: var(--ink); font-size: .9rem; }}
+.ah-chart-note {{ color: var(--navy); font-size: .98rem; line-height: 1.5; margin: .2rem 0 .8rem; }}
 </style>
 """
 
