@@ -145,6 +145,16 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
         ),
         "parameters": {"type": "object", "properties": {}},
     },
+    {
+        "name": "get_suggestions",
+        "description": (
+            "Every tested suggestion the app has (from the alerts and the things we noticed): what it "
+            "is, where it comes from, and the lowest balance, status and chance before and after it; "
+            "how much the owner is short of their low cash line and by when, what's still missing after "
+            "the best one, and the suggestions the owner said no to (never suggest those again)."
+        ),
+        "parameters": {"type": "object", "properties": {}},
+    },
     PROPOSE_TOOL,
 ]
 
@@ -200,6 +210,8 @@ class ToolDispatcher:
             return core.financing_summary()
         if name == "get_insights":
             return core.insights_for_chat()
+        if name == "get_suggestions":
+            return core.suggestions_for_chat()
         if name == "propose_plan_items":
             proposals = core.check_proposals(args, self.last_question)
             self.last_proposals = proposals

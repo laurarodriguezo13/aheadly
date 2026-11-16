@@ -499,6 +499,8 @@ CHANGE_FIELDS = {
     "revenue_change": "Raise prices by (%)",
 }
 CHANGE_WHICH = "{label}"
+USE_THIS_VERSION = "Use this version"
+BACK_TO_SUGGESTION = "Back to the suggestion"
 NOT_FOR_ME = "Not for me"
 NOT_FOR_ME_WHY = "Why not? We'll remember, so it isn't suggested again."
 DECLINE_LABELS = {
@@ -712,6 +714,10 @@ WHY_SHORTFALL = (
 WHY_BELOW_ZERO = (
     "Payments of {total} land in the same week. Around {date} your account would be about {short} short: "
     "payments due then could bounce or go into overdraft."
+)
+WHY_LATE_CUSTOMER = (
+    " {customer} now pays every {now} days instead of every {before}: at the old pace their money would "
+    "come {old}, before the tight days; at the new pace it comes {new}, after them."
 )
 WHY_WATCH = (
     "In the most likely case you stay above your {line} line, but a bad month could take you to {worst} "

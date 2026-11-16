@@ -73,3 +73,47 @@ def test_a_thing_we_noticed_can_be_set_aside():
     assert first in {c["type"] for c in cafe.insight_cards()}  # still known to the chat and the checks
     with pytest.raises(ValueError):
         cafe.set_aside_insight(first, "meh")
+
+
+# ------------------------------------------------------------------ R.3b: the chat and the late customer
+def test_the_chat_says_how_much_is_missing_and_what_helps(bakery):
+    data = bakery.suggestions_for_chat()
+    assert data["short_by"] == data["low_cash_line"] - data["lowest_balance"] > 0
+    assert data["suggestions"] and all("worst_after" in s for s in data["suggestions"])
+    answer = bakery.ask("What can I do?")
+    assert answer.tool_names == ["get_suggestions"]
+    assert "short of your" in answer.text and "What would help most" in answer.text
+
+
+def test_the_chat_never_suggests_what_the_owner_said_no_to(bakery):
+    oven = next(a for a in bakery.suggested_fixes() if a.get("payment") == "New oven")
+    bakery.decline_suggestion(oven, "wont_agree")
+    data = bakery.suggestions_for_chat()
+    assert data["said_no_to"] == [oven["label"]]
+    assert all("New oven" not in s["label"] for s in data["suggestions"])
+
+
+def test_a_late_customer_whose_money_now_lands_after_the_low_is_in_the_alert():
+    store = import_business("ferreteria-don-perno", with_one_offs=True)
+    [watch] = [a for a in store.get_alerts() if a.type == "watch"]
+    late = watch.facts["late_customer"]
+    assert late["at_old_pace"] <= watch.facts["lowest_date"] < late["at_new_pace"]
+    assert late["customer"] in watch.body and "after the tight days" in watch.body
+
+
+def test_no_late_customer_when_their_money_still_comes_in_time():
+    from datetime import date
+
+    from aheadly.core.alert_rules import late_customer
+
+    insight = {
+        "type": "customers_paying_later",
+        "facts": {
+            "customer": "X",
+            "days_between_now": 35,
+            "days_between_before": 30,
+            "last_paid": "2026-10-20",
+        },
+    }
+    assert late_customer([insight], date(2026, 12, 24), date(2026, 11, 11))["at_new_pace"] == "2026-12-29"
+    assert late_customer([insight], date(2026, 12, 30), date(2026, 11, 11)) is None  # both before the low

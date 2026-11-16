@@ -26,6 +26,23 @@ alerts = core.get_alerts()
 
 
 def why_it_matters(alert) -> str:
+    late = alert.facts.get("late_customer")
+    return _why(alert) + (_late_words(late) if late else "")
+
+
+def _late_words(late: dict) -> str:
+    """Roadmap R.3b: the customer paying later, when that's part of why cash runs short."""
+    old, new = date.fromisoformat(late["at_old_pace"]), date.fromisoformat(late["at_new_pace"])
+    return copy.WHY_LATE_CUSTOMER.format(
+        customer=late["customer"],
+        now=late["every_days_now"],
+        before=late["every_days_before"],
+        old=f"{old:%b} {old.day}",
+        new=f"{new:%b} {new.day}",
+    )
+
+
+def _why(alert) -> str:
     facts = alert.facts
     if alert.type == "shortfall":
         total = sum(o["amount"] for o in facts["top_outflows"])

@@ -272,7 +272,9 @@ class StubClient:
         proposals = self._plan_items(question)
         if proposals:
             return ToolCall(call_id, "propose_plan_items", {"items": proposals})
-        if any(w in q for w in ("alert", "warning", "why", "fix", "what would help", "what can i do")):
+        if any(w in q for w in SUGGESTION_WORDS) and "alert" not in q:  # roadmap R.3b
+            return ToolCall(call_id, "get_suggestions", {})
+        if any(w in q for w in ("alert", "warning", "why", "fix")):
             return ToolCall(call_id, "get_alerts", {})
         if any(w in q for w in ("bill", "payment", "due", "going out", "pay")):
             return ToolCall(call_id, "get_upcoming_outflows", {"weeks": 8})
@@ -379,6 +381,16 @@ def need_purchase_details(q: str, has_amount: bool, has_date: bool) -> str:
     )
 
 
+SUGGESTION_WORDS = (
+    "suggestion",
+    "suggest",
+    "what can i do",
+    "what should i do",
+    "what would help",
+    "how much do i need",
+    "how much am i short",
+    "how short",
+)
 QUESTION_WORDS = {"what", "how", "when", "will", "can", "should", "is", "do", "does", "am", "are", "why", "which",
                   "could", "would", "qué", "que", "cuándo", "cuando", "cómo", "como", "puedo", "debo"}  # fmt: skip
 

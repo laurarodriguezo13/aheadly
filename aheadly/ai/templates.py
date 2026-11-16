@@ -103,6 +103,8 @@ def answer_from_tool(tool: str, data: dict) -> str:
         return financing_answer(data)
     if tool == "get_insights":
         return insights_answer(data)
+    if tool == "get_suggestions":
+        return suggestions_answer(data)
     if tool == "get_alerts":
         if not data["alerts"]:
             return "You have no open alerts right now. Things look calm."
@@ -175,6 +177,19 @@ def chance_sentence(pct: int | None) -> str:
 
 
 CHARGE_ALERTS = ("duplicate_charge", "unusual_charge")
+
+
+def late_customer_sentence(facts: dict) -> str:
+    """Roadmap R.3b: a customer paying later, whose money now lands after the tight days."""
+    late = facts.get("late_customer")
+    if not late:
+        return ""
+    return (
+        f" {late['customer']} now pays every {late['every_days_now']} days instead of every "
+        f"{late['every_days_before']}, so their payment comes {_short_date(late['at_new_pace'])}, after the tight days."
+    )
+
+
 BELOW_ZERO_SENTENCE = " Payments due that week could bounce or put you into overdraft."
 
 
@@ -212,6 +227,7 @@ def alert_text(facts: dict) -> dict:
                 f"could take you to about {money(facts['lowest_worst_case'])} in {weeks(facts['weeks_ahead'])}."
                 + chance_sentence(facts.get("chance_below_line_pct"))
                 + cause
+                + late_customer_sentence(facts)
             ),
             "actions": _SHORTFALL_ACTIONS,
         }
@@ -251,6 +267,7 @@ def alert_text(facts: dict) -> dict:
     body += chance_sentence(facts.get("chance_below_line_pct"))
     if facts["lowest_balance"] < 0:  # roadmap R.1: below zero says what it means
         body += BELOW_ZERO_SENTENCE
+    body += late_customer_sentence(facts)
     return {
         "title": alert_title(facts),
         "body": body,
@@ -920,3 +937,39 @@ def insights_answer(data: dict) -> str:
         others = "; ".join(i["title"] for i in found[1:3])
         text += f" Also worth a look: {others}."
     return text + " The Insights page has the details and what could help."
+
+
+def suggestions_answer(data: dict) -> str:
+    """The chat's answer about what would help, from the get_suggestions tool (roadmap R.3b). When
+    the most likely case stays above the line ("watch"), a suggestion's effect is on a bad month."""
+    short = data.get("short_by")
+    when = _short_date(data["lowest_date"]) if data.get("lowest_date") else ""
+    text = (
+        f"You're about {money(short)} short of your {money(data['low_cash_line'])} line around {when}."
+        if short
+        else ""
+    )
+    found = data["suggestions"]
+    if not found:
+        none = (
+            "Nothing needs fixing in the next 8 weeks."
+            if not short
+            else " I have no tested suggestion for it."
+        )
+        return (text + none).strip()
+
+    def effect(s: dict) -> str:
+        if short or s["lowest_after"] != s["lowest_before"]:
+            return f"lowest point {money(s['lowest_before'])} → {money(s['lowest_after'])}"
+        return f"a bad month's lowest point {money(s['worst_before'])} → {money(s['worst_after'])}"
+
+    first = found[0]
+    text += f" What would help most: {first['label'][:1].lower()}{first['label'][1:]} ({effect(first)})."
+    if len(found) > 1:
+        second = found[1]
+        text += f" Next: {second['label'][:1].lower()}{second['label'][1:]} ({effect(second)})."
+    if data.get("still_short_after_best"):
+        text += (
+            f" Even after the best one you'd still be about {money(data['still_short_after_best'])} short."
+        )
+    return text.strip() + " Open them on the Suggestions tab to change one or save it."

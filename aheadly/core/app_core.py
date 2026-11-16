@@ -922,7 +922,16 @@ class AppCore:
         )
 
         detected = alert_rules.detect_alerts(forecast, business, self._avg_monthly_outflow(), self.today)
-        detected += alert_rules.charge_alerts(self.insights(), self.today)  # roadmap R.1
+        insights = self.insights()
+        detected += alert_rules.charge_alerts(insights, self.today)  # roadmap R.1
+        for found in detected:  # roadmap R.3b: a customer paying later, whose money now lands after the low
+            if found.type in ("shortfall", "watch"):
+                late = alert_rules.late_customer(insights, found.risk_date, self.today)
+                if late:
+                    found.facts["late_customer"] = {
+                        **late,
+                        "customer": templates.payee_name(late["customer"]),
+                    }
         open_alerts = self.repo.unresolved_alerts(business.id)  # dismissed ones too, so they stay dismissed
         summary = DailyRunSummary(ran=True, forecast=forecast)
         still_there = set()
@@ -1376,6 +1385,43 @@ class AppCore:
     def save_suggestion(self, adjustments: list[dict], name: str) -> DailyRunSummary:
         """Save as my plan: only the change itself, never the bad surprise it was tested against."""
         return self.save_plan(self._scenario(adjustments, name))
+
+    def suggestions_for_chat(self) -> dict:
+        """The get_suggestions chat tool (roadmap R.3b): how much is missing and by when, every tested
+        suggestion with its effect (not the bad surprises': they answer "what if"), and what the
+        owner said no to."""
+        business = self._business()
+        line = business.low_cash_line
+        forecast = self._baseline_forecast()
+        lowest = forecast.lowest
+        data = {
+            "low_cash_line": round(line),
+            "lowest_balance": round(lowest.balance_p50),
+            "lowest_date": lowest.date.isoformat(),
+            "suggestions": [
+                {
+                    "label": entry["action"]["label"],
+                    "from": entry["source"],
+                    "lowest_before": entry["action"]["impact"]["lowest_before"],
+                    "lowest_after": entry["action"]["impact"]["lowest_after"],
+                    "worst_before": entry["action"]["impact"]["worst_before"],
+                    "worst_after": entry["action"]["impact"]["worst_after"],
+                    "status_before": entry["action"]["impact"]["risk_before"],
+                    "status_after": entry["action"]["impact"]["risk_after"],
+                    "chance_before": entry["action"]["impact"]["chance_before"],
+                    "chance_after": entry["action"]["impact"]["chance_after"],
+                }
+                for entry in self.all_suggestions()
+                if not entry["context"]
+            ][:5],
+            "said_no_to": [rule["what"] for rule in self.declined_suggestions()],
+        }
+        if lowest.balance_p50 < line:
+            data["short_by"] = round(line - lowest.balance_p50)
+        still = self.still_short()
+        if still:
+            data["still_short_after_best"] = still
+        return data
 
     def insights_for_chat(self) -> dict:
         """The get_insights chat tool (roadmap 4.3): what we noticed, with the numbers behind it."""

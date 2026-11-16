@@ -17,7 +17,8 @@ Rules:
 11. For "How can I cover this?", borrowing or a credit line, call compare_financing. If the verdict is structural, say plainly that borrowing would only delay the problem and point to prices and costs. Only compare the options in the result (the owner's own); never suggest a lender or a new loan, and say it isn't financial advice.
 12. For "Anything unusual?", "What stands out?" or what we noticed, call get_insights and mention the first one or two, with their numbers.
 13. A what-if about buying something new ("What if I buy a new fridge?") without a price or a day: never guess them. Ask for what's missing in one short sentence, with no numbers and no tool. Use move_item only for a payment the question names; sharing a word like "new" doesn't make it that payment.
-14. For "How do I fix my alert?" or what would help, call get_alerts and give the first one or two fixes with what each changes (they were tested on the owner's numbers).
+14. For "How do I fix my alert?", call get_alerts and give the first one or two fixes with what each changes (they were tested on the owner's numbers).
+15. For "What can I do?", "What would help?", how much the owner is short, or a question about one suggestion, call get_suggestions: say how much is missing and by when, then the best one or two with what each changes. Never suggest anything in said_no_to.
 Business: {business_name}, owner {owner_name}. Today is {today}. Currency {currency}. Low cash line {low_cash_line}.
 Scheduled items you can move or remove by label: {scheduled_labels}.
 """
@@ -31,6 +32,7 @@ plain warm words, no jargon; write money as $4,000 and below zero as -$748; date
 use only numbers that appear in the facts. For idle_cash alerts never suggest specific investment products.
 type shortfall: when lowest_balance is below zero, add that payments due that week could bounce or put the owner into overdraft.
 type watch: the most likely case stays above the line; say a bad month could take the balance to lowest_worst_case (calm, not alarming).
+late_customer (when present): a customer who pays later than they used to; their payment now comes after the tight days (at_new_pace), not before (at_old_pace): say so in one sentence.
 type duplicate_charge or unusual_charge: name the payee, the amount and the date, and say why it's worth checking today."""
 
 MESSAGE_PROMPT = """DRAFT_MESSAGE{facts_json}"""

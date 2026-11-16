@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 
 from aheadly.domain import Alert, Business, ForecastResult, chance_pct
 
@@ -153,4 +153,29 @@ def find_duplicate(existing: list[Alert], new: AlertFacts) -> Alert | None:
         previous = date.fromisoformat(alert.facts.get("lowest_date", new.risk_date.isoformat()))
         if abs((previous - new.risk_date).days) <= DUPLICATE_WINDOW_DAYS:
             return alert
+    return None
+
+
+def late_customer(insights: list[dict], low_date: date, today: date) -> dict | None:
+    """Roadmap R.3b: a customer who pays later than they used to, whose payment would land before
+    the low point at the old pace and lands after it at the new one, is part of why cash runs short."""
+    for insight in insights:
+        if insight["type"] != "customers_paying_later":
+            continue
+        f = insight["facts"]
+        last, now, before = (
+            date.fromisoformat(f["last_paid"]),
+            f["days_between_now"],
+            f["days_between_before"],
+        )
+        for k in (1, 2, 3):
+            at_old, at_new = last + timedelta(days=k * before), last + timedelta(days=k * now)
+            if today <= at_old <= low_date < at_new:
+                return {
+                    "customer": f["customer"],
+                    "every_days_now": now,
+                    "every_days_before": before,
+                    "at_old_pace": at_old.isoformat(),
+                    "at_new_pace": at_new.isoformat(),
+                }
     return None
