@@ -30,13 +30,17 @@ WHY = {
     ),
     "mystery": "So your spending by category adds up, and a payment we can't name doesn't hide a problem.",
     "coming_up": "Your statement only shows the past. Big payments you already know about change the forecast.",
+    "anything_else": (
+        "Things only you know: what can't change (your pay, your prices, a supplier who never moves a date) "
+        "and anything else about the business. We use it for the suggestions and the chat."
+    ),
 }
 
 
 @dataclass(frozen=True)
 class Question:
     id: str
-    kind: str  # business | seasons | owner_pay | mystery | coming_up
+    kind: str  # business | seasons | owner_pay | mystery | coming_up | anything_else
     title: str
     why: str
     payee: str | None = None
@@ -114,7 +118,11 @@ def build(
     questions.append(
         Question("coming_up", "coming_up", "Anything big coming up in the next two months?", WHY["coming_up"])
     )
-    return questions[:MAX_QUESTIONS]
+    # roadmap R.3c: the free-text question planned in 2.7, always the last one
+    anything_else = Question(
+        "anything_else", "anything_else", "Is there anything else we should know?", WHY["anything_else"]
+    )
+    return questions[: MAX_QUESTIONS - 1] + [anything_else]
 
 
 def _detail(payee: dict, how_often: str | None) -> str:

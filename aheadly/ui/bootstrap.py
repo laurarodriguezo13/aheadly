@@ -29,6 +29,7 @@ PAGES = {
         "accounts",
         "questions",
         "basis",
+        "told",
         "settings",
     )
 }
@@ -37,7 +38,7 @@ PAGES = {
 GROUPS = {
     "home": ("dashboard", "alerts", "insights"),
     "ask": ("ask", "whatif", "suggestion", "surprises", "financing"),
-    "business": ("accounts", "questions", "basis"),
+    "business": ("accounts", "questions", "basis", "told"),
     "settings": ("settings",),
 }
 

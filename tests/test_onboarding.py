@@ -26,7 +26,12 @@ def test_it_asks_about_the_owners_pay_and_the_payees_the_rules_left_out(slug):
     core = import_business(slug)
     questions = core.onboarding()["questions"]
     assert 4 <= len(questions) <= 10 and all(q.why for q in questions)
-    assert [q.kind for q in questions][:2] == ["business", "seasons"] and questions[-1].kind == "coming_up"
+    assert [q.kind for q in questions][:2] == ["business", "seasons"] and [q.kind for q in questions][
+        -2:
+    ] == [
+        "coming_up",
+        "anything_else",
+    ]
     owner = [q.payee for q in questions if q.kind == "owner_pay"]
     assert owner == [key["onboarding_answers"]["owner_pay"]["match_hint"]]
     asked = {q.payee for q in questions if q.kind == "mystery"}
@@ -55,8 +60,8 @@ def test_answers_and_skips_are_remembered_so_the_owner_can_come_back():
     core.answer_owner_pay("TRANSF A CTA AHORROS M GOMEZ", True)
     later = core.onboarding()
     assert later["done"] == 3 and later["total"] == first["total"]
-    assert [q.kind for q in later["questions"]] == ["mystery", "coming_up"]
-    assert core.questions_left() == 2
+    assert [q.kind for q in later["questions"]] == ["mystery", "coming_up", "anything_else"]
+    assert core.questions_left() == 3
     profile = core.repo.get_profile(core._business().id)
     assert profile["business_type"] == "Bakery" and "busy_months" not in profile  # skipped: nothing changes
     pay = core.repo._conn.execute(

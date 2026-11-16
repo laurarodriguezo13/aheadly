@@ -21,6 +21,7 @@ NAV = {
     "accounts": "Connect accounts",
     "questions": "Questions",
     "basis": "Behind the forecast",
+    "told": "What you told us",
     "settings": "Settings",
 }
 
@@ -501,6 +502,48 @@ CHANGE_FIELDS = {
 CHANGE_WHICH = "{label}"
 USE_THIS_VERSION = "Use this version"
 BACK_TO_SUGGESTION = "Back to the suggestion"
+# ---------------------------------------------------------------- what the owner tells us (R.3c)
+ANYTHING_ELSE = "Anything else we should know?"
+ANYTHING_ELSE_PLACEHOLDER = "e.g. I can't lower my pay. Molinos never moves a delivery date. Most of our customers are offices nearby."
+UNDERSTOOD = "Here's what I understood. Untick anything that's wrong:"
+LIMIT_ROW = "Never suggest: {what}"
+LIMIT_KINDS = {
+    "owner_pay": "paying yourself less",
+    "price": "raising your prices",
+    "move_payment": "moving {payment}",
+    "collect_early": "asking for {payment} earlier",
+}
+NOTE_ROW = "Keep in mind: {note}"
+USE_THIS = "Use this"
+NOTHING_ELSE_TO_ADD = "Nothing else"
+TOLD_US_SAVED = "Saved. You can see and change it under What you told us."
+TOLD_TITLE = "What you told us"
+TOLD_INTRO = "Every answer you gave, in one place. Change anything that isn't right any more."
+TOLD_BUSINESS = "Your business"
+TOLD_BUSINESS_SAVE = "Save"
+TOLD_SEASONS = "Busy and slow months"
+TOLD_SEASONS_NONE = "You haven't told us about busy or slow months."
+TOLD_SEASONS_CHANGE = "Change them on Behind the forecast"
+TOLD_OWNER_PAY = "Your own pay"
+TOLD_OWNER_PAY_ROW = "{label} is your own pay."
+TOLD_NOT_MY_PAY = "That's not my pay"
+TOLD_PAYEES = "Payments you named"
+TOLD_PAYEE_SAVE = "Change"
+TOLD_YOU_SAID = "You said: {said}"
+TOLD_FORGET = "Forget this"
+TOLD_NOTES = "Things to keep in mind"
+TOLD_NOTE_ADD = "Add a note"
+TOLD_NOTE_ADD_BUTTON = "Add"
+TOLD_REMOVE = "Remove"
+TOLD_LIMITS = "Never suggest"
+TOLD_LIMIT_ROW = "{what} ({reason})"
+TOLD_SET_ASIDE = "Things we noticed that you set aside"
+TOLD_SET_ASIDE_ROW = "{title} ({reason})"
+TOLD_SET_ASIDE_REASONS = {"known": "you know about it", "wrong": "not right"}
+TOLD_BRING_BACK = "Show it again"
+TOLD_NOTHING = "Nothing here yet."
+TOLD_LINK = "What you told us"
+BASIS_TOLD = "What you told us"
 NOT_FOR_ME = "Not for me"
 NOT_FOR_ME_WHY = "Why not? We'll remember, so it isn't suggested again."
 DECLINE_LABELS = {
@@ -509,6 +552,7 @@ DECLINE_LABELS = {
     "cant_raise_prices": "I can't raise my prices",
     "already_done": "I've already done it",
     "other": "Something else",
+    "told_us": "you told us",
 }
 DECLINE_BY_KIND = {
     "move_payment": ("wont_agree", "already_done", "other"),

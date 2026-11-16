@@ -38,6 +38,7 @@ ICONS = {
     "accounts": ":material/account_balance:",
     "questions": ":material/quiz:",
     "basis": ":material/fact_check:",
+    "told": ":material/record_voice_over:",
     "settings": ":material/settings:",
 }
 GROUP_ICONS = {

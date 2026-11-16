@@ -19,7 +19,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from aheadly.ai import prompts, templates
+from aheadly.ai import owner_notes, prompts, templates
 from aheadly.ai.categorizer import CATEGORIES
 from aheadly.ai.guardrails import check_numbers
 from aheadly.ai.llm_client import LLMError, LLMReply, StubClient
@@ -276,6 +276,50 @@ class InsightTranslator:
         return out
 
     # ------------------------------------------------------ job C: just say it
+    def sort_owner_notes(self, text: str, labels: list[str]) -> dict:
+        """Roadmap R.3c: "anything else we should know?" sorted into limits for the suggestions and
+        notes for the chat. The model sorts it when one is connected (checked by
+        `owner_notes.check`); the rules do it offline or when the model fails."""
+        if not isinstance(self._llm, StubClient) and text.strip():
+            tool = {
+                "name": "sort_owner_notes",
+                "description": "Sort what the owner wrote into limits and background notes.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "limits": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "kind": {"type": "string", "enum": list(owner_notes.KINDS)},
+                                    "payment": {"type": "string", "enum": labels or [""]},
+                                    "quote": {"type": "string"},
+                                },
+                                "required": ["kind", "quote"],
+                            },
+                        },
+                        "notes": {"type": "array", "items": {"type": "string"}},
+                    },
+                    "required": ["limits", "notes"],
+                },
+            }
+            messages = [
+                {"role": "system", "content": prompts.OWNER_NOTES_INSTRUCTIONS},
+                {
+                    "role": "user",
+                    "content": json.dumps({"text": text, "payments": labels}, ensure_ascii=False),
+                },
+            ]
+            try:
+                reply = self._llm.chat(messages, [tool])
+                calls = [c for c in reply.tool_calls if c.name == "sort_owner_notes"]
+                if calls:
+                    return owner_notes.check(calls[0].arguments, labels, text)
+            except LLMError as exc:
+                logger.warning("owner notes: model failed, reading with rules: %s", exc)
+        return owner_notes.read_by_rules(text, labels)
+
     def extract_plan_items(self, text: str, today) -> tuple[list[ProposedItem], bool]:
         """Roadmap 2.4: the owner's own words → plan items to confirm. Returns (items, used_rules).
         The model reads it when one is connected; the offline rules read it otherwise or when the

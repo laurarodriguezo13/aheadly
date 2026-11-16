@@ -260,6 +260,22 @@ class Repository:
             )
         ]
 
+    def payee_rule_rows(self, business_id: int) -> list[dict]:
+        """The owner's answers about payees, with the name as they saw it (roadmap R.3c)."""
+        return [
+            {"match_key": r["match_key"], "category": r["category"], "label": r["label"] or r["match_key"]}
+            for r in self._conn.execute(
+                "SELECT match_key, category, label FROM payee_rules WHERE business_id=? ORDER BY id",
+                (business_id,),
+            )
+        ]
+
+    def delete_payee_rule(self, business_id: int, match_key: str) -> None:
+        self._conn.execute(
+            "DELETE FROM payee_rules WHERE business_id=? AND match_key=?", (business_id, match_key)
+        )
+        self._conn.commit()
+
     def record_uploaded_file(self, business_id: int, name: str, kind: str, mapping: dict) -> None:
         """An owner's file they confirmed (roadmap 2.5): its name, kind and which column was what."""
         self._conn.execute(

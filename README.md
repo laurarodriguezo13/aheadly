@@ -59,7 +59,7 @@ Rules we keep: the UI only calls `AppCore`; only the Insight Translator talks to
 | Folder | What lives there |
 |---|---|
 | `app.py` | Streamlit entry: page config, sidebar logo, `st.navigation`; four sidebar entries, each with a row of sub-tabs (`GROUPS` in `aheadly/ui/bootstrap.py`) |
-| `aheadly/ui/views/` | the eleven page scripts, one per sub-tab: Dashboard (Overview, Early-warning alerts, Insights), Ask Aheadly (Ask about my numbers, Test a what-if, Bad surprises, Financing), Your business (Connect accounts, Questions, Behind the forecast), Settings |
+| `aheadly/ui/views/` | the thirteen page scripts, one per sub-tab: Dashboard (Overview, Early-warning alerts, Insights), Ask Aheadly (Ask about my numbers, Test a what-if, Suggestions, Bad surprises, Financing), Your business (Connect accounts, Questions, Behind the forecast, What you told us), Settings |
 | `aheadly/ui/` | brand CSS on top of `.streamlit/config.toml`, all copy strings, cards, charts (weekly lows), cached bootstrap |
 | `aheadly/core/` | `AppCore`, and the rules it uses: `alert_rules`, `actions` (tested fixes), `safe` (safe to spend / pay), `stress` (bad surprises), `financing`, `onboarding` (questions), `transfers`, `examples`, `session` |
 | `aheadly/ai/` | `ForecastEngine` + models, `scenarios`, `categorizer`, `recurring`, `seasons`, `confidence`, `plan_text`, `InsightTranslator`, `llm_client`, `tools`, `guardrails`, `prompts`, `templates` |

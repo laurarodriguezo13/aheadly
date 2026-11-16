@@ -6,7 +6,7 @@ from datetime import timedelta
 import streamlit as st
 
 from aheadly.ui import copy
-from aheadly.ui.bootstrap import require_data, start_page
+from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.components import (
     day,
     money,
@@ -347,3 +347,17 @@ if month:
             st.caption(copy.BASIS_MAYBE_NOTE.format(amount=money(month["maybe_in"])))
         if (month["last"] + timedelta(days=1)).month == month["last"].month:  # the forecast ends mid-month
             st.caption(copy.BASIS_PARTIAL_MONTH.format(first=day(month["first"]), last=day(month["last"])))
+
+# ---------------------------------------------------------------- what the owner told us (roadmap R.3c)
+notes, limits = core.owner_notes(), core.declined_suggestions()
+if notes or limits:
+    with st.container(border=True):
+        section_title(copy.BASIS_TOLD)
+        st.markdown(
+            "\n".join(
+                [f"- {copy.NOTE_ROW.format(note=n['text'])}" for n in notes]
+                + [f"- {copy.LIMIT_ROW.format(what=r['what'])}" for r in limits]
+            )
+        )
+        if st.button(copy.TOLD_LINK, key="basis-told"):
+            go_to("told")

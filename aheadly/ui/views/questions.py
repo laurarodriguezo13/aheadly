@@ -127,6 +127,51 @@ with area.container(border=True):
                     ),
                 )
 
+    elif question.kind == "anything_else":  # roadmap R.3c: sorted, shown back, used only once confirmed
+        if st.session_state.get("plan_added"):
+            st.success(copy.PLAN_ITEMS_ADDED.format(n=st.session_state.pop("plan_added")))
+        said = st.text_area(copy.ANYTHING_ELSE, placeholder=copy.ANYTHING_ELSE_PLACEHOLDER)
+        if st.button(copy.READ_IT, key="anything-read"):
+            if not said.strip():
+                st.warning(copy.WRITE_FIRST)
+            else:
+                with st.spinner(copy.READING_IT):
+                    st.session_state["anything_else"] = core.read_anything_else(said)
+        understood = st.session_state.get("anything_else")
+        if understood is not None:
+            st.markdown(f"**{copy.UNDERSTOOD}**")
+            if not (understood["limits"] or understood["notes"] or understood["proposals"]):
+                st.info(copy.NOTHING_UNDERSTOOD)
+            keep_limits = [
+                limit
+                for n, limit in enumerate(understood["limits"])
+                if st.checkbox(
+                    copy.LIMIT_ROW.format(
+                        what=copy.LIMIT_KINDS[limit["kind"]].format(payment=limit["payment"])
+                    ),
+                    value=True,
+                    key=f"limit-{n}",
+                    help=limit["quote"],
+                )
+            ]
+            keep_notes = [
+                note
+                for n, note in enumerate(understood["notes"])
+                if st.checkbox(copy.NOTE_ROW.format(note=note), value=True, key=f"note-{n}")
+            ]
+            if understood["proposals"]:
+                added = proposal_card(core, understood["proposals"], "anything-plan")
+                if added:
+                    understood["proposals"] = []
+                    st.session_state["plan_added"] = added
+                    st.rerun()
+            if st.button(copy.USE_THIS, type="primary", key="anything-keep"):
+                st.session_state.pop("anything_else", None)
+                _save(lambda: core.keep_anything_else(keep_limits, keep_notes), copy.TOLD_US_SAVED)
+        if st.button(copy.NOTHING_ELSE_TO_ADD, key="anything-nothing"):
+            st.session_state.pop("anything_else", None)
+            _save(lambda: core.nothing_coming_up(question.id))
+
     else:  # coming_up: "just say it", the same as on How we built it
         if st.session_state.get("plan_added"):
             st.success(copy.PLAN_ITEMS_ADDED.format(n=st.session_state.pop("plan_added")))
@@ -153,5 +198,7 @@ with area.container(border=True):
             st.session_state.pop("plan_proposals", None)
             _save(lambda: core.nothing_coming_up(question.id))
 
-    if question.kind != "coming_up" and skip.button(copy.SKIP, key=f"skip-{question.id}"):
+    if question.kind not in ("coming_up", "anything_else") and skip.button(
+        copy.SKIP, key=f"skip-{question.id}"
+    ):
         _save(lambda: core.skip_question(question.id))

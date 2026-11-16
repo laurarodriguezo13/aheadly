@@ -30,7 +30,7 @@ from aheadly.ai.llm_client import create_llm_client
 from aheadly.ai.scenarios import apply_adjustments, parse_adjustment
 from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
-from aheadly.ai import templates
+from aheadly.ai import owner_notes, templates
 from aheadly.core import actions as alert_actions
 from aheadly.core import alert_rules, financing, insight_charts, onboarding, pattern_rules, safe, stress
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
@@ -96,7 +96,7 @@ INSIGHT_ACTION_KINDS = {
     "raise_prices_to_cover": "price",
     "cancel_if_not_needed": "cancel",
 }
-DECLINE_REASONS = ("wont_agree", "cant_lower_pay", "cant_raise_prices", "already_done", "other")
+DECLINE_REASONS = ("wont_agree", "cant_lower_pay", "cant_raise_prices", "already_done", "other", "told_us")
 
 
 class AppCore:
@@ -396,6 +396,105 @@ class AppCore:
             raise ValueError("Pick a category or say in your own words what it is.")
         self._question_done(f"mystery:{categorizer.match_key(payee)}")
         return category
+
+    # ------------------------------------------------- what the owner tells us (roadmap R.3c)
+    def read_anything_else(self, text: str) -> dict:
+        """'Is there anything else we should know?': payments to confirm (like "just say it"),
+        limits for the suggestions and notes for the chat, as understood. Saves nothing."""
+        if not text.strip():
+            return {"proposals": [], "limits": [], "notes": []}
+        sorted_ = self.translator.sort_owner_notes(text, self.scheduled_labels())
+        return {"proposals": self.parse_plan_text(text), **sorted_}
+
+    def keep_anything_else(self, limits: list[dict], notes: list[str]) -> None:
+        """What the owner confirmed: limits become "Not for me" rules, notes go to the chat."""
+        business = self._business()
+        profile = self.repo.get_profile(business.id)
+        kept_notes = profile.get("owner_notes", []) + [
+            {"text": n.strip(), "added": self.today.isoformat()} for n in notes if n.strip()
+        ]
+        rules = profile.get("declined_suggestions", []) + [owner_notes.as_rule(limit) for limit in limits]
+        self.repo.save_profile(business.id, {"owner_notes": kept_notes, "declined_suggestions": rules})
+        self._question_done("anything_else")
+        if limits:
+            self._suggestions_changed()
+
+    def owner_notes(self) -> list[dict]:
+        business = self.repo.get_business()
+        return self.repo.get_profile(business.id).get("owner_notes", []) if business else []
+
+    def add_owner_note(self, text: str) -> None:
+        if not text.strip():
+            raise ValueError("Write the note first.")
+        business = self._business()
+        notes = self.owner_notes() + [{"text": text.strip(), "added": self.today.isoformat()}]
+        self.repo.save_profile(business.id, {"owner_notes": notes})
+
+    def remove_owner_note(self, index: int) -> None:
+        notes = self.owner_notes()
+        del notes[index]
+        self.repo.save_profile(self._business().id, {"owner_notes": notes})
+
+    def remove_declined(self, index: int) -> None:
+        """One "Not for me" (or limit the owner told us) taken back: it can be suggested again."""
+        rules = self.declined_suggestions()
+        del rules[index]
+        self.repo.save_profile(self._business().id, {"declined_suggestions": rules})
+        self._suggestions_changed()
+
+    def bring_back_insight(self, insight_type: str) -> None:
+        profile = self.repo.get_profile(self._business().id)
+        set_aside = {k: v for k, v in profile.get("insights_set_aside", {}).items() if k != insight_type}
+        self.repo.save_profile(self._business().id, {"insights_set_aside": set_aside})
+
+    def change_payee_answer(self, match_key: str, category: str) -> None:
+        """'What you told us': another kind for a payee the owner named (the same payee, by its key;
+        the owner's own words stay)."""
+        if category not in categorizer.CATEGORIES:
+            raise ValueError(f"Unknown category {category!r}.")
+        business = self._business()
+        row = next((r for r in self.repo.payee_rule_rows(business.id) if r["match_key"] == match_key), None)
+        if row is None:
+            raise ValueError("There's no answer about that payee.")
+        self.repo.save_payee_rule(business.id, match_key, category, row["label"])
+        if self._categorize(business.id):
+            self._detect_recurring(business.id)
+            self.run_daily_check(force=True)
+
+    def forget_payee_answer(self, match_key: str) -> None:
+        """'That's not right': the owner's answer about a payee goes, and the rules place it again."""
+        business = self._business()
+        self.repo.delete_payee_rule(business.id, match_key)
+        if self._categorize(business.id):
+            self._detect_recurring(business.id)
+            self.run_daily_check(force=True)
+
+    def told_us(self) -> dict:
+        """'What you told us' (roadmap R.3c): every answer the owner gave, to see and change."""
+        business = self._business()
+        profile = self.repo.get_profile(business.id)
+        rules = [
+            {
+                **r,
+                "payee": r["match_key"].upper(),
+                "said": r["label"] if r["label"].lower() != r["match_key"] else "",
+            }
+            for r in self.repo.payee_rule_rows(business.id)
+        ]
+        titles = {card["type"]: card["title"] for card in self.insight_cards()}
+        return {
+            "business_type": profile.get("business_type", ""),
+            "customers_pay": profile.get("customers_pay", ""),
+            "seasons": self.seasons(),
+            "owner_pay": [r for r in rules if r["category"] == "owner_pay"],
+            "payees": [r for r in rules if r["category"] != "owner_pay"],
+            "notes": self.owner_notes(),
+            "limits": self.declined_suggestions(),
+            "set_aside": [
+                {"type": t, "title": titles.get(t, t), "reason": reason}
+                for t, reason in profile.get("insights_set_aside", {}).items()
+            ],
+        }
 
     def nothing_coming_up(self, question_id: str = "coming_up") -> None:
         """'Nothing else for now' answers the question (nothing big is coming): it counts as answered,
@@ -2129,6 +2228,8 @@ class AppCore:
             "currency": business.currency,
             "low_cash_line": round(business.low_cash_line),
             "scheduled_labels": labels or "none",
+            # roadmap R.3c: the owner's own notes ("anything else we should know?"), as background
+            "owner_notes": "; ".join(n["text"] for n in self.owner_notes()) or "nothing yet",
         }
 
 
