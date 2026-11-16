@@ -103,11 +103,13 @@ def answer_from_tool(tool: str, data: dict) -> str:
         return financing_answer(data)
     if tool == "get_insights":
         return insights_answer(data)
+    if tool == "get_suggestions":
+        return suggestions_answer(data)
     if tool == "get_alerts":
         if not data["alerts"]:
             return "You have no open alerts right now. Things look calm."
         first = data["alerts"][0]
-        return f"{first['title']}: {first['body']}"
+        return f"{first['title']}: {first['body']}" + fixes_sentence(first.get("fixes", []))
     if tool == "get_transactions":
         return f"Here are your last {len(data['transactions'])} transactions."
     if tool == "propose_plan_items":
@@ -125,6 +127,25 @@ def answer_from_tool(tool: str, data: dict) -> str:
             + ". It isn't saved yet: check it below and press Add."
         )
     return "Here is what I found."
+
+
+def fixes_sentence(fixes: list[dict]) -> str:
+    """Roadmap R.1: an alert answer says what would help, with what the tested fix changes."""
+    if not fixes:
+        return ""
+    best = fixes[0]
+    tested = best.get("tested")
+    if tested:
+        effect = (
+            f", which takes your lowest point from {money(tested['lowest_before'])} to "
+            f"{money(tested['lowest_after'])}"
+        )
+    else:
+        effect = (
+            f": {best['detail'][:1].lower()}{best['detail'][1:].rstrip('.')}" if best.get("detail") else ""
+        )
+    more = " More ideas are on the Alerts page." if len(fixes) > 1 else ""
+    return f" What would help most: {best['label'][:1].lower()}{best['label'][1:]}{effect}.{more}"
 
 
 def _short_date(iso: str) -> str:
@@ -155,16 +176,61 @@ def chance_sentence(pct: int | None) -> str:
     return f" About {pct}% of the ways the coming weeks could go dip below it."
 
 
+CHARGE_ALERTS = ("duplicate_charge", "unusual_charge")
+
+
+def late_customer_sentence(facts: dict) -> str:
+    """Roadmap R.3b: a customer paying later, whose money now lands after the tight days."""
+    late = facts.get("late_customer")
+    if not late:
+        return ""
+    return (
+        f" {late['customer']} now pays every {late['every_days_now']} days instead of every "
+        f"{late['every_days_before']}, so their payment comes {_short_date(late['at_new_pace'])}, after the tight days."
+    )
+
+
+BELOW_ZERO_SENTENCE = " Payments due that week could bounce or put you into overdraft."
+
+
 def alert_title(facts: dict) -> str:
     """How serious it is, from the numbers: code picks the title, the model only writes the body."""
-    if facts["type"] == "idle_cash":
+    kind = facts["type"]
+    if kind == "idle_cash":
         return "Good news: you have cash to spare"
+    if kind == "watch":
+        return "Keep an eye on: a bad month could take you below your line"
+    if kind == "duplicate_charge":
+        return f"Check this charge: {facts['payee']} charged twice"
+    if kind == "unusual_charge":
+        return f"Check this charge: {facts['payee']}"
     if facts["lowest_balance"] < 0:
         return "Warning: your cash could run out"
     return "Heads up: you may run low on cash"
 
 
 def alert_text(facts: dict) -> dict:
+    if facts["type"] in CHARGE_ALERTS:  # roadmap R.1: the charge itself, as the insight words it
+        return {
+            "title": alert_title(facts),
+            "body": insight_body(facts),
+            "actions": insight_actions(facts.get("possible_actions", [])),
+        }
+    if facts["type"] == "watch":
+        outflows = facts.get("top_outflows", [])
+        names = " and ".join(f"{o['label']} ({money(o['amount'])})" for o in outflows[:2])
+        cause = f" Around then {names} {'are' if len(outflows) > 1 else 'is'} due." if outflows else ""
+        return {
+            "title": alert_title(facts),
+            "body": (
+                f"In the most likely case you stay above your {money(facts['low_cash_line'])} line, but a bad month "
+                f"could take you to about {money(facts['lowest_worst_case'])} in {weeks(facts['weeks_ahead'])}."
+                + chance_sentence(facts.get("chance_below_line_pct"))
+                + cause
+                + late_customer_sentence(facts)
+            ),
+            "actions": _SHORTFALL_ACTIONS,
+        }
     if facts["type"] == "idle_cash":
         return {
             "title": alert_title(facts),
@@ -194,37 +260,44 @@ def alert_text(facts: dict) -> dict:
     outflows = facts["top_outflows"]
     # payment names as written (lowercasing them broke names like "Christmas ingredients")
     cause = " and ".join(f"{o['label']} ({money(o['amount'])})" for o in outflows[:2])
+    body = (
+        f"Your balance could drop to about {money(facts['lowest_balance'])} in {weeks(facts['weeks_ahead'])}, "
+        f"below your {money(facts['low_cash_line'])} line, because {cause} land close together."
+    )
+    body += chance_sentence(facts.get("chance_below_line_pct"))
+    if facts["lowest_balance"] < 0:  # roadmap R.1: below zero says what it means
+        body += BELOW_ZERO_SENTENCE
+    body += late_customer_sentence(facts)
     return {
         "title": alert_title(facts),
-        "body": (
-            f"Your balance could drop to about {money(facts['lowest_balance'])} in {weeks(facts['weeks_ahead'])}, "
-            f"below your {money(facts['low_cash_line'])} line, because {cause} land close together."
-            + chance_sentence(facts.get("chance_below_line_pct"))
-        ),
-        "actions": [
-            {
-                "label": "Delay the planned purchase",
-                "detail": "Moving a big purchase by a few weeks changes a lot.",
-                "how_to": [
-                    "Look at what you plan to buy in the tight week.",
-                    "Ask whether it can wait a few weeks.",
-                ],
-            },
-            {
-                "label": "Collect invoices early",
-                "detail": "Ask customers who owe you to pay a little sooner.",
-                "how_to": ["List who owes you money.", "Ask the biggest ones to pay a little sooner."],
-            },
-            {
-                "label": "Negotiate payment terms",
-                "detail": "Split the big supplier bill in two.",
-                "how_to": [
-                    "Call the supplier before the bill is due.",
-                    "Ask to pay half now and half later.",
-                ],
-            },
-        ],
+        "body": body,
+        "actions": _SHORTFALL_ACTIONS,
     }
+
+
+_SHORTFALL_ACTIONS = [
+    {
+        "label": "Delay the planned purchase",
+        "detail": "Moving a big purchase by a few weeks changes a lot.",
+        "how_to": [
+            "Look at what you plan to buy in the tight week.",
+            "Ask whether it can wait a few weeks.",
+        ],
+    },
+    {
+        "label": "Collect invoices early",
+        "detail": "Ask customers who owe you to pay a little sooner.",
+        "how_to": ["List who owes you money.", "Ask the biggest ones to pay a little sooner."],
+    },
+    {
+        "label": "Negotiate payment terms",
+        "detail": "Split the big supplier bill in two.",
+        "how_to": [
+            "Call the supplier before the bill is due.",
+            "Ask to pay half now and half later.",
+        ],
+    },
+]
 
 
 # ------------------------------------------------------------- actions (roadmap 3.2)
@@ -250,7 +323,7 @@ def action_words(
             "how_to": [
                 "Work out what you need to live on for the next weeks.",
                 "Change or skip the transfer to your own account until the tight weeks pass.",
-                "Press Test this, then Save as my plan.",
+                "Then press Save as my plan.",
             ],
         }
     if kind == "price":
@@ -260,7 +333,7 @@ def action_words(
             "how_to": [
                 "Start with your best-selling items.",
                 "Tell regular customers ahead, and keep quality the same.",
-                "Press Test this; check your sales for two weeks before counting on it.",
+                "Check your sales for two weeks before counting on it; then press Save as my plan.",
             ],
         }
     old, new = _short_date(when), _short_date(new_when)
@@ -271,7 +344,7 @@ def action_words(
             "how_to": [
                 f"Call or message them this week, before {old}.",
                 f"Ask to pay on {new} instead of {old}, and confirm the new date in writing.",
-                "If they agree, press Test this, then Save as my plan so the forecast uses the new date.",
+                "If they agree, press Save as my plan so the forecast uses the new date.",
             ],
         }
     return {
@@ -280,7 +353,7 @@ def action_words(
         "how_to": [
             "Message them a few days ahead.",
             f"Ask whether they could pay by {new} instead of {old}; a small discount for paying early can help.",
-            "If they agree, press Test this, then Save as my plan.",
+            "If they agree, press Save as my plan.",
         ],
     }
 
@@ -848,7 +921,7 @@ def cancel_words(name: str, amount: float, how_often: str) -> dict:
         "how_to": [
             "Find out what the charge is for.",
             "If you don't use it, cancel it with them.",
-            "Press Test this, then Save as my plan so the forecast leaves it out.",
+            "Then press Save as my plan so the forecast leaves it out.",
         ],
     }
 
@@ -864,3 +937,39 @@ def insights_answer(data: dict) -> str:
         others = "; ".join(i["title"] for i in found[1:3])
         text += f" Also worth a look: {others}."
     return text + " The Insights page has the details and what could help."
+
+
+def suggestions_answer(data: dict) -> str:
+    """The chat's answer about what would help, from the get_suggestions tool (roadmap R.3b). When
+    the most likely case stays above the line ("watch"), a suggestion's effect is on a bad month."""
+    short = data.get("short_by")
+    when = _short_date(data["lowest_date"]) if data.get("lowest_date") else ""
+    text = (
+        f"You're about {money(short)} short of your {money(data['low_cash_line'])} line around {when}."
+        if short
+        else ""
+    )
+    found = data["suggestions"]
+    if not found:
+        none = (
+            "Nothing needs fixing in the next 8 weeks."
+            if not short
+            else " I have no tested suggestion for it."
+        )
+        return (text + none).strip()
+
+    def effect(s: dict) -> str:
+        if short or s["lowest_after"] != s["lowest_before"]:
+            return f"lowest point {money(s['lowest_before'])} → {money(s['lowest_after'])}"
+        return f"a bad month's lowest point {money(s['worst_before'])} → {money(s['worst_after'])}"
+
+    first = found[0]
+    text += f" What would help most: {first['label'][:1].lower()}{first['label'][1:]} ({effect(first)})."
+    if len(found) > 1:
+        second = found[1]
+        text += f" Next: {second['label'][:1].lower()}{second['label'][1:]} ({effect(second)})."
+    if data.get("still_short_after_best"):
+        text += (
+            f" Even after the best one you'd still be about {money(data['still_short_after_best'])} short."
+        )
+    return text.strip() + " Open them on the Suggestions tab to change one or save it."

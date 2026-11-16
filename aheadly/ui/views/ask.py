@@ -3,7 +3,7 @@
 import streamlit as st
 
 from aheadly.ui import copy
-from aheadly.ui.bootstrap import require_data, start_page
+from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.charts import scenario_chart
 from aheadly.ui.components import proposal_card, scenario_metrics
 
@@ -41,10 +41,18 @@ for index, message in enumerate(history):
                 config={"displayModeBar": False},
             )
             scenario_metrics(result)
-            if st.button(copy.SAVE_PLAN, key=f"save-{index}", type="primary"):
+            # roadmap R.3b: talking about an open suggestion, the change the chat tested is the
+            # owner's version of it: use it, or go back to the suggestion
+            opened = st.session_state.get("open_suggestion")
+            if st.button(
+                copy.USE_THIS_VERSION if opened else copy.SAVE_PLAN, key=f"save-{index}", type="primary"
+            ):
                 with st.spinner(copy.SAVING_PLAN):
                     core.save_plan(result)
+                st.session_state.pop("open_suggestion", None)
                 st.success(copy.PLAN_SAVED)
+            if opened and st.button(copy.BACK_TO_SUGGESTION, key=f"back-{index}"):
+                go_to("suggestion")
         proposals = st.session_state["proposal_cards"].get(index)
         if isinstance(proposals, int):
             st.success(copy.PLAN_ITEMS_ADDED.format(n=proposals))

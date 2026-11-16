@@ -8,6 +8,7 @@ from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.charts import forecast_chart
 from aheadly.ui.components import (
     alert_list_html,
+    dismissed_words,
     chart_note,
     insight_heading,
     day,
@@ -46,6 +47,8 @@ with col2:
             if low_date is None
             else f"In {weeks(alert_rules.weeks_until(core.today, low_date))}"
         )
+        if value < 0 and low_date is not None:  # roadmap R.1: below zero says what it means
+            when = copy.SHORT_BY.format(short=money(-value), date=f"{low_date:%b} {low_date.day}")
         chance = copy.chance_words(alert_rules.chance_pct(forecast.chance_below(business.low_cash_line)))
         if chance:  # roadmap 3.1
             when = f"{when} · {chance}"
@@ -104,11 +107,18 @@ with st.container(border=True):
     if st.button(copy.BASIS_LINK, key="dashboard-basis"):
         go_to("basis")
     trust = core.forecast_confidence()
-    with st.container(border=True):
-        st.markdown(f"**{copy.CONFIDENCE_TITLE.format(level=copy.CONFIDENCE_LEVELS[trust['level']])}**")
-        st.markdown("\n".join(f"- {reason}" for reason in trust["reasons"]))
-        with st.expander(copy.CONFIDENCE_ALL):
-            st.markdown("\n".join(f"- {'✓' if c.grade == 2 else '•'} {c.text}" for c in trust["checks"]))
+    with st.container(border=True):  # R.1: the level once, what would help, the passed checks apart
+        passed = [c for c in trust["checks"] if c.grade == 2]
+        to_improve = [c for c in trust["checks"] if c.grade < 2]
+        level = copy.CONFIDENCE_LEVELS[trust["level"]]
+        count = copy.CONFIDENCE_COUNT.format(passed=len(passed), total=len(trust["checks"]))
+        st.markdown(f"**{copy.CONFIDENCE_TITLE.format(level=level)}** · {count}")
+        if to_improve:
+            st.markdown(copy.CONFIDENCE_BETTER)
+            st.markdown("\n".join(f"- {c.text}" for c in to_improve))
+        if passed:
+            with st.expander(copy.CONFIDENCE_PASSED.format(n=len(passed))):
+                st.markdown("  \n".join(f"✓ {c.text}" for c in passed))
     if core.no_one_offs_planned():
         note, go = st.columns([4, 1])
         note.info(copy.NOTHING_PLANNED)
@@ -116,7 +126,7 @@ with st.container(border=True):
             go_to("basis")
 
 if forecast:  # roadmap 4.3: the top things we noticed, the rest on the Insights page
-    cards = core.insight_cards()
+    cards = core.noticed_cards()
     with st.container(border=True):
         section_title(copy.NOTICED_TITLE)
         if not cards:
@@ -134,12 +144,8 @@ with left, st.container(border=True):
         st.markdown(alert_list_html(dash.alerts), unsafe_allow_html=True)
         if st.button(copy.OPEN_ALERTS):
             go_to("alerts")
-    elif forecast and forecast.risk_level(business.low_cash_line) == "watch":
-        st.warning(
-            copy.WATCH_NO_ALERTS.format(worst=money(forecast.min_p10), line=money(business.low_cash_line))
-        )
-        if st.button(copy.SEE_FIXES, key="dashboard-fixes"):  # roadmap 3.3
-            go_to("alerts")
+    elif dismissed := core.dismissed_alerts():
+        st.info(copy.ONLY_DISMISSED.format(what=dismissed_words(dismissed)))
     else:
         st.success(copy.NO_ALERTS)
 with right, st.container(border=True):

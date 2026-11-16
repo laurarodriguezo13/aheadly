@@ -113,7 +113,10 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     },
     {
         "name": "get_alerts",
-        "description": "Open alerts with the facts behind them.",
+        "description": (
+            "Open alerts with the facts behind them and what would help (fixes; the ones with 'tested' "
+            "were run on the forecast: lowest balance and status before and after)."
+        ),
         "parameters": {"type": "object", "properties": {}},
     },
     {
@@ -139,6 +142,16 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
             "Things we noticed in the owner's statement even when cash is fine (a thin cushion, a cost "
             "creeping up, one big customer, a customer paying later, doubled or unusual charges, sales "
             "slowing...), each with its title, a short explanation and the numbers behind it."
+        ),
+        "parameters": {"type": "object", "properties": {}},
+    },
+    {
+        "name": "get_suggestions",
+        "description": (
+            "Every tested suggestion the app has (from the alerts and the things we noticed): what it "
+            "is, where it comes from, and the lowest balance, status and chance before and after it; "
+            "how much the owner is short of their low cash line and by when, what's still missing after "
+            "the best one, and the suggestions the owner said no to (never suggest those again)."
         ),
         "parameters": {"type": "object", "properties": {}},
     },
@@ -197,6 +210,8 @@ class ToolDispatcher:
             return core.financing_summary()
         if name == "get_insights":
             return core.insights_for_chat()
+        if name == "get_suggestions":
+            return core.suggestions_for_chat()
         if name == "propose_plan_items":
             proposals = core.check_proposals(args, self.last_question)
             self.last_proposals = proposals

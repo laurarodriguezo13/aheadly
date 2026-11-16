@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import calendar
 import html
+from datetime import date
 
 import streamlit as st
 
@@ -77,15 +78,6 @@ def section_title(title: str) -> None:
     st.markdown(f'<div class="ah-card-title">{html.escape(title)}</div>', unsafe_allow_html=True)
 
 
-def check_list_html(items: list[tuple[str, str]]) -> str:
-    rows = "".join(
-        f'<li><span class="ah-tick">✓</span><div><b>{html.escape(label)}</b>'
-        f'<div class="ah-muted">{html.escape(detail)}</div></div></li>'
-        for label, detail in items
-    )
-    return f'<ul class="ah-list">{rows}</ul>'
-
-
 def rows_html(rows: list[tuple[str, str]]) -> str:
     return "".join(
         f'<div class="ah-row"><span>{html.escape(label)}</span><b>{html.escape(value)}</b></div>'
@@ -93,10 +85,25 @@ def rows_html(rows: list[tuple[str, str]]) -> str:
     )
 
 
+def dismissed_words(alerts) -> str:
+    """'"Warning: your cash could run out"', or 'two alerts'."""
+    if len(alerts) == 1:
+        return f'"{alerts[0].title}"'
+    return f"{len(alerts)} alerts"
+
+
+def _alert_when(alert) -> str:
+    """'in 5 weeks', or for a charge to check (roadmap R.1) the day it was charged."""
+    if alert.type in ("duplicate_charge", "unusual_charge"):
+        charged = date.fromisoformat(alert.facts["date"])
+        return copy.CHARGED_ON.format(date=f"{charged:%b} {charged.day}")
+    return f"in {weeks(alert.weeks_ahead)}"
+
+
 def alert_list_html(alerts) -> str:
     items = "".join(
         f'<li><span class="ah-dot {a.severity}">!</span><div><b>{html.escape(a.title)}</b>'
-        f'<div class="ah-muted">in {weeks(a.weeks_ahead)}</div></div></li>'
+        f'<div class="ah-muted">{_alert_when(a)}</div></div></li>'
         for a in alerts
     )
     return f'<ul class="ah-list">{items}</ul>'
@@ -122,7 +129,10 @@ def insight_heading(card: dict) -> str:
     return f'{pill} <span style="font-weight:700;color:var(--navy)">{html.escape(card["title"])}</span>'
 
 
-def severity_pill(severity: str) -> str:
+def severity_pill(severity: str, below_zero: bool = False) -> str:
+    """An alert's pill; one whose lowest point is below zero says URGENT (roadmap R.1)."""
+    if below_zero:
+        return f'<span class="ah-pill urgent">{copy.URGENT_PILL}</span>'
     return f'<span class="ah-pill {severity}">{severity.upper()}</span>'
 
 
@@ -372,15 +382,47 @@ def seasons_editor(core, key: str, busy: list[int], slow: list[int], own: dict[i
 
 
 def impact_line(impact: dict) -> str:
-    risk = copy.RISK_NAMES
     return copy.ACTION_IMPACT.format(
         before=money(impact["lowest_before"]),
         after=money(impact["lowest_after"]),
-        risk_before=risk[impact["risk_before"]],
-        risk_after=risk[impact["risk_after"]],
+        risk_before=copy.risk_name(impact["risk_before"], impact["lowest_before"]),
+        risk_after=copy.risk_name(impact["risk_after"], impact["lowest_after"]),
         chance_before=impact["chance_before"],
         chance_after=impact["chance_after"],
     )
+
+
+def open_suggestion(action: dict, source: str, context: list[dict] | None = None) -> None:
+    """Opens one suggestion on the Suggestions sub-tab (roadmap R.3)."""
+    st.session_state["open_suggestion"] = {"action": action, "source": source, "context": context or []}
+    st.session_state.pop("suggestion_mine", None)
+    st.session_state.pop("suggestion_message", None)
+    st.switch_page("aheadly/ui/views/suggestion.py")
+
+
+def suggestion_cards(
+    actions: list[dict], key_prefix: str, source: str, title: str = copy.ACTIONS_TITLE, context=None
+) -> None:
+    """Roadmap R.3: each suggestion as a compact card (what, its effect, Open); the detail, how to do
+    it, changing it and "Not for me" are on the Suggestions sub-tab. General advice (nothing to test)
+    stays here with its steps."""
+    if not actions:
+        return
+    st.markdown(f"**{title}**")
+    for i, action in enumerate(actions):
+        with st.container(border=True):
+            if action.get("adjustments"):
+                left, right = st.columns([5, 1], vertical_alignment="center")
+                left.markdown(f"**{action['label']}**")
+                left.caption(impact_line(action["impact"]))
+                if right.button(copy.SUGGESTION_OPEN, key=f"{key_prefix}-open-{i}", type="primary"):
+                    open_suggestion(action, source, context)
+            else:
+                st.markdown(f"**{action['label']}**  \n{action.get('detail', '')}")
+                st.caption(copy.ACTION_GENERAL)
+                if action.get("how_to"):
+                    with st.expander(copy.ACTION_HOW):
+                        st.markdown("\n".join(f"{n}. {step}" for n, step in enumerate(action["how_to"], 1)))
 
 
 def action_rows(core, actions: list[dict], key_prefix: str, title: str = copy.ACTIONS_TITLE) -> None:

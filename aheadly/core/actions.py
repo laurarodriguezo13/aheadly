@@ -15,10 +15,16 @@ best status is kept):
 Only ideas that help are kept. Order: status after the change, then how much it asks of the owner
 (moving a date costs nothing, less pay or higher prices do), then the worst case. When no single
 idea changes the status, pairs of the top five are tried too. At most three are shown.
+
+The owner's "Not for me" (roadmap R.3) becomes a rule: {"kind": ...} rules out a whole kind ("I can't
+lower my pay"), {"kind": ..., "label": ...} one payment ("the supplier won't agree"), {"id": ...} one
+exact suggestion. Ruled-out ideas are never tried.
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import date, timedelta
 from itertools import combinations
 from typing import Callable
@@ -42,6 +48,20 @@ MIN_CHANCE_DROP = 5  # points
 MIN_LIFT_SHARE = 0.10  # of the low cash line
 
 Evaluate = Callable[[list[dict]], ScenarioResult]
+
+
+def suggestion_id(adjustments: list[dict]) -> str:
+    """The same change always gets the same id (to open it, or to say no to it)."""
+    return hashlib.sha1(json.dumps(adjustments, sort_keys=True).encode()).hexdigest()[:10]
+
+
+def ruled_out(rules: list[dict], kind: str, label: str | None = None, sid: str | None = None) -> bool:
+    for rule in rules:
+        if sid and rule.get("id") == sid:
+            return True
+        if rule.get("kind") == kind and rule.get("label") in (None, label):
+            return True
+    return False
 
 
 def _once(items: list[ScheduledItem], start: date, end: date) -> list[tuple[ScheduledItem, date]]:
@@ -196,13 +216,18 @@ def build(
     evaluate: Evaluate,
     weekly_sales: float = 0.0,
     exclude: frozenset[str] = frozenset(),
+    declined: list[dict] | None = None,
 ) -> list[dict]:
     """`exclude`: payments not to touch (a stress test's own surprise: "the customer pays late"
-    isn't fixed by "ask the customer to pay early")."""
+    isn't fixed by "ask the customer to pay early"). `declined`: the owner's "Not for me" rules."""
     if baseline.risk_level(low_cash_line) == "safe":
         return []
+    declined = declined or []
     singles = []
     for family in _families(baseline, low_cash_line, items, today, end, weekly_sales, exclude):
+        label = family["item"].label if family["item"] else None
+        if ruled_out(declined, family["kind"], label):
+            continue
         tried = [(adjs, size, impact(evaluate(adjs))) for adjs, size in family["options"]]
         best_risk = min(RISK_ORDER[i["risk_after"]] for _, _, i in tried)
         adjs, size, i = min(
@@ -217,9 +242,15 @@ def build(
             "cost": COST[family["kind"]],
             "adjustments": adjs,
             "impact": i,
+            "id": suggestion_id(adjs),
+            "payment": label,  # the payment it's about, for "Not for me" (R.3)
         }
+        if ruled_out(declined, family["kind"], label, action["id"]):
+            continue
         if family["kind"] in MESSAGE_KINDS:
             action |= {"when": family["when"].isoformat(), "amount": round(abs(family["item"].amount))}
+        if family["kind"] == "owner_pay":
+            action["pay"] = round(abs(family["item"].amount), 2)  # each time, so the owner can pick another %
         singles.append(action)
     singles.sort(key=rank_key)
 
@@ -231,6 +262,8 @@ def build(
             if a["kind"] == b["kind"] and a["kind"] in ("owner_pay", "price"):
                 continue
             adjs = a["adjustments"] + b["adjustments"]
+            if ruled_out(declined, "pair", sid=suggestion_id(adjs)):
+                continue
             i = impact(evaluate(adjs))
             if RISK_ORDER[i["risk_after"]] < best_single:
                 found.append(
@@ -240,6 +273,8 @@ def build(
                         "cost": a["cost"] + b["cost"] + 1,
                         "adjustments": adjs,
                         "impact": i,
+                        "id": suggestion_id(adjs),
+                        "payment": None,
                     }
                 )
     found.sort(key=rank_key)

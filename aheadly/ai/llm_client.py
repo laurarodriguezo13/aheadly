@@ -17,14 +17,13 @@ from __future__ import annotations
 import json
 import logging
 import time
-import logging
 import re
 import uuid
 from typing import Any
 from dataclasses import dataclass, field
-from datetime import date, timedelta
+from datetime import date
 
-from aheadly.ai.plan_text import read_by_rules
+from aheadly.ai.plan_text import amounts_in, dates_in, read_by_rules
 from aheadly.ai.templates import alert_text, answer_from_tool, chart_summary, insight_body, message_text
 from aheadly.domain import end_of_next_month
 from aheadly.config import Settings
@@ -221,11 +220,14 @@ class StubClient:
             return LLMReply(content=json.dumps({"summary": chart_summary(facts)}))
         if last["role"] == "user" and last["content"].startswith("WRITE_ALERT"):
             return LLMReply(content=json.dumps(alert_text(json.loads(last["content"][len("WRITE_ALERT") :]))))
-        return LLMReply(tool_calls=[self.plan(last["content"], scheduled_labels(messages))])
+        call = self.plan(last["content"], scheduled_labels(messages))
+        if isinstance(call, str):  # a question back to the owner, no tool needed
+            return LLMReply(content=call)
+        return LLMReply(tool_calls=[call])
 
     # ----- turn 1: choose a tool
-    def plan(self, question: str, labels: list[str] | None = None) -> ToolCall:
-        """Keyword routing. Also the Insight Translator's fallback planner when a real provider is down.
+    def plan(self, question: str, labels: list[str] | None = None) -> ToolCall | str:
+        """Keyword routing (or a question back, as text, when a what-if is missing what it needs). Also the Insight Translator's fallback planner when a real provider is down.
         `labels` = the business's scheduled items, so "move the flour order" finds the right one."""
         q = question.lower()
         call_id = f"stub-{uuid.uuid4().hex[:8]}"
@@ -263,11 +265,16 @@ class StubClient:
         ):
             return ToolCall(call_id, "get_insights", {})
         if "what if" in q or "instead" in q:
-            return ToolCall(call_id, "run_scenario", self._scenario_args(q, labels or []))
+            args = self._scenario_args(q, labels or [])
+            if isinstance(args, str):  # roadmap R.1: ask for what's missing instead of guessing
+                return args
+            return ToolCall(call_id, "run_scenario", args)
         proposals = self._plan_items(question)
         if proposals:
             return ToolCall(call_id, "propose_plan_items", {"items": proposals})
-        if "alert" in q or "warning" in q or "why" in q:
+        if any(w in q for w in SUGGESTION_WORDS) and "alert" not in q:  # roadmap R.3b
+            return ToolCall(call_id, "get_suggestions", {})
+        if any(w in q for w in ("alert", "warning", "why", "fix")):
             return ToolCall(call_id, "get_alerts", {})
         if any(w in q for w in ("bill", "payment", "due", "going out", "pay")):
             return ToolCall(call_id, "get_upcoming_outflows", {"weeks": 8})
@@ -299,17 +306,26 @@ class StubClient:
             if i.amount
         ]
 
-    def _scenario_args(self, q: str, labels: list[str]) -> dict:
-        amount = re.search(r"\$?\s?(\d[\d,]{2,})", q)
-        if amount and any(w in q for w in ("buy", "spend", "purchase", "hire")) and "instead" not in q:
+    def _scenario_args(self, q: str, labels: list[str]) -> dict | str:
+        """The what-if to test, or (roadmap R.1) a question back when a purchase has no amount or no
+        date: guessing them tested a made-up purchase, and "a new fridge" once moved the New oven."""
+        label = best_label(q, labels)
+        bare = re.search(r"\$?\s?(\d[\d,]{2,})", q)
+        amounts = amounts_in(q) or ([float(bare.group(1).replace(",", ""))] if bare else [])
+        dates, _ = dates_in(q, self.today)
+        when = dates[0] if dates else end_of_next_month(self.today) if "next month" in q else None
+        buying = any(w in q for w in ("buy", "spend", "purchase", "hire", "get a new", "order a"))
+        if buying and "instead" not in q and not (label and not amounts):
+            if not amounts or when is None:
+                return need_purchase_details(q, bool(amounts), when is not None)
             return {
                 "name": "One-time expense",
                 "adjustments": [
                     {
                         "type": "one_time_expense",
-                        "amount": float(amount.group(1).replace(",", "")),
-                        "date": (self.today + timedelta(days=7)).isoformat(),
-                        "label": "New expense",
+                        "amount": amounts[0],
+                        "date": when.isoformat(),
+                        "label": purchase_name(q) or "New expense",
                     }
                 ],
             }
@@ -320,17 +336,61 @@ class StubClient:
                 "name": f"Sales {sign * int(percent.group(1)):+d}%",
                 "adjustments": [{"type": "revenue_change", "percent": sign * int(percent.group(1))}],
             }
-        label = best_label(q, labels) or (
-            "oven" if "oven" in q else q.split("buy")[-1].split()[1] if "buy" in q else "oven"
-        )
+        if not label:
+            return WHAT_TO_TEST
+        new_date = when if when and when > self.today else end_of_next_month(self.today)
         return {
-            "name": f"Move {label} to next month",
-            "adjustments": [
-                {"type": "move_item", "label": label, "new_date": end_of_next_month(self.today).isoformat()}
-            ],
+            "name": f"Move {label} to {new_date:%b} {new_date.day}",
+            "adjustments": [{"type": "move_item", "label": label, "new_date": new_date.isoformat()}],
         }
 
 
+WHAT_TO_TEST = (
+    "I can test that, but I need a bit more: which payment to move or change, or what you'd buy, "
+    'how much it costs and when. For example: "What if I move the flour order to next month?"'
+)
+
+
+PURCHASE_RE = re.compile(
+    r"\b(?:buy|purchase|get|order|hire)\s+((?:a|an|the|another|some)\s+)?([a-z][a-z ]{1,30}?)"
+    r"(?=\s+(?:for|on|at|in|by|next|this|costing|that)\b|[?.,!$]|$)"
+)
+
+
+def purchase_name(q: str, with_article: bool = False) -> str:
+    """'what if i buy a new fridge for $1,200?' → 'New fridge' (or 'a new fridge')."""
+    found = PURCHASE_RE.search(q)
+    if not found:
+        return ""
+    if with_article:
+        return f"{found.group(1) or ''}{found.group(2).strip()}"
+    return found.group(2).strip().capitalize()
+
+
+def need_purchase_details(q: str, has_amount: bool, has_date: bool) -> str:
+    thing = purchase_name(q, with_article=True) or "it"
+    missing = (
+        "when you'd pay for it"
+        if has_amount
+        else "about how much it costs" if has_date else "about how much it costs and when you'd pay for it"
+    )
+    # no example amounts or dates: every number in an answer must come from a tool result
+    return (
+        f"Happy to test buying {thing}. To do it on your numbers I need {missing}. "
+        "Tell me and I'll show you how it changes your cash."
+    )
+
+
+SUGGESTION_WORDS = (
+    "suggestion",
+    "suggest",
+    "what can i do",
+    "what should i do",
+    "what would help",
+    "how much do i need",
+    "how much am i short",
+    "how short",
+)
 QUESTION_WORDS = {"what", "how", "when", "will", "can", "should", "is", "do", "does", "am", "are", "why", "which",
                   "could", "would", "qué", "que", "cuándo", "cuando", "cómo", "como", "puedo", "debo"}  # fmt: skip
 
@@ -350,14 +410,21 @@ def scheduled_labels(messages: list[dict]) -> list[str]:
     return []
 
 
+# words many payment names share: a question naming one of them doesn't name that payment (roadmap R.1)
+GENERIC_WORDS = {"payment", "payments", "order", "orders", "bill", "bills", "monthly", "weekly", "yearly",
+                 "invoice", "transfer", "purchase", "expense", "other", "pago", "pagos", "factura", "compra",
+                 "pedido", "mensual"}  # fmt: skip
+
+
 def best_label(question: str, labels: list[str]) -> str | None:
-    """The scheduled item a question talks about: its whole name, or else most of its longer words."""
+    """The scheduled item a question talks about: its whole name, or else most of its distinctive
+    words (never "new" or "payment": "a new fridge" is not the New oven)."""
     best, best_score = None, 0
     for label in labels:
         name = label.lower()
         if name in question:
             return label
-        words = {w for w in re.findall(r"[a-záéíóúñ]+", name) if len(w) > 3}
+        words = {w for w in re.findall(r"[a-záéíóúñ]+", name) if len(w) > 3 and w not in GENERIC_WORDS}
         score = sum(1 for w in words if w in question)
         if score > best_score:
             best, best_score = label, score

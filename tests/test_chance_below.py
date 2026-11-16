@@ -83,7 +83,7 @@ def test_alert_facts_carry_the_chance_and_the_text_says_it(connected_core):
     facts = shortfall[0].facts
     assert 50 <= facts["chance_below_line_pct"] <= 100
     text = templates.alert_text(facts)
-    assert text["body"].endswith(templates.chance_sentence(facts["chance_below_line_pct"]))
+    assert templates.chance_sentence(facts["chance_below_line_pct"]) in text["body"]
     assert check_numbers(f"{text['title']} {text['body']}", [facts]).passed
 
 

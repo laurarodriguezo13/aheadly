@@ -6,7 +6,7 @@ from datetime import timedelta
 import streamlit as st
 
 from aheadly.ui import copy
-from aheadly.ui.bootstrap import require_data, start_page
+from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.components import (
     day,
     money,
@@ -46,8 +46,8 @@ if effect:
         )
         if change["risk_before"] != change["risk_after"]:
             message += copy.BASIS_RISK_CHANGED.format(
-                before=copy.RISK_NAMES.get(change["risk_before"], change["risk_before"]),
-                after=copy.RISK_NAMES.get(change["risk_after"], change["risk_after"]),
+                before=copy.risk_name(change["risk_before"], change["before"]),
+                after=copy.risk_name(change["risk_after"], change["after"]),
             )
         st.success(message)
     else:
@@ -181,12 +181,95 @@ def _table(rows: list[dict], repeating: bool) -> None:
     )
 
 
+def _by_direction(rows: list[dict], repeating: bool) -> None:
+    """Money coming in first, then going out, each with what it adds up to (R.1)."""
+    for direction, title in (("in", copy.BASIS_COMING_IN), ("out", copy.BASIS_GOING_OUT)):
+        part = [r for r in rows if r["direction"] == direction]
+        if not part:
+            continue
+        total = sum(r["next_30_days"] for r in part) if repeating else sum(r["amount"] for r in part)
+        words = copy.BASIS_TOTAL_30 if repeating else copy.BASIS_TOTAL_ONE_OFFS
+        st.markdown(f"**{title}** · {words.format(total=money(abs(total)))}")
+        _table(part, repeating)
+
+
+def _change_box(rows: list[dict], repeating: bool) -> None:
+    """Change one of the payments just above, with the fields that fit it (R.1)."""
+    if not rows:
+        return
+    key = "regular" if repeating else "one-off"
+    with st.expander(copy.BASIS_EDIT_REGULAR if repeating else copy.BASIS_EDIT_ONE_OFF):
+        by_id = {r["id"]: r for r in rows}
+        chosen = st.selectbox(
+            copy.BASIS_PICK,
+            list(by_id),
+            key=f"pick-{key}",
+            format_func=lambda i: f"{by_id[i]['label']} · {money(by_id[i]['amount'])}"
+            + (f" · {by_id[i]['how_often']}" if repeating else f" · {day(by_id[i]['due'])}"),
+        )
+        row = by_id[chosen]
+        with st.form(f"edit-{key}-{chosen}"):
+            left, right = st.columns(2)
+            amount = left.number_input(
+                copy.BASIS_AMOUNT, min_value=0.0, value=float(abs(row["amount"])), step=10.0
+            )
+            when = right.date_input(
+                copy.BASIS_NEXT_DATE if repeating else copy.BASIS_ONE_OFF_DATE,
+                value=row["next"] or row["due"],
+                format="MM/DD/YYYY",
+            )
+            changes: dict = {}
+            if repeating:
+                has_end = st.checkbox(copy.BASIS_HAS_END, value=row["end_date"] is not None)
+                end = st.date_input(
+                    copy.BASIS_END_DATE,
+                    value=row["end_date"] or core.today + timedelta(days=90),
+                    format="MM/DD/YYYY",
+                )
+            else:
+                sure = st.radio(
+                    copy.BASIS_HOW_SURE,
+                    list(copy.BASIS_SURE),
+                    index=1 if row["maybe"] else 0,
+                    horizontal=True,
+                    format_func=lambda k: copy.BASIS_SURE[k],
+                )
+            if st.form_submit_button(copy.BASIS_SAVE, type="primary"):
+                if repeating:
+                    changes["end_date"] = end if has_end else None
+                elif sure != ("maybe" if row["maybe"] else "confirmed"):
+                    changes["certainty"] = sure
+                if abs(amount - abs(row["amount"])) > 0.005:
+                    changes["amount"] = amount
+                if when != (row["next"] or row["due"]):
+                    changes["due_date"] = when
+                _done(copy.BASIS_SAVED.format(label=row["label"]), core.update_plan_item(chosen, **changes))
+        buttons = st.columns(3)
+        if repeating:
+            if row["paused"]:
+                if buttons[0].button(copy.BASIS_RESUME, key=f"resume-{chosen}"):
+                    _done(
+                        copy.BASIS_RESUMED_DONE.format(label=row["label"]),
+                        core.pause_plan_item(chosen, False),
+                    )
+            elif buttons[0].button(copy.BASIS_PAUSE, key=f"pause-{chosen}"):
+                _done(copy.BASIS_PAUSED_DONE.format(label=row["label"]), core.pause_plan_item(chosen))
+            if row["badge"] == "statement" and buttons[2].button(
+                copy.BASIS_LOOKS_RIGHT, key=f"confirm-{chosen}"
+            ):
+                core.confirm_plan_item(chosen)
+                _done(copy.BASIS_CONFIRMED)
+        if buttons[1].button(copy.BASIS_REMOVE, key=f"remove-{key}-{chosen}"):
+            _done(copy.BASIS_REMOVED_DONE.format(label=row["label"]), core.delete_plan_item(chosen))
+
+
 # ---------------------------------------------------------------- regular payments
 with st.container(border=True):
     section_title(copy.BASIS_REGULAR)
     st.caption(copy.BASIS_REGULAR_HELP)
     if basis["regular"]:
-        _table(basis["regular"], repeating=True)
+        _by_direction(basis["regular"], repeating=True)
+    _change_box(basis["regular"], repeating=True)
 
 # ---------------------------------------------------------------- one-offs, and "just say it"
 with st.container(border=True):
@@ -205,9 +288,10 @@ with st.container(border=True):
                 core.update_plan_item(row["id"], due_date=core.today + timedelta(days=7)),
             )
     if basis["one_offs"]:
-        _table(basis["one_offs"], repeating=False)
+        _by_direction(basis["one_offs"], repeating=False)
     else:
         st.caption(copy.BASIS_NO_ONE_OFFS)
+    _change_box(basis["one_offs"], repeating=False)
     if st.session_state.get("plan_added"):
         st.success(copy.PLAN_ITEMS_ADDED.format(n=st.session_state.pop("plan_added")))
     said = st.text_area(
@@ -231,52 +315,6 @@ with st.container(border=True):
                 st.session_state.pop("plan_proposals", None)
                 st.session_state["plan_added"] = added
                 st.rerun()
-
-# ---------------------------------------------------------------- change a payment
-everything = basis["regular"] + basis["one_offs"]
-if everything:
-    with st.container(border=True):
-        section_title(copy.BASIS_EDIT)
-        by_id = {r["id"]: r for r in everything}
-        chosen = st.selectbox(
-            copy.BASIS_PICK,
-            list(by_id),
-            format_func=lambda i: f"{by_id[i]['label']} · {money(by_id[i]['amount'])} · "
-            f"{by_id[i]['how_often']}",
-        )
-        row = by_id[chosen]
-        with st.form(f"edit-{chosen}"):
-            left, right = st.columns(2)
-            amount = left.number_input(
-                copy.BASIS_AMOUNT, min_value=0.0, value=float(abs(row["amount"])), step=10.0
-            )
-            when = right.date_input(
-                copy.BASIS_NEXT_DATE, value=row["next"] or row["due"], format="MM/DD/YYYY"
-            )
-            has_end = st.checkbox(copy.BASIS_HAS_END, value=row["end_date"] is not None)
-            end = st.date_input(
-                copy.BASIS_END_DATE,
-                value=row["end_date"] or core.today + timedelta(days=90),
-                format="MM/DD/YYYY",
-            )
-            if st.form_submit_button(copy.BASIS_SAVE, type="primary"):
-                changes = {"end_date": end if has_end else None}
-                if abs(amount - abs(row["amount"])) > 0.005:
-                    changes["amount"] = amount
-                if when != (row["next"] or row["due"]):
-                    changes["due_date"] = when
-                _done(copy.BASIS_SAVED.format(label=row["label"]), core.update_plan_item(chosen, **changes))
-        buttons = st.columns(3)
-        if row["paused"]:
-            if buttons[0].button(copy.BASIS_RESUME, key=f"resume-{chosen}"):
-                _done(copy.BASIS_RESUMED_DONE.format(label=row["label"]), core.pause_plan_item(chosen, False))
-        elif buttons[0].button(copy.BASIS_PAUSE, key=f"pause-{chosen}"):
-            _done(copy.BASIS_PAUSED_DONE.format(label=row["label"]), core.pause_plan_item(chosen))
-        if buttons[1].button(copy.BASIS_REMOVE, key=f"remove-{chosen}"):
-            _done(copy.BASIS_REMOVED_DONE.format(label=row["label"]), core.delete_plan_item(chosen))
-        if row["badge"] == "statement" and buttons[2].button(copy.BASIS_LOOKS_RIGHT, key=f"confirm-{chosen}"):
-            core.confirm_plan_item(chosen)
-            _done(copy.BASIS_CONFIRMED)
 
 # ---------------------------------------------------------------- left out
 left_out = basis["not_counted"]
@@ -309,3 +347,17 @@ if month:
             st.caption(copy.BASIS_MAYBE_NOTE.format(amount=money(month["maybe_in"])))
         if (month["last"] + timedelta(days=1)).month == month["last"].month:  # the forecast ends mid-month
             st.caption(copy.BASIS_PARTIAL_MONTH.format(first=day(month["first"]), last=day(month["last"])))
+
+# ---------------------------------------------------------------- what the owner told us (roadmap R.3c)
+notes, limits = core.owner_notes(), core.declined_suggestions()
+if notes or limits:
+    with st.container(border=True):
+        section_title(copy.BASIS_TOLD)
+        st.markdown(
+            "\n".join(
+                [f"- {copy.NOTE_ROW.format(note=n['text'])}" for n in notes]
+                + [f"- {copy.LIMIT_ROW.format(what=r['what'])}" for r in limits]
+            )
+        )
+        if st.button(copy.TOLD_LINK, key="basis-told"):
+            go_to("told")

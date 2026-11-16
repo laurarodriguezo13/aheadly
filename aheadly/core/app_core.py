@@ -30,7 +30,7 @@ from aheadly.ai.llm_client import create_llm_client
 from aheadly.ai.scenarios import apply_adjustments, parse_adjustment
 from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
-from aheadly.ai import templates
+from aheadly.ai import owner_notes, templates
 from aheadly.core import actions as alert_actions
 from aheadly.core import alert_rules, financing, insight_charts, onboarding, pattern_rules, safe, stress
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
@@ -85,8 +85,18 @@ class Dashboard:
     history: pd.DataFrame
     alerts: list[Alert]
     next_payment: tuple[date, float, str] | None
-    unread_alerts: int = 0
+    open_alerts: int = 0
     scheduled: list = field(default_factory=list)
+
+
+# what an insight's action changes, for the owner's "Not for me" rules (roadmap R.3)
+INSIGHT_ACTION_KINDS = {
+    "lower_owner_pay_for_a_while": "owner_pay",
+    "review_prices": "price",
+    "raise_prices_to_cover": "price",
+    "cancel_if_not_needed": "cancel",
+}
+DECLINE_REASONS = ("wont_agree", "cant_lower_pay", "cant_raise_prices", "already_done", "other", "told_us")
 
 
 class AppCore:
@@ -344,10 +354,16 @@ class AppCore:
         return {"questions": pending, "done": len(done), "total": len(done) + len(pending)}
 
     def questions_left(self) -> int | None:
-        """How many questions were left the last time they were worked out (cheap: for the sidebar);
-        None before the first time."""
+        """How many questions are left, for the sidebar: kept since they were last worked out, and
+        worked out the first time when there's data (roadmap R.2, issue 17: the sidebar is drawn
+        before the Questions page, so the count only showed after the first answer). None without data."""
         business = self.repo.get_business()
-        return self.repo.get_profile(business.id).get("questions_left") if business else None
+        if not business:
+            return None
+        left = self.repo.get_profile(business.id).get("questions_left")
+        if left is None and self.status().connected:
+            left = len(self.onboarding()["questions"])
+        return left
 
     def answer_business(self, business_type: str, customers_pay: str = "") -> None:
         changes = {"business_type": business_type.strip(), "customers_pay": customers_pay.strip()}
@@ -368,15 +384,122 @@ class AppCore:
 
     def answer_mystery(self, payee: str, category: str | None = None, words: str = "") -> str:
         """What a payee is: a category picked from the list, or the owner's own words (or both).
+        The words win when they name a kind of payment (roadmap R.1: on the live site the list,
+        still on the AI's guess "Other income", beat "loan repayment"); the list decides otherwise.
         Returns the category used."""
+        said = categorizer.category_from_answer(words) if words.strip() else "other"
+        if said != "other" or (words.strip() and not category):
+            category = said
         if category:
             self.set_payee_rule(payee, category, words or payee)
-        elif words.strip():
-            category = self.answer_payee(payee, words)
         else:
             raise ValueError("Pick a category or say in your own words what it is.")
         self._question_done(f"mystery:{categorizer.match_key(payee)}")
         return category
+
+    # ------------------------------------------------- what the owner tells us (roadmap R.3c)
+    def read_anything_else(self, text: str) -> dict:
+        """'Is there anything else we should know?': payments to confirm (like "just say it"),
+        limits for the suggestions and notes for the chat, as understood. Saves nothing."""
+        if not text.strip():
+            return {"proposals": [], "limits": [], "notes": []}
+        sorted_ = self.translator.sort_owner_notes(text, self.scheduled_labels())
+        return {"proposals": self.parse_plan_text(text), **sorted_}
+
+    def keep_anything_else(self, limits: list[dict], notes: list[str]) -> None:
+        """What the owner confirmed: limits become "Not for me" rules, notes go to the chat."""
+        business = self._business()
+        profile = self.repo.get_profile(business.id)
+        kept_notes = profile.get("owner_notes", []) + [
+            {"text": n.strip(), "added": self.today.isoformat()} for n in notes if n.strip()
+        ]
+        rules = profile.get("declined_suggestions", []) + [owner_notes.as_rule(limit) for limit in limits]
+        self.repo.save_profile(business.id, {"owner_notes": kept_notes, "declined_suggestions": rules})
+        self._question_done("anything_else")
+        if limits:
+            self._suggestions_changed()
+
+    def owner_notes(self) -> list[dict]:
+        business = self.repo.get_business()
+        return self.repo.get_profile(business.id).get("owner_notes", []) if business else []
+
+    def add_owner_note(self, text: str) -> None:
+        if not text.strip():
+            raise ValueError("Write the note first.")
+        business = self._business()
+        notes = self.owner_notes() + [{"text": text.strip(), "added": self.today.isoformat()}]
+        self.repo.save_profile(business.id, {"owner_notes": notes})
+
+    def remove_owner_note(self, index: int) -> None:
+        notes = self.owner_notes()
+        del notes[index]
+        self.repo.save_profile(self._business().id, {"owner_notes": notes})
+
+    def remove_declined(self, index: int) -> None:
+        """One "Not for me" (or limit the owner told us) taken back: it can be suggested again."""
+        rules = self.declined_suggestions()
+        del rules[index]
+        self.repo.save_profile(self._business().id, {"declined_suggestions": rules})
+        self._suggestions_changed()
+
+    def bring_back_insight(self, insight_type: str) -> None:
+        profile = self.repo.get_profile(self._business().id)
+        set_aside = {k: v for k, v in profile.get("insights_set_aside", {}).items() if k != insight_type}
+        self.repo.save_profile(self._business().id, {"insights_set_aside": set_aside})
+
+    def change_payee_answer(self, match_key: str, category: str) -> None:
+        """'What you told us': another kind for a payee the owner named (the same payee, by its key;
+        the owner's own words stay)."""
+        if category not in categorizer.CATEGORIES:
+            raise ValueError(f"Unknown category {category!r}.")
+        business = self._business()
+        row = next((r for r in self.repo.payee_rule_rows(business.id) if r["match_key"] == match_key), None)
+        if row is None:
+            raise ValueError("There's no answer about that payee.")
+        self.repo.save_payee_rule(business.id, match_key, category, row["label"])
+        if self._categorize(business.id):
+            self._detect_recurring(business.id)
+            self.run_daily_check(force=True)
+
+    def forget_payee_answer(self, match_key: str) -> None:
+        """'That's not right': the owner's answer about a payee goes, and the rules place it again."""
+        business = self._business()
+        self.repo.delete_payee_rule(business.id, match_key)
+        if self._categorize(business.id):
+            self._detect_recurring(business.id)
+            self.run_daily_check(force=True)
+
+    def told_us(self) -> dict:
+        """'What you told us' (roadmap R.3c): every answer the owner gave, to see and change."""
+        business = self._business()
+        profile = self.repo.get_profile(business.id)
+        rules = [
+            {
+                **r,
+                "payee": r["match_key"].upper(),
+                "said": r["label"] if r["label"].lower() != r["match_key"] else "",
+            }
+            for r in self.repo.payee_rule_rows(business.id)
+        ]
+        titles = {card["type"]: card["title"] for card in self.insight_cards()}
+        return {
+            "business_type": profile.get("business_type", ""),
+            "customers_pay": profile.get("customers_pay", ""),
+            "seasons": self.seasons(),
+            "owner_pay": [r for r in rules if r["category"] == "owner_pay"],
+            "payees": [r for r in rules if r["category"] != "owner_pay"],
+            "notes": self.owner_notes(),
+            "limits": self.declined_suggestions(),
+            "set_aside": [
+                {"type": t, "title": titles.get(t, t), "reason": reason}
+                for t, reason in profile.get("insights_set_aside", {}).items()
+            ],
+        }
+
+    def nothing_coming_up(self, question_id: str = "coming_up") -> None:
+        """'Nothing else for now' answers the question (nothing big is coming): it counts as answered,
+        not skipped (roadmap R.1: the trust box said 4 of 5 after it)."""
+        self._question_done(question_id)
 
     def skip_question(self, question_id: str) -> None:
         """Skipped: not asked again, but not counted as answered (confidence, roadmap 2.8)."""
@@ -523,9 +646,11 @@ class AppCore:
         }
 
     def update_plan_item(self, item_id: int, **changes) -> dict:
-        """The owner changes an item (amount, label, next date, end date). From now on it's theirs:
-        a later upload suggests changes but never overwrites them. Returns the effect."""
+        """The owner changes an item (amount, label, next date, end date, certain or maybe). From now
+        on it's theirs: a later upload suggests changes but never overwrites them. Returns the effect."""
         item = self._own_item(item_id)
+        if changes.get("certainty") not in (None, "confirmed", "maybe"):
+            raise ValueError("certainty is confirmed or maybe")
         if "amount" in changes and changes["amount"] is not None:
             amount = abs(float(changes["amount"]))
             changes["amount"] = amount if item.amount > 0 else -amount
@@ -611,6 +736,15 @@ class AppCore:
             "end_date": item.end_date,
             "past_due": not item.recurrence and item.due_date < self.today,
             "category": item.category,
+            # what it adds up to in the next 30 days (R.1: totals for money in and out)
+            "next_30_days": round(
+                (
+                    sum(a for d, a, _ in upcoming if d < self.today + timedelta(days=30))
+                    if not item.paused
+                    else 0.0
+                ),
+                2,
+            ),
         }
 
     def _update_suggestions(self, items: list[ScheduledItem], found: dict) -> list[dict]:
@@ -887,16 +1021,30 @@ class AppCore:
         )
 
         detected = alert_rules.detect_alerts(forecast, business, self._avg_monthly_outflow(), self.today)
-        open_alerts = self.repo.list_alerts(business.id)
+        insights = self.insights()
+        detected += alert_rules.charge_alerts(insights, self.today)  # roadmap R.1
+        for found in detected:  # roadmap R.3b: a customer paying later, whose money now lands after the low
+            if found.type in ("shortfall", "watch"):
+                late = alert_rules.late_customer(insights, found.risk_date, self.today)
+                if late:
+                    found.facts["late_customer"] = {
+                        **late,
+                        "customer": templates.payee_name(late["customer"]),
+                    }
+        open_alerts = self.repo.unresolved_alerts(business.id)  # dismissed ones too, so they stay dismissed
         summary = DailyRunSummary(ran=True, forecast=forecast)
+        still_there = set()
         for facts in detected:
             for key in ("top_outflows", "expected_inflows_before"):
                 if key in facts.facts:
                     facts.facts[key] = self._plain_names(facts.facts[key])
+            if "payee" in facts.facts:
+                facts.facts["payee"] = templates.payee_name(facts.facts["payee"])
             text = self.translator.write_alert(facts.facts)
             text.actions = self._actions_for(facts.facts, forecast)
             duplicate = alert_rules.find_duplicate(open_alerts, facts)
             if duplicate:
+                still_there.add(duplicate.id)
                 self.repo.update_alert(
                     duplicate.id,
                     facts.severity,
@@ -920,9 +1068,10 @@ class AppCore:
                     text.actions,
                 )
                 summary.alerts_raised += 1
-        detected_types = {f.type for f in detected}
-        for alert_type in {a.type for a in open_alerts} - detected_types:
-            summary.alerts_resolved += self.repo.resolve_alerts(business.id, alert_type)
+        for alert in open_alerts:  # what today's check no longer finds is solved
+            if alert.id not in still_there:
+                self.repo.resolve_alert(alert.id)
+                summary.alerts_resolved += 1
         logger.info(
             "daily check: raised=%s updated=%s resolved=%s",
             summary.alerts_raised,
@@ -952,7 +1101,7 @@ class AppCore:
             history=history,
             alerts=self.repo.list_alerts(business.id),
             next_payment=next_payment,
-            unread_alerts=self.repo.unread_alert_count(business.id),
+            open_alerts=self.repo.open_alert_count(business.id),
             scheduled=forecast.scheduled if forecast else [],
         )
 
@@ -960,15 +1109,21 @@ class AppCore:
     def get_alerts(self, open_only: bool = True) -> list[Alert]:
         return self.repo.list_alerts(self._business().id, open_only=open_only)
 
-    def unread_alert_count(self) -> int:
+    def open_alert_count(self) -> int:
+        """The sidebar badge: alerts stay counted until they are dismissed or solved, not just seen."""
         business = self.repo.get_business()
-        return self.repo.unread_alert_count(business.id) if business else 0
-
-    def mark_alert_read(self, alert_id: int) -> None:
-        self.repo.mark_alert_read(alert_id)
+        return self.repo.open_alert_count(business.id) if business else 0
 
     def dismiss_alert(self, alert_id: int) -> None:
         self.repo.dismiss_alert(alert_id)
+
+    def dismissed_alerts(self) -> list[Alert]:
+        """Dismissed but not solved: the pages don't say "cash looks healthy" while there are any (R.1)."""
+        business = self.repo.get_business()
+        return self.repo.dismissed_alerts(business.id) if business else []
+
+    def bring_back_alerts(self) -> None:
+        self.repo.bring_back_alerts(self._business().id)
 
     # ------------------------------------------------------------------ chat
     def ask(self, question: str) -> ChatAnswer:
@@ -1014,7 +1169,7 @@ class AppCore:
         """2–3 actions for an alert: worked out and measured by code when it can (roadmap 3.2–3.3),
         general advice (without a what-if) to fill up to two, and for idle cash."""
         generic = templates.alert_text(facts)["actions"]
-        if facts["type"] != "shortfall":
+        if facts["type"] not in ("shortfall", "watch"):
             return generic
         found = self._fixes(forecast)
         return found + generic[: max(0, 2 - len(found))]
@@ -1029,6 +1184,7 @@ class AppCore:
             self.today + timedelta(days=self.settings.horizon_days - 1),
             lambda adjustments: self._scenario(adjustments, "Suggested fix", baseline=baseline),
             self.weekly_sales(),
+            declined=self.declined_suggestions(),
         )
 
     def suggested_fixes(self) -> list[dict]:
@@ -1170,6 +1326,9 @@ class AppCore:
                     "body": text.body,
                     "actions": [self._insight_action(a, insight, baseline) for a in text.actions],
                     "facts": insight["facts"],
+                    # roadmap R.1: a charge to check and idle cash are alerts too, so the Insights page
+                    # and the dashboard leave them out (the chat still sees them)
+                    "is_alert": insight["type"] in (*alert_rules.CHARGE_TYPES, "idle_cash"),
                 }
             )
         self._cards_cache = {"key": key, "cards": cards}
@@ -1216,6 +1375,12 @@ class AppCore:
         if not found:
             return action
         words, adjustments = found
+        kind = INSIGHT_ACTION_KINDS[action["key"]]
+        payment = adjustments[0].get("label") if kind in ("owner_pay", "cancel") else None
+        if alert_actions.ruled_out(
+            self.declined_suggestions(), kind, payment, alert_actions.suggestion_id(adjustments)
+        ):
+            return action  # the owner said no to this kind of change (roadmap R.3): advice only
         result = self._scenario(adjustments, words["label"], baseline=baseline)
         effect = alert_actions.impact(result)
         if (
@@ -1227,10 +1392,135 @@ class AppCore:
         return {
             **words,
             "key": action["key"],
-            "kind": "insight",
+            "kind": kind,
             "adjustments": adjustments,
             "impact": effect,
+            "id": alert_actions.suggestion_id(adjustments),
+            "payment": payment,
+            **({"pay": round(-pay.amount, 2)} if kind == "owner_pay" else {}),
         }
+
+    def noticed_cards(self) -> list[dict]:
+        """The things we noticed the Insights page and the dashboard show: not the ones on Alerts,
+        nor the ones the owner set aside ("I know about it", "Not right", roadmap R.3)."""
+        set_aside = self.repo.get_profile(self._business().id).get("insights_set_aside", {})
+        return [
+            card for card in self.insight_cards() if not card["is_alert"] and card["type"] not in set_aside
+        ]
+
+    def set_aside_insight(self, insight_type: str, reason: str) -> None:
+        if reason not in ("known", "wrong"):
+            raise ValueError("reason is 'known' or 'wrong'")
+        profile = self.repo.get_profile(self._business().id)
+        set_aside = {**profile.get("insights_set_aside", {}), insight_type: reason}
+        self.repo.save_profile(self._business().id, {"insights_set_aside": set_aside})
+
+    # ------------------------------------------------------- suggestions you can work with (R.3)
+    def declined_suggestions(self) -> list[dict]:
+        """The owner's "Not for me" answers, as rules the suggestions respect."""
+        business = self.repo.get_business()
+        return self.repo.get_profile(business.id).get("declined_suggestions", []) if business else []
+
+    def decline_suggestion(self, action: dict, reason: str, note: str = "") -> dict:
+        """'Not for me', with a reason. Some reasons rule out a whole kind ("I can't lower my pay"),
+        some one payment ("they won't agree"), the rest this suggestion; the alerts and every list
+        of suggestions are worked out again without it."""
+        kind, payment = action.get("kind"), action.get("payment")
+        if reason not in DECLINE_REASONS:
+            raise ValueError(f"Unknown reason {reason!r}")
+        if reason == "cant_lower_pay":
+            rule = {"kind": "owner_pay"}
+        elif reason == "cant_raise_prices":
+            rule = {"kind": "price"}
+        elif payment and kind != "pair":
+            rule = {"kind": kind, "label": payment}
+        else:
+            rule = {"id": action.get("id") or alert_actions.suggestion_id(action["adjustments"])}
+        rule |= {"reason": reason, "note": note.strip(), "what": action["label"]}
+        rules = [r for r in self.declined_suggestions() if r.get("what") != action["label"]] + [rule]
+        self.repo.save_profile(self._business().id, {"declined_suggestions": rules})
+        self._suggestions_changed()
+        return rule
+
+    def bring_back_suggestions(self) -> None:
+        self.repo.save_profile(self._business().id, {"declined_suggestions": []})
+        self._suggestions_changed()
+
+    def _suggestions_changed(self) -> None:
+        self._fixes_cache, self._cards_cache, self._stress_cache = {}, {}, {}
+        self.run_daily_check(force=True)  # the alerts' own suggestions are worked out again
+
+    def all_suggestions(self) -> list[dict]:
+        """Every tested suggestion the app has right now, once each, with where it comes from:
+        the alerts, the things we noticed and the bad surprises (tested with the surprise in place,
+        `context`)."""
+        found, seen = [], set()
+
+        def add(action: dict, source: str, context: list[dict] | None = None) -> None:
+            if not action.get("adjustments"):
+                return
+            sid = alert_actions.suggestion_id((context or []) + action["adjustments"])
+            if sid not in seen:
+                seen.add(sid)
+                found.append({"id": sid, "action": action, "source": source, "context": context or []})
+
+        for alert in self.get_alerts():
+            for action in alert.actions:
+                add(action, alert.title)
+        for card in self.noticed_cards():
+            for action in card["actions"]:
+                add(action, card["title"])
+        for test in self.stress_tests():
+            for action in test["fixes"]:
+                add(action, test["label"], test["adjustments"])
+        return found
+
+    def test_suggestion(self, adjustments: list[dict], context: list[dict] | None = None) -> dict:
+        """A suggestion as it is or as the owner changed it, tested (with a bad surprise in place
+        when it came from one). Not kept in the history."""
+        result = self._scenario((context or []) + adjustments, "Your version")
+        return {"result": result, "impact": alert_actions.impact(result)}
+
+    def save_suggestion(self, adjustments: list[dict], name: str) -> DailyRunSummary:
+        """Save as my plan: only the change itself, never the bad surprise it was tested against."""
+        return self.save_plan(self._scenario(adjustments, name))
+
+    def suggestions_for_chat(self) -> dict:
+        """The get_suggestions chat tool (roadmap R.3b): how much is missing and by when, every tested
+        suggestion with its effect (not the bad surprises': they answer "what if"), and what the
+        owner said no to."""
+        business = self._business()
+        line = business.low_cash_line
+        forecast = self._baseline_forecast()
+        lowest = forecast.lowest
+        data = {
+            "low_cash_line": round(line),
+            "lowest_balance": round(lowest.balance_p50),
+            "lowest_date": lowest.date.isoformat(),
+            "suggestions": [
+                {
+                    "label": entry["action"]["label"],
+                    "from": entry["source"],
+                    "lowest_before": entry["action"]["impact"]["lowest_before"],
+                    "lowest_after": entry["action"]["impact"]["lowest_after"],
+                    "worst_before": entry["action"]["impact"]["worst_before"],
+                    "worst_after": entry["action"]["impact"]["worst_after"],
+                    "status_before": entry["action"]["impact"]["risk_before"],
+                    "status_after": entry["action"]["impact"]["risk_after"],
+                    "chance_before": entry["action"]["impact"]["chance_before"],
+                    "chance_after": entry["action"]["impact"]["chance_after"],
+                }
+                for entry in self.all_suggestions()
+                if not entry["context"]
+            ][:5],
+            "said_no_to": [rule["what"] for rule in self.declined_suggestions()],
+        }
+        if lowest.balance_p50 < line:
+            data["short_by"] = round(line - lowest.balance_p50)
+        still = self.still_short()
+        if still:
+            data["still_short_after_best"] = still
+        return data
 
     def insights_for_chat(self) -> dict:
         """The get_insights chat tool (roadmap 4.3): what we noticed, with the numbers behind it."""
@@ -1376,6 +1666,7 @@ class AppCore:
                     ),
                     weekly,
                     frozenset(a["label"] for a in surprise["adjustments"] if "label" in a),
+                    declined=self.declined_suggestions(),
                 )[:2]
             tests.append(
                 {
@@ -1411,6 +1702,45 @@ class AppCore:
         return self._scenario(test["adjustments"], test["label"])
 
     # -------------------------------------------------------------- financing helper (3.6)
+    def test_loan(
+        self, amount: float, yearly_rate: float, months: int, fees: float = 0.0, start: date | None = None
+    ) -> dict:
+        """Roadmap R.2: a loan the owner is thinking about, on their own numbers (no lender, no offer).
+        The monthly payment and what it costs come from code; the what-if shows what it does to the
+        next 8 weeks. Not kept in the history until the owner saves it as the plan."""
+        start = start or self.today
+        if start < self.today:
+            raise ValueError("The money can't come in before today.")
+        adjustment = {
+            "type": "loan",
+            "amount": amount,
+            "yearly_rate": yearly_rate,
+            "months": months,
+            "fees": fees,
+            "start_date": start.isoformat(),
+            "label": f"Loan of ${amount:,.0f}",
+        }
+        result = self._scenario([adjustment], f"Loan of ${amount:,.0f} over {months} months")
+        schedule = financing.loan_payments(amount, yearly_rate, months, start)
+        end = self.today + timedelta(days=self.settings.horizon_days - 1)
+        in_window = [pay for when, pay in schedule if when <= end]
+        line = result.low_cash_line
+        paid = round(sum(pay for _, pay in schedule), 2)
+        return {
+            "result": result,
+            "monthly_payment": financing.monthly_payment(amount, yearly_rate, months),
+            "payments": len(schedule),
+            "last_payment": schedule[-1][0],
+            "interest": round(paid - amount, 2),
+            "total_cost": round(paid - amount + fees, 2),
+            "payments_in_window": len(in_window),
+            "paid_in_window": round(sum(in_window), 2),
+            "lowest_before": round(result.baseline.lowest.balance_p50),
+            "lowest_after": round(result.scenario.lowest.balance_p50),
+            "risk_before": result.baseline.risk_level(line),
+            "risk_after": result.scenario.risk_level(line),
+        }
+
     def financing_options(self) -> list[dict]:
         """The ways to cover a gap the owner says they have (nothing is offered by the app)."""
         return list(self.repo.get_profile(self._business().id).get("financing_options", []))
@@ -1705,6 +2035,15 @@ class AppCore:
                 "severity": a.severity,
                 "weeks_ahead": a.weeks_ahead,
                 "facts": a.facts,
+                # roadmap R.1: "How do I fix my alert?" gets the fixes, tested ones first
+                "fixes": [
+                    {
+                        "label": action["label"],
+                        "detail": action.get("detail", ""),
+                        **({"tested": action["impact"]} if action.get("impact") else {}),
+                    }
+                    for action in sorted(a.actions, key=lambda action: not action.get("impact"))[:3]
+                ],
             }
             for a in self.get_alerts()
         ]
@@ -1889,6 +2228,8 @@ class AppCore:
             "currency": business.currency,
             "low_cash_line": round(business.low_cash_line),
             "scheduled_labels": labels or "none",
+            # roadmap R.3c: the owner's own notes ("anything else we should know?"), as background
+            "owner_notes": "; ".join(n["text"] for n in self.owner_notes()) or "nothing yet",
         }
 
 

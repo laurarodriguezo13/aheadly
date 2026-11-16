@@ -30,13 +30,17 @@ WHY = {
     ),
     "mystery": "So your spending by category adds up, and a payment we can't name doesn't hide a problem.",
     "coming_up": "Your statement only shows the past. Big payments you already know about change the forecast.",
+    "anything_else": (
+        "Things only you know: what can't change (your pay, your prices, a supplier who never moves a date) "
+        "and anything else about the business. We use it for the suggestions and the chat."
+    ),
 }
 
 
 @dataclass(frozen=True)
 class Question:
     id: str
-    kind: str  # business | seasons | owner_pay | mystery | coming_up
+    kind: str  # business | seasons | owner_pay | mystery | coming_up | anything_else
     title: str
     why: str
     payee: str | None = None
@@ -45,6 +49,17 @@ class Question:
     suggestion: str | None = None  # a category the model suggests (mystery questions)
     reason: str = ""
     extra: dict = field(default_factory=dict)
+
+
+MONEY_IN_KINDS = {"sales", "other_income"}
+EITHER_WAY = {"loan", "other", "transfer_internal", "card_payment"}
+
+
+def fits_direction(category: str, amount: float) -> bool:
+    """A guess for money going out can't be a kind of income, and the other way round."""
+    if category in EITHER_WAY:
+        return True
+    return (category in MONEY_IN_KINDS) == (amount > 0)
 
 
 def build(
@@ -85,6 +100,8 @@ def build(
     for p in mysteries[:MAX_MYSTERIES]:
         key = plain(p["description"])
         category, reason = suggestions.get(p["description"], (None, ""))
+        if category and not fits_direction(category, p["total"]):
+            category, reason = None, ""  # roadmap R.1: the AI called a payment going out "Other income"
         questions.append(
             Question(
                 f"mystery:{key}",
@@ -101,7 +118,11 @@ def build(
     questions.append(
         Question("coming_up", "coming_up", "Anything big coming up in the next two months?", WHY["coming_up"])
     )
-    return questions[:MAX_QUESTIONS]
+    # roadmap R.3c: the free-text question planned in 2.7, always the last one
+    anything_else = Question(
+        "anything_else", "anything_else", "Is there anything else we should know?", WHY["anything_else"]
+    )
+    return questions[: MAX_QUESTIONS - 1] + [anything_else]
 
 
 def _detail(payee: dict, how_often: str | None) -> str:

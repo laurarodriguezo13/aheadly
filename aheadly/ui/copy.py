@@ -2,15 +2,26 @@
 
 TAGLINE = "Clarity today. A brighter tomorrow."
 
-NAV = {
-    "dashboard": "Dashboard",
-    "questions": "Questions",
-    "alerts": "Alerts",
+# roadmap R.2: four sidebar entries, each with sub-tabs; the four use case names are sub-tab names
+NAV_GROUPS = {
+    "home": "Dashboard",
     "ask": "Ask Aheadly",
-    "whatif": "What-if",
-    "accounts": "Accounts",
-    "basis": "How we built it",
+    "business": "Your business",
+    "settings": "Settings",
+}
+NAV = {
+    "dashboard": "Overview",
+    "alerts": "Early-warning alerts",
     "insights": "Insights",
+    "ask": "Ask about my numbers",
+    "whatif": "Test a what-if",
+    "suggestion": "Suggestions",
+    "surprises": "Bad surprises",
+    "financing": "Financing",
+    "accounts": "Connect accounts",
+    "questions": "Questions",
+    "basis": "Behind the forecast",
+    "told": "What you told us",
     "settings": "Settings",
 }
 
@@ -20,7 +31,7 @@ WELCOME_BODY = (
     "and answers your questions in plain words."
 )
 ALL_SET = "All set. We'll check your money every time you open Aheadly."
-NOT_CONNECTED = "No data yet. Upload your bank statement on **Accounts** to get started."
+NOT_CONNECTED = "No data yet. Upload your bank statement under **Your business** to get started."
 GO_TO_ACCOUNTS = "Upload my bank statement"
 UPLOAD_TITLE = "Upload your bank statements"
 UPLOAD_HELP = (
@@ -197,18 +208,17 @@ NEXT_PAYMENT = "Next big payment"
 CHART_TITLE = "Cash flow forecast, next 8 weeks"
 UPCOMING_ALERTS = "Upcoming alerts"
 NO_ALERTS = "No alerts. Your cash looks healthy for the next 8 weeks."
-WATCH_NO_ALERTS = (
-    "No alerts, but in a bad month your cash could dip to {worst}, below your {line} line. Keep an eye on it."
-)
+# roadmap R.1: after Dismiss the numbers haven't changed, so the page mustn't say all is well
+ONLY_DISMISSED = "No open alerts. You dismissed {what}; the forecast still shows it."
+BRING_BACK = "Show dismissed alerts"
 ASK_BOX = "Ask Aheadly"
 ASK_PLACEHOLDER = "Ask a question…"
 
 ALERTS_TITLE = "Alerts"
 WHY_IT_MATTERS = "Why it matters"
-WHAT_YOU_CAN_DO = "What you can do"
 TOP_OUTFLOWS = "Top cash outflows in {weeks}"
-SEE_WHY = "See why"
-TEST_WHAT_IF = "Test a what-if"
+ASK_ABOUT_ALERT = "Ask about this alert"
+ASK_ABOUT_ALERT_QUESTION = "What's causing my alert \"{title}\", and what's my best option?"
 DISMISS = "Dismiss"
 ALERT_FOOTER = "Plan ahead and take action now to stay on track."
 
@@ -245,12 +255,12 @@ BACKTEST = "Compare forecast models (backtest)"
 
 
 # ---------------------------------------------------------------- how we built your forecast (2.6)
-BASIS_TITLE = "How we built your forecast"
+BASIS_TITLE = "Behind the forecast"
 BASIS_INTRO = (
     "Everything the forecast counts on, in one place. Change anything that's wrong and you'll see "
     "what it does to your lowest balance."
 )
-BASIS_LINK = "How we built this forecast"
+BASIS_LINK = "Behind the forecast"
 BASIS_START = "Where it starts"
 BASIS_START_ROWS = {
     "balance": "Cash on the statement's last day",
@@ -292,7 +302,15 @@ BASIS_COLUMNS = {
 BASIS_PAUSED = "Paused"
 BASIS_ENDS = "Ends {date}"
 BASIS_MAYBE = "Maybe: counted in 3 of 4 scenarios"
-BASIS_EDIT = "Change a payment"
+BASIS_EDIT_REGULAR = "Change one of these regular payments"
+BASIS_EDIT_ONE_OFF = "Change one of these one-off payments"
+BASIS_ONE_OFF_DATE = "Date"
+BASIS_HOW_SURE = "How sure is it?"
+BASIS_SURE = {"confirmed": "Certain", "maybe": "Maybe (it might not happen)"}
+BASIS_COMING_IN = "Coming in"
+BASIS_GOING_OUT = "Going out"
+BASIS_TOTAL_30 = "about {total} in the next 30 days"
+BASIS_TOTAL_ONE_OFFS = "{total} in all"
 BASIS_PICK = "Which one?"
 BASIS_AMOUNT = "Amount"
 BASIS_NEXT_DATE = "Date"
@@ -307,6 +325,19 @@ BASIS_CONFIRMED = "Marked as confirmed. It won't be changed by a new upload."
 BASIS_EFFECT = "{what}. Lowest balance: {before} → {after}."
 BASIS_RISK_CHANGED = " Your status went from {before} to {after}."
 RISK_NAMES = {"act_now": "act now", "watch": "watch", "safe": "on track"}
+RISK_URGENT = "urgent"  # roadmap R.1: act now with the balance below zero (display only)
+URGENT_PILL = "URGENT"
+SHORT_BY = "Short by {short} on {date}"
+
+
+def risk_name(level: str, lowest: float | None = None) -> str:
+    """The status in words; "act now" with the balance below zero reads "urgent" (roadmap R.1,
+    display only: the forecast's own levels stay safe / watch / act_now)."""
+    if level == "act_now" and lowest is not None and lowest < 0:
+        return RISK_URGENT
+    return RISK_NAMES.get(level, level)
+
+
 BASIS_SAVED = "Saved {label}"
 BASIS_PAUSED_DONE = "Paused {label}"
 BASIS_RESUMED_DONE = "{label} counts again"
@@ -392,7 +423,9 @@ NOTHING_ELSE = "Nothing else for now"
 # ---------------------------------------------------------------- forecast confidence (2.8)
 CONFIDENCE_TITLE = "How much to trust this forecast: {level}"
 CONFIDENCE_LEVELS = {"high": "high", "medium": "medium", "low": "low"}
-CONFIDENCE_ALL = "All the checks"
+CONFIDENCE_COUNT = "{passed} of {total} checks pass"
+CONFIDENCE_BETTER = "What would make it better:"
+CONFIDENCE_PASSED = "The {n} checks that pass"
 NOTHING_PLANNED = "This forecast assumes no big one-off payments in the next 8 weeks. Planning any?"
 NOTHING_PLANNED_GO = "Tell us"
 
@@ -417,10 +450,7 @@ ACTION_HOW = "How to do it"
 ACTION_DRAFT = "Draft a message"
 ACTION_DRAFT_NOTE = "Copy it and send it yourself: Aheadly never sends messages."
 ACTION_SAVED = "Plan saved. The forecast and alerts now use it."
-ACTION_AFTER = "Lowest balance after: {after}"
 STILL_SHORT = "Even the best change here leaves your base case about {gap} below your line. Covering that may need money from outside the business: talk to your bank or accountant."
-WATCH_FIXES = "Your base case stays above your line, but a bad month could dip below it. These changes, tested on your numbers, would help."
-SEE_FIXES = "See what would help"
 ACTION_GENERAL = "General advice: we couldn't test this one for you."
 
 
@@ -435,9 +465,112 @@ SAFE_PAY_UNKNOWN = "Tell us which payment is your own pay (Questions) to see thi
 
 
 # ---------------------------------------------------------------- stress tests (3.5)
+SURPRISES_TITLE = "Bad surprises"
+
+# ---------------------------------------------------------------- suggestions you can work with (R.3)
+SUGGESTIONS_TITLE = "Suggestions"
+SUGGESTIONS_INTRO = (
+    "Everything Aheadly found that could help, each one tested on your forecast. Open one to see how to "
+    "do it, change it and test it again, or tell us it's not for you."
+)
+SUGGESTIONS_WORKING = "Gathering the suggestions…"
+SUGGESTIONS_NONE = "No suggestions right now: nothing in the next 8 weeks needs fixing."
+SUGGESTION_OPEN = "Open"
+SUGGESTION_BACK = "All suggestions"
+SUGGESTION_FROM = "From: {source}"
+SUGGESTION_FROM_SURPRISE = "If this bad surprise happened: {source}"
+SUGGESTION_AS_IS = "As suggested"
+SUGGESTION_MINE = "Your version"
+SUGGESTION_CHANGE = "Change it"
+SUGGESTION_CHANGE_NOTE = "Change the numbers and test your version: nothing is saved until you save it."
+SUGGESTION_NOTHING_TO_CHANGE = "There's nothing to change here: it's done as it is or not at all."
+SUGGESTION_TEST_MINE = "Test my version"
+SUGGESTION_TESTING = "Testing it on your forecast…"
+SUGGESTION_SAVE = "Save as my plan"
+SUGGESTION_SAVE_MINE = "Save my version as my plan"
+SUGGESTION_SAVED = "Saved as your plan: the forecast and the alerts now count on it."
+SUGGESTION_ASK = "Ask about this suggestion"
+SUGGESTION_ASK_QUESTION = (
+    'Tell me more about this suggestion: "{label}". Why does it help, and is there a catch?'
+)
+CHANGE_FIELDS = {
+    "move_item": "Move it to",
+    "collect_early": "Ask for it by",
+    "recurring_change": "Pay yourself less by (%)",
+    "revenue_change": "Raise prices by (%)",
+}
+CHANGE_WHICH = "{label}"
+USE_THIS_VERSION = "Use this version"
+BACK_TO_SUGGESTION = "Back to the suggestion"
+# ---------------------------------------------------------------- what the owner tells us (R.3c)
+ANYTHING_ELSE = "Anything else we should know?"
+ANYTHING_ELSE_PLACEHOLDER = "e.g. I can't lower my pay. Molinos never moves a delivery date. Most of our customers are offices nearby."
+UNDERSTOOD = "Here's what I understood. Untick anything that's wrong:"
+LIMIT_ROW = "Never suggest: {what}"
+LIMIT_KINDS = {
+    "owner_pay": "paying yourself less",
+    "price": "raising your prices",
+    "move_payment": "moving {payment}",
+    "collect_early": "asking for {payment} earlier",
+}
+NOTE_ROW = "Keep in mind: {note}"
+USE_THIS = "Use this"
+NOTHING_ELSE_TO_ADD = "Nothing else"
+TOLD_US_SAVED = "Saved. You can see and change it under What you told us."
+TOLD_TITLE = "What you told us"
+TOLD_INTRO = "Every answer you gave, in one place. Change anything that isn't right any more."
+TOLD_BUSINESS = "Your business"
+TOLD_BUSINESS_SAVE = "Save"
+TOLD_SEASONS = "Busy and slow months"
+TOLD_SEASONS_NONE = "You haven't told us about busy or slow months."
+TOLD_SEASONS_CHANGE = "Change them on Behind the forecast"
+TOLD_OWNER_PAY = "Your own pay"
+TOLD_OWNER_PAY_ROW = "{label} is your own pay."
+TOLD_NOT_MY_PAY = "That's not my pay"
+TOLD_PAYEES = "Payments you named"
+TOLD_PAYEE_SAVE = "Change"
+TOLD_YOU_SAID = "You said: {said}"
+TOLD_FORGET = "Forget this"
+TOLD_NOTES = "Things to keep in mind"
+TOLD_NOTE_ADD = "Add a note"
+TOLD_NOTE_ADD_BUTTON = "Add"
+TOLD_REMOVE = "Remove"
+TOLD_LIMITS = "Never suggest"
+TOLD_LIMIT_ROW = "{what} ({reason})"
+TOLD_SET_ASIDE = "Things we noticed that you set aside"
+TOLD_SET_ASIDE_ROW = "{title} ({reason})"
+TOLD_SET_ASIDE_REASONS = {"known": "you know about it", "wrong": "not right"}
+TOLD_BRING_BACK = "Show it again"
+TOLD_NOTHING = "Nothing here yet."
+TOLD_LINK = "What you told us"
+BASIS_TOLD = "What you told us"
+NOT_FOR_ME = "Not for me"
+NOT_FOR_ME_WHY = "Why not? We'll remember, so it isn't suggested again."
+DECLINE_LABELS = {
+    "wont_agree": "They won't agree (the supplier, the customer…)",
+    "cant_lower_pay": "I can't lower my pay",
+    "cant_raise_prices": "I can't raise my prices",
+    "already_done": "I've already done it",
+    "other": "Something else",
+    "told_us": "you told us",
+}
+DECLINE_BY_KIND = {
+    "move_payment": ("wont_agree", "already_done", "other"),
+    "collect_early": ("wont_agree", "already_done", "other"),
+    "owner_pay": ("cant_lower_pay", "already_done", "other"),
+    "price": ("cant_raise_prices", "already_done", "other"),
+}
+DECLINE_NOTE = "Anything to add? (optional)"
+DECLINE_SAVE = "Don't suggest this again"
+DECLINED_TOAST = "Got it. We won't suggest that again."
+DECLINED_TITLE = "Suggestions you said no to ({n})"
+DECLINED_ROW = "{what}: {reason}"
+BRING_BACK_SUGGESTIONS = "Suggest them again"
+NOTICED_KNOWN = "I know about it"
+NOTICED_WRONG = "Not right"
+NOTICED_SET_ASIDE = "Set aside. It won't show here again."
 STRESS_TITLE = "How would you handle a bad surprise?"
 STRESS_INTRO = "Four surprises built from your own numbers, each tested on your forecast. Nothing is saved."
-STRESS_RUN = "Check four surprises"
 STRESS_WORKING = "Testing four surprises on your forecast…"
 STRESS_FINE = "You'd be fine: your lowest balance would be about {lowest}."
 STRESS_SHORT = "You'd need about {gap} more to stay above your line."
@@ -448,12 +581,43 @@ STRESS_IMPACT = (
     "Lowest balance {before} → {after} · chance of dipping below your line {chance_before}% → {chance_after}%"
 )
 STRESS_HELPS = "What would help:"
-STRESS_FIX_AFTER = "lowest balance {after}"
 STRESS_CHART = "See the chart"
 
 
 # ---------------------------------------------------------------- financing helper (3.6)
+FINANCING_TITLE = "Financing"
+FINANCING_INTRO = "Compare the ways you already have to cover a gap, or test a loan you're thinking about."
 FIN_TITLE = "How could you cover a gap?"
+FIN_SEE = "How could you cover it?"
+# a loan the owner is thinking about (roadmap R.2): their own numbers, no lender, no offer
+LOAN_TITLE = "Test a loan"
+LOAN_INTRO = (
+    "Put in the loan you're thinking about, with the rate and fees you were quoted, and see the "
+    "payments and what they do to your cash. Nothing is saved unless you save it as your plan."
+)
+LOAN_FIELDS = {
+    "amount": "How much ($)",
+    "rate": "Yearly interest rate (%)",
+    "months": "Paid back over (months)",
+    "fees": "Fees when you take it ($)",
+    "start": "When the money comes in",
+}
+LOAN_RUN = "Test this loan"
+LOAN_WORKING = "Testing the loan on your forecast…"
+LOAN_RESULT = (
+    "**{monthly} a month** for {months} months (last payment {last}). Interest {interest}, and with the "
+    "fees it costs you **{cost}** in all."
+)
+LOAN_RESULT_NO_FEES = (
+    "**{monthly} a month** for {months} months (last payment {last}). It costs you **{cost}** in interest."
+)
+LOAN_WINDOW = (
+    "{n} of the payments ({paid}) fall in the next 8 weeks; the rest come after what the forecast shows."
+)
+LOAN_WINDOW_ONE = (
+    "The first payment ({paid}) falls in the next 8 weeks; the rest come after what the forecast shows."
+)
+LOAN_WINDOW_NONE = "No payment falls in the next 8 weeks; the first one comes after what the forecast shows."
 FIN_WORKING = "Testing your options on your forecast…"
 FIN_NOTE = (
     "Aheadly compares only the options you tell it you have. It doesn't offer credit or recommend "
@@ -586,3 +750,26 @@ INSIGHT_CHART_NOTES = {
 }
 INSIGHTS_TOO_SHORT = "The charts need at least two complete months of statement."
 INSIGHT_PILLS = {"medium": "Worth a look", "low": "Good to know"}
+SAVING_ANSWER = "Saving your answer…"
+WHY_SHORTFALL = (
+    "Payments of {total} land in the same week, and your balance would fall to {lowest} around {date}, "
+    "below your {line} safety line."
+)
+WHY_BELOW_ZERO = (
+    "Payments of {total} land in the same week. Around {date} your account would be about {short} short: "
+    "payments due then could bounce or go into overdraft."
+)
+WHY_LATE_CUSTOMER = (
+    " {customer} now pays every {now} days instead of every {before}: at the old pace their money would "
+    "come {old}, before the tight days; at the new pace it comes {new}, after them."
+)
+WHY_WATCH = (
+    "In the most likely case you stay above your {line} line, but a bad month could take you to {worst} "
+    "around {date}. Acting early keeps that from happening."
+)
+CHARGED_ON = "charged on {date}"
+WHY_CHARGE = {
+    "duplicate_charge": "If the same charge went through twice by mistake, that money can usually be recovered.",
+    "unusual_charge": "A new payee charging more than your usual payments is worth checking the same day.",
+}
+WHY_IDLE = "Even in a bad case you keep {worst}, more than three months of outflows ({three_months})."

@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import date, timedelta
 
+from aheadly.core.financing import loan_payments
 from aheadly.domain import Adjustment, ScheduledItem
 
 ADJUSTMENT_TYPES = (
@@ -19,6 +20,7 @@ ADJUSTMENT_TYPES = (
     "revenue_change",  # {percent, start_date, weeks?}  (a weekly line; `weeks` ends it, roadmap 3.5)
     "collect_early",  # {label, new_date}
     "financing",  # {amount, start_date, repay_date, cost, label}  (money in, then back with its cost; 3.6)
+    "loan",  # {amount, start_date, yearly_rate, months, fees, label}  (money in, monthly payments; R.2)
 )
 
 
@@ -39,6 +41,15 @@ def parse_adjustment(raw: dict) -> Adjustment:
             raise ValueError("financing needs the day the money comes in and the day it's paid back")
         if float(params.get("cost", 0)) < 0:
             raise ValueError("financing can't cost less than nothing")
+    if kind == "loan":
+        if float(params.get("amount", 0)) <= 0:
+            raise ValueError("A loan needs a positive amount.")
+        if not 1 <= int(params.get("months", 0)) <= 120:
+            raise ValueError("A loan is paid back in 1 to 120 months.")
+        if not 0 <= float(params.get("yearly_rate", 0)) <= 100:
+            raise ValueError("The yearly rate is between 0% and 100%.")
+        if float(params.get("fees", 0)) < 0 or not params.get("start_date"):
+            raise ValueError("A loan needs the day the money comes in, and fees can't be negative.")
     for key in ("date", "new_date", "start_date", "repay_date"):
         if key in params and params[key]:
             params[key] = date.fromisoformat(str(params[key]))
@@ -73,6 +84,23 @@ def _apply_one(
                 source="scenario",
             )
         ]
+    if adj.type == "loan":  # roadmap R.2: the owner's own numbers; payments past the 8 weeks don't show
+        name = p.get("label") or "Loan"
+        start, fees = p["start_date"], float(p.get("fees", 0))
+        lines = [ScheduledItem(name, abs(float(p["amount"])), start, kind="other", source="scenario")]
+        if fees:
+            lines.append(
+                ScheduledItem(f"{name} fees", -round(fees, 2), start, kind="other", source="scenario")
+            )
+        schedule = loan_payments(float(p["amount"]), float(p.get("yearly_rate", 0)), int(p["months"]), start)
+        return (
+            items
+            + lines
+            + [
+                ScheduledItem(f"{name} payment", -pay, when, kind="other", source="scenario")
+                for when, pay in schedule
+            ]
+        )
     if adj.type == "financing":
         name = p.get("label", "Financing")
         amount = abs(float(p["amount"]))

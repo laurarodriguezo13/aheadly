@@ -5,7 +5,7 @@ import streamlit as st
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import require_data, start_page
 from aheadly.ui.charts import cushion_chart, income_chart, money_in_out_chart, spending_chart
-from aheadly.ui.components import action_rows, chart_note, insight_heading, section_title
+from aheadly.ui.components import chart_note, insight_heading, section_title, suggestion_cards
 
 core = start_page(copy.INSIGHTS_TITLE)
 require_data(core)
@@ -13,14 +13,21 @@ st.caption(copy.INSIGHTS_INTRO)
 
 section_title(copy.NOTICED_TITLE)
 with st.spinner(copy.CHECKING_MONEY):
-    cards = core.insight_cards()
+    cards = core.noticed_cards()
 if not cards:
     st.success(copy.NOTICED_NONE)
 for i, card in enumerate(cards):
     with st.container(border=True):
         st.markdown(insight_heading(card), unsafe_allow_html=True)
         chart_note(card["body"])
-        action_rows(core, card["actions"], f"insight-{i}", title=copy.NOTICED_HELP)
+        suggestion_cards(card["actions"], f"insight-{i}", card["title"], title=copy.NOTICED_HELP)
+        # roadmap R.3: the owner can set it aside
+        with st.container(horizontal=True):
+            for reason, label in (("known", copy.NOTICED_KNOWN), ("wrong", copy.NOTICED_WRONG)):
+                if st.button(label, key=f"insight-{i}-{reason}"):
+                    core.set_aside_insight(card["type"], reason)
+                    st.toast(copy.NOTICED_SET_ASIDE)
+                    st.rerun()
 
 section_title(copy.INSIGHT_CHARTS_TITLE)
 charts = core.insight_charts()

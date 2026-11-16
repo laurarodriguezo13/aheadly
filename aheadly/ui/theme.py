@@ -80,6 +80,13 @@ h2, h3 {{ letter-spacing: -0.02em; }}
   letter-spacing: .04em; }}
 .ah-pill.high {{ background: var(--rose); color: var(--red); }} .ah-pill.medium {{ background: #FFF4E0; color: #B26A00; }}
 .ah-pill.low {{ background: var(--mint); color: #15807A; }} .ah-pill.info {{ background: var(--sky); color: #0B6FC2; }}
+.ah-pill.urgent {{ background: var(--red); color: #fff; }}
+/* roadmap R.2: the sub-tabs at the top of a group's pages */
+.st-key-subtabs {{ gap: .15rem; border-bottom: 1px solid var(--line); padding-bottom: .4rem; margin-bottom: .25rem;
+                  flex-wrap: wrap; }}
+.st-key-subtabs [data-testid="stPageLink"] {{ flex: 0 0 auto; width: auto; }}
+.st-key-subtabs [data-testid="stPageLink"] a {{ padding: .25rem .6rem; border-radius: 999px; }}
+.st-key-subtabs [data-testid="stPageLink"] p {{ font-size: .9rem; }}
 .ah-hero {{ background: var(--gradient); color: #fff; border-radius: var(--radius-card); padding: 1.8rem 2rem;
   box-shadow: var(--shadow-card); }}
 .ah-hero h2, .ah-hero p {{ color: #fff !important; margin: 0; }}
