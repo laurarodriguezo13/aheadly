@@ -89,6 +89,16 @@ class Dashboard:
     scheduled: list = field(default_factory=list)
 
 
+# what an insight's action changes, for the owner's "Not for me" rules (roadmap R.3)
+INSIGHT_ACTION_KINDS = {
+    "lower_owner_pay_for_a_while": "owner_pay",
+    "review_prices": "price",
+    "raise_prices_to_cover": "price",
+    "cancel_if_not_needed": "cancel",
+}
+DECLINE_REASONS = ("wont_agree", "cant_lower_pay", "cant_raise_prices", "already_done", "other")
+
+
 class AppCore:
     def __init__(
         self,
@@ -1066,6 +1076,7 @@ class AppCore:
             self.today + timedelta(days=self.settings.horizon_days - 1),
             lambda adjustments: self._scenario(adjustments, "Suggested fix", baseline=baseline),
             self.weekly_sales(),
+            declined=self.declined_suggestions(),
         )
 
     def suggested_fixes(self) -> list[dict]:
@@ -1256,6 +1267,12 @@ class AppCore:
         if not found:
             return action
         words, adjustments = found
+        kind = INSIGHT_ACTION_KINDS[action["key"]]
+        payment = adjustments[0].get("label") if kind in ("owner_pay", "cancel") else None
+        if alert_actions.ruled_out(
+            self.declined_suggestions(), kind, payment, alert_actions.suggestion_id(adjustments)
+        ):
+            return action  # the owner said no to this kind of change (roadmap R.3): advice only
         result = self._scenario(adjustments, words["label"], baseline=baseline)
         effect = alert_actions.impact(result)
         if (
@@ -1267,14 +1284,98 @@ class AppCore:
         return {
             **words,
             "key": action["key"],
-            "kind": "insight",
+            "kind": kind,
             "adjustments": adjustments,
             "impact": effect,
+            "id": alert_actions.suggestion_id(adjustments),
+            "payment": payment,
+            **({"pay": round(-pay.amount, 2)} if kind == "owner_pay" else {}),
         }
 
     def noticed_cards(self) -> list[dict]:
-        """The things we noticed the Insights page and the dashboard show: not the ones on Alerts."""
-        return [card for card in self.insight_cards() if not card["is_alert"]]
+        """The things we noticed the Insights page and the dashboard show: not the ones on Alerts,
+        nor the ones the owner set aside ("I know about it", "Not right", roadmap R.3)."""
+        set_aside = self.repo.get_profile(self._business().id).get("insights_set_aside", {})
+        return [
+            card for card in self.insight_cards() if not card["is_alert"] and card["type"] not in set_aside
+        ]
+
+    def set_aside_insight(self, insight_type: str, reason: str) -> None:
+        if reason not in ("known", "wrong"):
+            raise ValueError("reason is 'known' or 'wrong'")
+        profile = self.repo.get_profile(self._business().id)
+        set_aside = {**profile.get("insights_set_aside", {}), insight_type: reason}
+        self.repo.save_profile(self._business().id, {"insights_set_aside": set_aside})
+
+    # ------------------------------------------------------- suggestions you can work with (R.3)
+    def declined_suggestions(self) -> list[dict]:
+        """The owner's "Not for me" answers, as rules the suggestions respect."""
+        business = self.repo.get_business()
+        return self.repo.get_profile(business.id).get("declined_suggestions", []) if business else []
+
+    def decline_suggestion(self, action: dict, reason: str, note: str = "") -> dict:
+        """'Not for me', with a reason. Some reasons rule out a whole kind ("I can't lower my pay"),
+        some one payment ("they won't agree"), the rest this suggestion; the alerts and every list
+        of suggestions are worked out again without it."""
+        kind, payment = action.get("kind"), action.get("payment")
+        if reason not in DECLINE_REASONS:
+            raise ValueError(f"Unknown reason {reason!r}")
+        if reason == "cant_lower_pay":
+            rule = {"kind": "owner_pay"}
+        elif reason == "cant_raise_prices":
+            rule = {"kind": "price"}
+        elif payment and kind != "pair":
+            rule = {"kind": kind, "label": payment}
+        else:
+            rule = {"id": action.get("id") or alert_actions.suggestion_id(action["adjustments"])}
+        rule |= {"reason": reason, "note": note.strip(), "what": action["label"]}
+        rules = [r for r in self.declined_suggestions() if r.get("what") != action["label"]] + [rule]
+        self.repo.save_profile(self._business().id, {"declined_suggestions": rules})
+        self._suggestions_changed()
+        return rule
+
+    def bring_back_suggestions(self) -> None:
+        self.repo.save_profile(self._business().id, {"declined_suggestions": []})
+        self._suggestions_changed()
+
+    def _suggestions_changed(self) -> None:
+        self._fixes_cache, self._cards_cache, self._stress_cache = {}, {}, {}
+        self.run_daily_check(force=True)  # the alerts' own suggestions are worked out again
+
+    def all_suggestions(self) -> list[dict]:
+        """Every tested suggestion the app has right now, once each, with where it comes from:
+        the alerts, the things we noticed and the bad surprises (tested with the surprise in place,
+        `context`)."""
+        found, seen = [], set()
+
+        def add(action: dict, source: str, context: list[dict] | None = None) -> None:
+            if not action.get("adjustments"):
+                return
+            sid = alert_actions.suggestion_id((context or []) + action["adjustments"])
+            if sid not in seen:
+                seen.add(sid)
+                found.append({"id": sid, "action": action, "source": source, "context": context or []})
+
+        for alert in self.get_alerts():
+            for action in alert.actions:
+                add(action, alert.title)
+        for card in self.noticed_cards():
+            for action in card["actions"]:
+                add(action, card["title"])
+        for test in self.stress_tests():
+            for action in test["fixes"]:
+                add(action, test["label"], test["adjustments"])
+        return found
+
+    def test_suggestion(self, adjustments: list[dict], context: list[dict] | None = None) -> dict:
+        """A suggestion as it is or as the owner changed it, tested (with a bad surprise in place
+        when it came from one). Not kept in the history."""
+        result = self._scenario((context or []) + adjustments, "Your version")
+        return {"result": result, "impact": alert_actions.impact(result)}
+
+    def save_suggestion(self, adjustments: list[dict], name: str) -> DailyRunSummary:
+        """Save as my plan: only the change itself, never the bad surprise it was tested against."""
+        return self.save_plan(self._scenario(adjustments, name))
 
     def insights_for_chat(self) -> dict:
         """The get_insights chat tool (roadmap 4.3): what we noticed, with the numbers behind it."""
@@ -1420,6 +1521,7 @@ class AppCore:
                     ),
                     weekly,
                     frozenset(a["label"] for a in surprise["adjustments"] if "label" in a),
+                    declined=self.declined_suggestions(),
                 )[:2]
             tests.append(
                 {

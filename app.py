@@ -32,6 +32,7 @@ ICONS = {
     "insights": ":material/insights:",
     "ask": ":material/chat:",
     "whatif": ":material/science:",
+    "suggestion": ":material/lightbulb:",
     "surprises": ":material/thunderstorm:",
     "financing": ":material/payments:",
     "accounts": ":material/account_balance:",

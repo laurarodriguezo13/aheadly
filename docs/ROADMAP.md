@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-16 after R.2 (sidebar regrouping)** (550 tests: 541 pass, 8 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-16 after R.3a (suggestions you can work with)** (556 tests: 547 pass, 8 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#49**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#50**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -317,6 +317,10 @@ Nine sidebar entries (one per use case, then one per feature as items arrived) �
 - **The late customer** linked into the shortfall alert when their payment falls in the tight week.
 - **"Is there anything else we should know?"** as the last onboarding question (the free text planned in 2.7 and not built): the AI sorts it into payments (confirmed like "just say it"), limits for the suggestions (the same rules as "Not for me") and background notes for the chat; "Here's what I understood", nothing used before confirming; shown on Behind the forecast.
 - **"What you told us":** every past answer (your own pay, named payees, busy months, notes, limits) listed with Change, under Your business.
+
+Built in three parts: **R.3a** suggestions you can work with (the detail view, change it, "Not for me", things we noticed set aside), **R.3b** the chat (suggestions tool with how much is missing, "Use this version", the late customer in the alert), **R.3c** what the owner tells us ("Anything else we should know?", "What you told us").
+
+**R.3a built (2026-11-16, DECISIONS #49):** every suggestion gets an id from its changes (`actions.suggestion_id`) and the payment it's about. Alerts, Insights and Bad surprises show compact cards (what, its effect, *Open*); general advice keeps its steps there. New sub-tab **Suggestions** under Ask Aheadly (`views/suggestion.py`): every tested suggestion grouped by where it comes from (`AppCore.all_suggestions`: the alerts, the things we noticed, the bad surprises' fixes, which keep their surprise as `context`), and one in detail: what and why, as suggested, how to do it and the drafted message (for the owner's version too), **Change it** (a date for a move or an early payment, a percent for the owner's pay or prices; *Test my version* → `AppCore.test_suggestion`, nothing kept), the chart with its summary, *Save as my plan* (the owner's version if tested; only the change, never the surprise: `save_suggestion`), *Ask about this suggestion*, **Not for me** with a reason: "they won't agree" rules out that payment, "I can't lower my pay" / "I can't raise my prices" the whole kind, the rest that payment or that exact suggestion; kept in the profile (`declined_suggestions`), respected by `actions.build` and the insights' actions, and the alerts are worked out again at once; listed under the suggestions with *Suggest them again*. Things we noticed get *I know about it* / *Not right* (`set_aside_insight`; the chat and the checks still see them). Checked in the browser on Miguel's machine: open from an alert, change the oven's date (Dec 2 changes nothing, rightly: still before the tight week), "they won't agree" removes every move of the oven, from the alert and the surprises' fixes. Fixed there: the how-to steps still said "press Test this", the bad surprises' groups now say "If this bad surprise happened: …", the five sub-tabs are a little tighter. `tests/test_suggestions_work.py`.
 
 ### Phase 5: finish (week 4)
 

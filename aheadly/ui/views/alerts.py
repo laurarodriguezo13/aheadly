@@ -8,7 +8,6 @@ import streamlit as st
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.components import (
-    action_rows,
     banner,
     card,
     dismissed_words,
@@ -16,6 +15,7 @@ from aheadly.ui.components import (
     money,
     rows_html,
     severity_pill,
+    suggestion_cards,
     weeks,
 )
 
@@ -86,7 +86,7 @@ for alert in alerts:
             title = copy.TOP_OUTFLOWS.format(weeks=weeks(alert.weeks_ahead))
             info_card(title, rows_html(outflows), "sky")
 
-    action_rows(core, alert.actions, f"action-{alert.id}")
+    suggestion_cards(alert.actions, f"action-{alert.id}", alert.title)
     if alert.type in ("shortfall", "watch") and not financing_shown:
         # roadmap R.2: the financing helper has its own sub-tab; the alert says when it's needed
         short = core.still_short()

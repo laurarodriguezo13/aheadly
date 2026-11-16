@@ -23,6 +23,7 @@ PAGES = {
         "insights",
         "ask",
         "whatif",
+        "suggestion",
         "surprises",
         "financing",
         "accounts",
@@ -35,7 +36,7 @@ PAGES = {
 # so a button or a link can open it; Streamlit's own tabs can't be opened from outside)
 GROUPS = {
     "home": ("dashboard", "alerts", "insights"),
-    "ask": ("ask", "whatif", "surprises", "financing"),
+    "ask": ("ask", "whatif", "suggestion", "surprises", "financing"),
     "business": ("accounts", "questions", "basis"),
     "settings": ("settings",),
 }

@@ -392,6 +392,39 @@ def impact_line(impact: dict) -> str:
     )
 
 
+def open_suggestion(action: dict, source: str, context: list[dict] | None = None) -> None:
+    """Opens one suggestion on the Suggestions sub-tab (roadmap R.3)."""
+    st.session_state["open_suggestion"] = {"action": action, "source": source, "context": context or []}
+    st.session_state.pop("suggestion_mine", None)
+    st.session_state.pop("suggestion_message", None)
+    st.switch_page("aheadly/ui/views/suggestion.py")
+
+
+def suggestion_cards(
+    actions: list[dict], key_prefix: str, source: str, title: str = copy.ACTIONS_TITLE, context=None
+) -> None:
+    """Roadmap R.3: each suggestion as a compact card (what, its effect, Open); the detail, how to do
+    it, changing it and "Not for me" are on the Suggestions sub-tab. General advice (nothing to test)
+    stays here with its steps."""
+    if not actions:
+        return
+    st.markdown(f"**{title}**")
+    for i, action in enumerate(actions):
+        with st.container(border=True):
+            if action.get("adjustments"):
+                left, right = st.columns([5, 1], vertical_alignment="center")
+                left.markdown(f"**{action['label']}**")
+                left.caption(impact_line(action["impact"]))
+                if right.button(copy.SUGGESTION_OPEN, key=f"{key_prefix}-open-{i}", type="primary"):
+                    open_suggestion(action, source, context)
+            else:
+                st.markdown(f"**{action['label']}**  \n{action.get('detail', '')}")
+                st.caption(copy.ACTION_GENERAL)
+                if action.get("how_to"):
+                    with st.expander(copy.ACTION_HOW):
+                        st.markdown("\n".join(f"{n}. {step}" for n, step in enumerate(action["how_to"], 1)))
+
+
 def action_rows(core, actions: list[dict], key_prefix: str, title: str = copy.ACTIONS_TITLE) -> None:
     """Roadmap 3.2–3.3 (alerts) and 4.3 (insights): each suggestion with what it changes, Test this,
     how to do it and a message."""

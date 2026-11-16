@@ -306,7 +306,7 @@ def action_words(
             "how_to": [
                 "Work out what you need to live on for the next weeks.",
                 "Change or skip the transfer to your own account until the tight weeks pass.",
-                "Press Test this, then Save as my plan.",
+                "Then press Save as my plan.",
             ],
         }
     if kind == "price":
@@ -316,7 +316,7 @@ def action_words(
             "how_to": [
                 "Start with your best-selling items.",
                 "Tell regular customers ahead, and keep quality the same.",
-                "Press Test this; check your sales for two weeks before counting on it.",
+                "Check your sales for two weeks before counting on it; then press Save as my plan.",
             ],
         }
     old, new = _short_date(when), _short_date(new_when)
@@ -327,7 +327,7 @@ def action_words(
             "how_to": [
                 f"Call or message them this week, before {old}.",
                 f"Ask to pay on {new} instead of {old}, and confirm the new date in writing.",
-                "If they agree, press Test this, then Save as my plan so the forecast uses the new date.",
+                "If they agree, press Save as my plan so the forecast uses the new date.",
             ],
         }
     return {
@@ -336,7 +336,7 @@ def action_words(
         "how_to": [
             "Message them a few days ahead.",
             f"Ask whether they could pay by {new} instead of {old}; a small discount for paying early can help.",
-            "If they agree, press Test this, then Save as my plan.",
+            "If they agree, press Save as my plan.",
         ],
     }
 
@@ -904,7 +904,7 @@ def cancel_words(name: str, amount: float, how_often: str) -> dict:
         "how_to": [
             "Find out what the charge is for.",
             "If you don't use it, cancel it with them.",
-            "Press Test this, then Save as my plan so the forecast leaves it out.",
+            "Then press Save as my plan so the forecast leaves it out.",
         ],
     }
 

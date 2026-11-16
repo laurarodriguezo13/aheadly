@@ -15,6 +15,7 @@ NAV = {
     "insights": "Insights",
     "ask": "Ask about my numbers",
     "whatif": "Test a what-if",
+    "suggestion": "Suggestions",
     "surprises": "Bad surprises",
     "financing": "Financing",
     "accounts": "Connect accounts",
@@ -464,6 +465,64 @@ SAFE_PAY_UNKNOWN = "Tell us which payment is your own pay (Questions) to see thi
 
 # ---------------------------------------------------------------- stress tests (3.5)
 SURPRISES_TITLE = "Bad surprises"
+
+# ---------------------------------------------------------------- suggestions you can work with (R.3)
+SUGGESTIONS_TITLE = "Suggestions"
+SUGGESTIONS_INTRO = (
+    "Everything Aheadly found that could help, each one tested on your forecast. Open one to see how to "
+    "do it, change it and test it again, or tell us it's not for you."
+)
+SUGGESTIONS_WORKING = "Gathering the suggestions…"
+SUGGESTIONS_NONE = "No suggestions right now: nothing in the next 8 weeks needs fixing."
+SUGGESTION_OPEN = "Open"
+SUGGESTION_BACK = "All suggestions"
+SUGGESTION_FROM = "From: {source}"
+SUGGESTION_FROM_SURPRISE = "If this bad surprise happened: {source}"
+SUGGESTION_AS_IS = "As suggested"
+SUGGESTION_MINE = "Your version"
+SUGGESTION_CHANGE = "Change it"
+SUGGESTION_CHANGE_NOTE = "Change the numbers and test your version: nothing is saved until you save it."
+SUGGESTION_NOTHING_TO_CHANGE = "There's nothing to change here: it's done as it is or not at all."
+SUGGESTION_TEST_MINE = "Test my version"
+SUGGESTION_TESTING = "Testing it on your forecast…"
+SUGGESTION_SAVE = "Save as my plan"
+SUGGESTION_SAVE_MINE = "Save my version as my plan"
+SUGGESTION_SAVED = "Saved as your plan: the forecast and the alerts now count on it."
+SUGGESTION_ASK = "Ask about this suggestion"
+SUGGESTION_ASK_QUESTION = (
+    'Tell me more about this suggestion: "{label}". Why does it help, and is there a catch?'
+)
+CHANGE_FIELDS = {
+    "move_item": "Move it to",
+    "collect_early": "Ask for it by",
+    "recurring_change": "Pay yourself less by (%)",
+    "revenue_change": "Raise prices by (%)",
+}
+CHANGE_WHICH = "{label}"
+NOT_FOR_ME = "Not for me"
+NOT_FOR_ME_WHY = "Why not? We'll remember, so it isn't suggested again."
+DECLINE_LABELS = {
+    "wont_agree": "They won't agree (the supplier, the customer…)",
+    "cant_lower_pay": "I can't lower my pay",
+    "cant_raise_prices": "I can't raise my prices",
+    "already_done": "I've already done it",
+    "other": "Something else",
+}
+DECLINE_BY_KIND = {
+    "move_payment": ("wont_agree", "already_done", "other"),
+    "collect_early": ("wont_agree", "already_done", "other"),
+    "owner_pay": ("cant_lower_pay", "already_done", "other"),
+    "price": ("cant_raise_prices", "already_done", "other"),
+}
+DECLINE_NOTE = "Anything to add? (optional)"
+DECLINE_SAVE = "Don't suggest this again"
+DECLINED_TOAST = "Got it. We won't suggest that again."
+DECLINED_TITLE = "Suggestions you said no to ({n})"
+DECLINED_ROW = "{what}: {reason}"
+BRING_BACK_SUGGESTIONS = "Suggest them again"
+NOTICED_KNOWN = "I know about it"
+NOTICED_WRONG = "Not right"
+NOTICED_SET_ASIDE = "Set aside. It won't show here again."
 STRESS_TITLE = "How would you handle a bad surprise?"
 STRESS_INTRO = "Four surprises built from your own numbers, each tested on your forecast. Nothing is saved."
 STRESS_WORKING = "Testing four surprises on your forecast…"
@@ -476,7 +535,6 @@ STRESS_IMPACT = (
     "Lowest balance {before} → {after} · chance of dipping below your line {chance_before}% → {chance_after}%"
 )
 STRESS_HELPS = "What would help:"
-STRESS_FIX_AFTER = "lowest balance {after}"
 STRESS_CHART = "See the chart"
 
 

@@ -6,7 +6,7 @@ import streamlit as st
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import require_data, start_page
 from aheadly.ui.charts import scenario_chart
-from aheadly.ui.components import chart_note, money, scenario_metrics
+from aheadly.ui.components import chart_note, money, scenario_metrics, suggestion_cards
 
 core = start_page(copy.SURPRISES_TITLE)
 require_data(core)
@@ -37,15 +37,10 @@ with st.container(border=True):
                     chance_after=impact["chance_after"],
                 )
             )
-            if test["fixes"]:
-                st.markdown(copy.STRESS_HELPS)
-                st.markdown(
-                    "\n".join(
-                        f"- {fix['label']}: "
-                        + copy.STRESS_FIX_AFTER.format(after=money(fix["impact"]["lowest_after"]))
-                        for fix in test["fixes"]
-                    )
-                )
+            # roadmap R.3: open a fix to change it or say no; it's tested with the surprise in place
+            suggestion_cards(
+                test["fixes"], f"stress-{test['key']}", test["label"], copy.STRESS_HELPS, test["adjustments"]
+            )
             if st.button(copy.STRESS_CHART, key=f"stress-chart-{test['key']}"):
                 st.session_state[f"stress-result-{test['key']}"] = core.stress_result(test["key"])
             shown = st.session_state.get(f"stress-result-{test['key']}")
