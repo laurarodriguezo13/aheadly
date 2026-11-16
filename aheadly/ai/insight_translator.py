@@ -36,6 +36,14 @@ logger = logging.getLogger(__name__)
 
 # "$-748" → "-$748" in alert text written by the model
 _MINUS_AFTER_DOLLAR = re.compile(r"\$-(\d)")
+_BARE_THOUSANDS = re.compile(r"(?<=\$)(\d{4,})(?![\d,])")
+
+
+def tidy_money(text: str) -> str:
+    """How amounts read, whoever wrote them: "-$748", never "$-748"; "$1,058", never "$1058"
+    (live check after Phase R, issue 31). Only the look changes: the guardrail reads both alike."""
+    text = _MINUS_AFTER_DOLLAR.sub(r"-$\1", text)
+    return _BARE_THOUSANDS.sub(lambda m: f"{int(m.group(1)):,}", text)
 
 
 @dataclass
@@ -74,7 +82,7 @@ class InsightTranslator:
             reply = self._llm.chat(messages)
             parsed = json.loads(_strip_code_fence(reply.content or ""))
             # the title says how serious it is, so it follows the numbers (live check, 2026-11-12)
-            body = _MINUS_AFTER_DOLLAR.sub(r"-$\1", parsed["body"])
+            body = tidy_money(parsed["body"])
             text = AlertText(templates.alert_title(facts), body, [])  # actions come from code (roadmap 3.2)
             if not check_numbers(f"{text.title} {text.body}", [facts]).passed:
                 raise ValueError("alert used a number that is not in the facts")
@@ -102,9 +110,7 @@ class InsightTranslator:
         ]
         try:
             reply = self._llm.chat(messages)
-            body = _MINUS_AFTER_DOLLAR.sub(
-                r"-$\1", json.loads(_strip_code_fence(reply.content or ""))["body"]
-            )
+            body = tidy_money(json.loads(_strip_code_fence(reply.content or ""))["body"])
             if not body.strip() or not check_numbers(body, [facts]).passed:
                 raise ValueError("insight used a number that is not in the facts")
             return body.strip()
@@ -125,9 +131,7 @@ class InsightTranslator:
         ]
         try:
             reply = self._llm.chat(messages)
-            text = _MINUS_AFTER_DOLLAR.sub(
-                r"-$\1", json.loads(_strip_code_fence(reply.content or ""))["summary"]
-            )
+            text = tidy_money(json.loads(_strip_code_fence(reply.content or ""))["summary"])
             if not text.strip() or not check_numbers(text, [facts]).passed:
                 raise ValueError("chart summary used a number that is not in the facts")
             return text.strip()
@@ -151,9 +155,7 @@ class InsightTranslator:
         ]
         try:
             reply = self._llm.chat(messages)
-            text = _MINUS_AFTER_DOLLAR.sub(
-                r"-$\1", json.loads(_strip_code_fence(reply.content or ""))["message"]
-            )
+            text = tidy_money(json.loads(_strip_code_fence(reply.content or ""))["message"])
             if not text.strip() or not check_numbers(text, [facts]).passed:
                 raise ValueError("message used a number that is not in the facts")
             return text.strip()
@@ -391,7 +393,7 @@ class InsightTranslator:
         text = reply.content or ""
         check = check_numbers(text, evidence)
         if check.passed and text:
-            return text
+            return tidy_money(text)
         self.guardrail_failures += 1
         logger.warning("guardrail rejected numbers %s; retrying once", check.unverified)
         messages.append({"role": "assistant", "content": text})
@@ -400,7 +402,7 @@ class InsightTranslator:
         if retry.tool_calls:  # the model asked for data instead of guessing: run one more round
             retry = self._run_tool_loop_from(retry, messages, evidence, tool_names)
         retry_text = retry.content or ""
-        return retry_text if retry_text and check_numbers(retry_text, evidence).passed else None
+        return tidy_money(retry_text) if retry_text and check_numbers(retry_text, evidence).passed else None
 
     def _run_tool_loop_from(
         self, reply: LLMReply, messages: list[dict], evidence: list, tool_names: list[str]

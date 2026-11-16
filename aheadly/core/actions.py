@@ -202,8 +202,9 @@ def _words(family: dict, adjustments: list[dict], size: int, weekly_sales: float
             when=family["when"].isoformat(),
             new_when=adjustments[0]["new_date"],
         )
-    if kind == "owner_pay":
-        return templates.action_words(kind, payee=item.label, amount=abs(item.amount), pct=size)
+    if kind == "owner_pay":  # called "Your own pay", never by the bank's wording (review, Nov 16)
+        name = templates.payment_name(item.label, item.category, item.source == "statement")
+        return templates.action_words(kind, payee=name, amount=abs(item.amount), pct=size)
     return templates.action_words(kind, pct=size, weekly=weekly_sales)
 
 

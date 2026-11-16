@@ -772,8 +772,12 @@ class Repository:
         query = "SELECT * FROM alerts WHERE business_id=?"
         if open_only:
             query += " AND dismissed=0 AND resolved=0"
-        # the most serious first (roadmap R.1: several kinds can be open at once), then the newest
-        order = " ORDER BY CASE severity WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, id DESC"
+        # a cash shortfall first, whatever its severity (review, Nov 16: the café's shortfall 8 weeks
+        # out was listed under a $172 doubled charge), then the most serious (roadmap R.1), the newest
+        order = (
+            " ORDER BY CASE type WHEN 'shortfall' THEN 0 ELSE 1 END,"
+            " CASE severity WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, id DESC"
+        )
         rows = self._conn.execute(query + order, (business_id,)).fetchall()
         return [self._row_to_alert(r) for r in rows]
 

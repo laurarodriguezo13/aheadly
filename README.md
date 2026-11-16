@@ -13,7 +13,7 @@ cd aheadly
 uv sync                      # or: python3.11 -m venv .venv && pip install -r requirements.txt
 cp .env.example .env         # defaults: LLM_PROVIDER=stub (offline, no keys)
 uv run streamlit run app.py
-# Accounts → upload your bank statements (+ any files you keep),
+# Your business → Connect accounts → upload your bank statements (+ any files you keep),
 #            or click "Try the example bakery" to see it with no files of your own
 ```
 
@@ -22,7 +22,7 @@ Optional, a real language model: set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY=.
 Other commands:
 
 ```bash
-uv run pytest -q                      # all offline, about a minute and a half; ends with the test-business scorecard
+uv run pytest -q                      # all offline, about three minutes; ends with the test-business scorecard
 uv run black .                        # formatting
 uv run python -m aheadly.jobs.daily_run   # the daily check from the command line (cron-able)
 ```
@@ -31,11 +31,11 @@ uv run python -m aheadly.jobs.daily_run   # the daily check from the command lin
 
 With the example bakery (Panadería La Esquina, statement up to Nov 10, 2026; the numbers below are the example's):
 
-1. **Guessing.** Fresh start: every visitor gets an empty app; Accounts shows the upload card and *Try the example bakery*.
-2. **Connect once.** *Try the example bakery*: a year of statements comes in and the app opens **Questions** (what the business does, busy months, whether the weekly transfer to M Gómez is the owner's pay…), pre-filled with the owner's answers.
+1. **Guessing.** Fresh start: every visitor gets an empty app; Your business → Connect accounts shows the upload card and *Try the example bakery*.
+2. **Connect once.** *Try the example bakery*: a year of statements comes in and the app opens **Questions** (what the business does, busy months, whether the weekly transfer to M Gómez is the owner's pay…), pre-filled with the owner's answers; the last one, "Is there anything else we should know?", is read by the AI into limits for the suggestions and notes for the chat (all listed under *What you told us*).
 3. **Always watching.** Dashboard: $8,200 today, the forecast dips below the $2,000 line in mid-December (the $7,500 oven on Nov 14, then the Christmas ingredients, the quarterly flour order and rent), the chance of dipping below the line, safe to spend today, how much to trust the forecast. *Behind the forecast* shows every payment the forecast counts on.
-4. **Early warning.** Alerts: why it happens, and fixes the app has already tested on the forecast ("Move New oven to Dec 16": lowest balance from below zero to above the line), each with *Test this*, how to do it and a message to copy. *How could you cover a gap?* says it's a timing gap and compares the owner's own options by cost.
-5. **Ask in plain words.** Ask Aheadly: "What if I move the new oven payment to next month?" → the answer plus the best / base / worst card; "How much can I safely spend?" and "How can I cover this?" work too. What-if: *Check four surprises* (sales down 20%, the biggest payment a month late, the main supplier 10% dearer, a surprise bill).
+4. **Early warning.** Early-warning alerts: why it happens, and fixes the app has already tested on the forecast ("Move New oven to Dec 16": lowest balance from below zero to above the line). *Open* one (Ask Aheadly → Suggestions): how to do it, a message to copy, change it and test it again, or *Not for me*. *How could you cover it?* opens Financing: it's a timing gap, the owner's own options compared by cost, and *Test a loan*.
+5. **Ask in plain words.** Ask Aheadly: "What if I move the new oven payment to next month?" → the answer plus the best / base / worst card; "How can I fix my alert?", "How much can I safely spend?" and "How can I cover this?" work too. Bad surprises: four built from the business's own numbers (sales down 20%, the biggest payment a month late, the main supplier 10% dearer, a surprise bill), each with what would help.
 6. **Act with confidence.** *Save as my plan*: the oven moves, the forecast reruns, the alert resolves.
 
 To show the app on a business that isn't a bakery, upload the statements of another test business from `tests/businesses/<business>/statements/` (the café's problem is structural, the hardware store depends on one late-paying customer).
@@ -61,8 +61,8 @@ Rules we keep: the UI only calls `AppCore`; only the Insight Translator talks to
 | `app.py` | Streamlit entry: page config, sidebar logo, `st.navigation`; four sidebar entries, each with a row of sub-tabs (`GROUPS` in `aheadly/ui/bootstrap.py`) |
 | `aheadly/ui/views/` | the thirteen page scripts, one per sub-tab: Dashboard (Overview, Early-warning alerts, Insights), Ask Aheadly (Ask about my numbers, Test a what-if, Suggestions, Bad surprises, Financing), Your business (Connect accounts, Questions, Behind the forecast, What you told us), Settings |
 | `aheadly/ui/` | brand CSS on top of `.streamlit/config.toml`, all copy strings, cards, charts (weekly lows), cached bootstrap |
-| `aheadly/core/` | `AppCore`, and the rules it uses: `alert_rules`, `actions` (tested fixes), `safe` (safe to spend / pay), `stress` (bad surprises), `financing`, `onboarding` (questions), `transfers`, `examples`, `session` |
-| `aheadly/ai/` | `ForecastEngine` + models, `scenarios`, `categorizer`, `recurring`, `seasons`, `confidence`, `plan_text`, `InsightTranslator`, `llm_client`, `tools`, `guardrails`, `prompts`, `templates` |
+| `aheadly/core/` | `AppCore`, and the rules it uses: `alert_rules`, `pattern_rules` (things we noticed), `insight_charts`, `actions` (tested fixes), `safe` (safe to spend / pay), `stress` (bad surprises), `financing`, `onboarding` (questions), `transfers`, `examples`, `session` |
+| `aheadly/ai/` | `ForecastEngine` + models, `scenarios`, `categorizer`, `recurring`, `seasons`, `confidence`, `plan_text`, `owner_notes`, `InsightTranslator`, `llm_client`, `tools`, `guardrails`, `prompts`, `templates` |
 | `aheadly/data/` | `schema.sql` + numbered migrations, `Repository`, `seed_demo`, `connectors/` (bank statements, the owner's own files) |
 | `aheadly/jobs/` | `daily_run` (cron-able) |
 | `tests/` | pytest: unit tests per component, the demo script as a functional test, and `test_businesses.py`, which runs the six test businesses in `tests/businesses/` against their answer keys |
@@ -71,7 +71,7 @@ Rules we keep: the UI only calls `AppCore`; only the Insight Translator talks to
 ## How the AI works
 
 * **Forecast Engine.** Regular payments and income found in the statement (rent on the 15th, payroll on Fridays, taxes every two months…) and the one-offs the owner knows go on their real dates; the rest of the history is fitted with Prophet (weekly seasonality, Colombian holidays, flat trend). 500 sampled future paths are cumulated from today's balance; worst / base / best case are the 10th / 50th / 90th percentiles, and the chance of dipping below the line is the share of paths that do. A seasonal-naive baseline is always available; Settings → *Compare forecast models* runs the backtest (MAE on the last 4 weeks).
-* **Alert rules** are deterministic code: shortfall when the base case drops below the low cash line, idle cash when even the worst case stays above three months of outflows. Rules build a *facts* object; the LLM only writes the words.
+* **Alert rules** are deterministic code: shortfall when the base case drops below the low cash line, watch when only a bad month would, a doubled or unusual charge, idle cash when even the worst case stays above three months of outflows. Rules build a *facts* object; the LLM only writes the words.
 * **Things we noticed** (`aheadly/core/pattern_rules.py`): twelve patterns worth knowing even when cash is fine (thin cushion, a cost creeping up, the owner's pay taking most of what's left, one big customer, a customer paying later, doubled or unusual charges…), found by rules that skip the months the owner calls busy or slow. Each gets a title from code, 1–3 sentences from the LLM and what could help (tested as a what-if when it can be), on the Insights page and the dashboard; every chart gets a short summary the same way. Both are checked by the guardrail, fall back to templates and are written once per set of numbers.
 * **Solving, not just warning.** Every fix the app suggests (move a payment, ask for money earlier, pay yourself less, raise prices, pairs of these) is run as a what-if first and shown with its effect; the same machinery gives safe to spend, the stress tests and the financing comparison (only the owner's own options, with their own rates; not financial advice).
 * **Insight Translator** answers chat questions with function calling over eleven tools (`get_cash_summary`, `get_forecast`, `get_upcoming_outflows`, `get_transactions`, `run_scenario`, `get_alerts`, `safe_to_spend`, `compare_financing`, `get_insights`, `get_suggestions`, `propose_plan_items`).
@@ -100,6 +100,6 @@ Your business → Connect accounts → upload one or more bank statements (CSV o
 
 A list of upcoming **one-off** payments and expected income (`Date, Description, Amount`, minus = money going out) is one of the files you keep: a planned purchase, a big supplier order, a customer order. Regular payments (payroll, rent, suppliers) are learned from the statement; one you list anyway is recognised and counted once.
 
-No files at hand? On Accounts, **Try the example bakery** loads Panadería La Esquina (`aheadly/examples/`): a year of statements from the test businesses plus the one-off payments its owner knows about. It is always shown as of the day after its statement ends (Nov 11, 2026). Settings → Start over goes back to your own upload.
+No files at hand? On Connect accounts, **Try the example bakery** loads Panadería La Esquina (`aheadly/examples/`): a year of statements from the test businesses plus the one-off payments its owner knows about. It is always shown as of the day after its statement ends (Nov 11, 2026). Settings → Start over goes back to your own upload.
 
 A sample bank export of the demo bakery is still in `data/samples/` for testing the import (regenerate it with `uv run python -m scripts.make_sample_export`). For realistic files, use the statements in `tests/businesses/<business>/statements/`: six test businesses made separately from the code, each with an answer key (DECISIONS #25).

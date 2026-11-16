@@ -1251,7 +1251,7 @@ class AppCore:
             "lowest_worst_case": spend["lowest_worst_case"],
             "owner_pay": (
                 {
-                    "payment": pay["label"],
+                    "payment": templates.CATEGORY_WORDS["owner_pay"],  # not the bank's wording
                     "now_per_payment": pay["now"],
                     "safe_per_payment": pay["safe"],
                     "how_often": pay["how_often"],
@@ -1324,7 +1324,9 @@ class AppCore:
                     "severity": insight["severity"],
                     "title": text.title,
                     "body": text.body,
-                    "actions": [self._insight_action(a, insight, baseline) for a in text.actions],
+                    "actions": [
+                        a for a in (self._insight_action(a, insight, baseline) for a in text.actions) if a
+                    ],
                     "facts": insight["facts"],
                     # roadmap R.1: a charge to check and idle cash are alerts too, so the Insights page
                     # and the dashboard leave them out (the chat still sees them)
@@ -1334,8 +1336,13 @@ class AppCore:
         self._cards_cache = {"key": key, "cards": cards}
         return cards
 
-    def _insight_action(self, action: dict, insight: dict, baseline: ForecastResult) -> dict:
-        """An insight's action, tested on the forecast when it maps to a what-if (roadmap 4.3)."""
+    def _insight_action(self, action: dict, insight: dict, baseline: ForecastResult) -> dict | None:
+        """An insight's action, tested on the forecast when it maps to a what-if (roadmap 4.3).
+        None when the owner ruled out that kind of change: not even as untested advice (issue 30)."""
+        declined = self.declined_suggestions()
+        kind = INSIGHT_ACTION_KINDS.get(action["key"])
+        if kind and alert_actions.ruled_out([r for r in declined if "label" not in r], kind):
+            return None
         items = [i for i in self.repo.list_scheduled_items(self._business().id) if i.active and not i.paused]
         found = None
         if action["key"] == "lower_owner_pay_for_a_while":
@@ -1377,10 +1384,8 @@ class AppCore:
         words, adjustments = found
         kind = INSIGHT_ACTION_KINDS[action["key"]]
         payment = adjustments[0].get("label") if kind in ("owner_pay", "cancel") else None
-        if alert_actions.ruled_out(
-            self.declined_suggestions(), kind, payment, alert_actions.suggestion_id(adjustments)
-        ):
-            return action  # the owner said no to this kind of change (roadmap R.3): advice only
+        if alert_actions.ruled_out(declined, kind, payment, alert_actions.suggestion_id(adjustments)):
+            return None  # the owner said no to this change (roadmap R.3)
         result = self._scenario(adjustments, words["label"], baseline=baseline)
         effect = alert_actions.impact(result)
         if (

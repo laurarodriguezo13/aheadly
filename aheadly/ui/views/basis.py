@@ -348,7 +348,16 @@ if month:
         if (month["last"] + timedelta(days=1)).month == month["last"].month:  # the forecast ends mid-month
             st.caption(copy.BASIS_PARTIAL_MONTH.format(first=day(month["first"]), last=day(month["last"])))
 
+
 # ---------------------------------------------------------------- what the owner told us (roadmap R.3c)
+def _limit_words(rule: dict) -> str:
+    """'Never suggest: paying yourself less', not '…: I can't lower my pay' (review, Nov 16): a limit
+    the owner told us reads as the kind of change; a suggestion they said no to, by its name."""
+    if rule.get("reason") == "told_us" and rule.get("kind") in copy.LIMIT_KINDS:
+        return copy.LIMIT_KINDS[rule["kind"]].format(payment=rule.get("label", ""))
+    return rule["what"]
+
+
 notes, limits = core.owner_notes(), core.declined_suggestions()
 if notes or limits:
     with st.container(border=True):
@@ -356,7 +365,7 @@ if notes or limits:
         st.markdown(
             "\n".join(
                 [f"- {copy.NOTE_ROW.format(note=n['text'])}" for n in notes]
-                + [f"- {copy.LIMIT_ROW.format(what=r['what'])}" for r in limits]
+                + [f"- {copy.LIMIT_ROW.format(what=_limit_words(r))}" for r in limits]
             )
         )
         if st.button(copy.TOLD_LINK, key="basis-told"):

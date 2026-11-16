@@ -499,7 +499,6 @@ CHANGE_FIELDS = {
     "recurring_change": "Pay yourself less by (%)",
     "revenue_change": "Raise prices by (%)",
 }
-CHANGE_WHICH = "{label}"
 USE_THIS_VERSION = "Use this version"
 BACK_TO_SUGGESTION = "Back to the suggestion"
 # ---------------------------------------------------------------- what the owner tells us (R.3c)
