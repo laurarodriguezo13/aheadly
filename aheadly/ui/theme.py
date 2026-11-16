@@ -80,6 +80,7 @@ h2, h3 {{ letter-spacing: -0.02em; }}
   letter-spacing: .04em; }}
 .ah-pill.high {{ background: var(--rose); color: var(--red); }} .ah-pill.medium {{ background: #FFF4E0; color: #B26A00; }}
 .ah-pill.low {{ background: var(--mint); color: #15807A; }} .ah-pill.info {{ background: var(--sky); color: #0B6FC2; }}
+.ah-pill.urgent {{ background: var(--red); color: #fff; }}
 .ah-hero {{ background: var(--gradient); color: #fff; border-radius: var(--radius-card); padding: 1.8rem 2rem;
   box-shadow: var(--shadow-card); }}
 .ah-hero h2, .ah-hero p {{ color: #fff !important; margin: 0; }}

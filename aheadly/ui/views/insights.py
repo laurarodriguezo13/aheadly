@@ -13,7 +13,7 @@ st.caption(copy.INSIGHTS_INTRO)
 
 section_title(copy.NOTICED_TITLE)
 with st.spinner(copy.CHECKING_MONEY):
-    cards = core.insight_cards()
+    cards = core.noticed_cards()
 if not cards:
     st.success(copy.NOTICED_NONE)
 for i, card in enumerate(cards):

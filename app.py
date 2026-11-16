@@ -2,7 +2,7 @@
 
 `st.set_page_config` must be the first Streamlit call. Page scripts live in `aheadly/ui/views/`
 and are registered with `st.navigation` so the sidebar shows titles, icons and
-the unread-alert badge.
+the open-alert badge.
 """
 
 import streamlit as st
@@ -11,7 +11,14 @@ st.set_page_config(
     page_title="Aheadly", page_icon="assets/favicon_64.png", layout="wide", initial_sidebar_state="expanded"
 )
 
-from aheadly.version import forget_old_code  # noqa: E402
+try:
+    from aheadly.version import forget_old_code  # noqa: E402
+except ImportError:  # an old copy of version.py is still in memory (roadmap issue 19, after PR #5)
+    import sys
+
+    for _name in [m for m in sys.modules if m == "aheadly" or m.startswith("aheadly.")]:
+        del sys.modules[_name]
+    from aheadly.version import forget_old_code  # noqa: E402
 
 forget_old_code()  # after an update, load the new code everywhere (roadmap issue 19)
 
@@ -19,13 +26,14 @@ from aheadly.ui import copy  # noqa: E402  (imports after set_page_config on pur
 from aheadly.ui.bootstrap import PAGES, get_core, get_settings  # noqa: E402
 
 
-def unread_badge() -> str:
+def alerts_badge() -> str:
+    """Counts open alerts: one stays counted until it is dismissed or solved, not just seen."""
     try:
         get_settings().validate()
-        unread = get_core().unread_alert_count()
+        count = get_core().open_alert_count()
     except (ValueError, RuntimeError):
-        unread = 0
-    return f"{copy.NAV['alerts']} ({unread})" if unread else copy.NAV["alerts"]
+        count = 0
+    return f"{copy.NAV['alerts']} ({count})" if count else copy.NAV["alerts"]
 
 
 def questions_badge() -> str:
@@ -40,7 +48,7 @@ def questions_badge() -> str:
 pages = [
     st.Page(PAGES["dashboard"], title=copy.NAV["dashboard"], icon=":material/home:", default=True),
     st.Page(PAGES["questions"], title=questions_badge(), icon=":material/quiz:"),
-    st.Page(PAGES["alerts"], title=unread_badge(), icon=":material/notifications:"),
+    st.Page(PAGES["alerts"], title=alerts_badge(), icon=":material/notifications:"),
     st.Page(PAGES["insights"], title=copy.NAV["insights"], icon=":material/insights:"),
     st.Page(PAGES["basis"], title=copy.NAV["basis"], icon=":material/fact_check:"),
     st.Page(PAGES["ask"], title=copy.NAV["ask"], icon=":material/chat:"),

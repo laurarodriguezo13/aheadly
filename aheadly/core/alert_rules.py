@@ -1,7 +1,9 @@
 """Alert rules: deterministic, no LLM (the LLM only writes the words).
 
 shortfall : any day where the base-case balance drops below the low cash line.
+watch     : the base case stays above the line, but the worst case (a bad month) dips below it (R.1).
 idle_cash : even the worst case stays above three months of outflows all horizon.
+duplicate_charge / unusual_charge : a charge to check today, from the pattern rules (R.1).
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ POSSIBLE_ACTIONS = [
     "delay_planned_purchase",
 ]
 DUPLICATE_WINDOW_DAYS = 3
+CHARGE_TYPES = ("duplicate_charge", "unusual_charge")
 
 
 @dataclass
@@ -70,6 +73,42 @@ def detect_shortfall(forecast: ForecastResult, business: Business, today: date) 
     )
 
 
+def detect_watch(forecast: ForecastResult, business: Business, today: date) -> AlertFacts | None:
+    """Roadmap R.1: "watch" got no alert, so a business at a 53% chance of dipping below its line
+    (the costume shop) saw nothing on the Alerts page. Low severity: nothing is likely to go wrong."""
+    line = business.low_cash_line
+    if forecast.risk_level(line) != "watch":
+        return None
+    worst = min(forecast.points, key=lambda p: p.balance_p10)
+    weeks_ahead = weeks_until(today, worst.date)
+    facts = {
+        "type": "watch",
+        "current_balance": round(forecast.opening_balance),
+        "low_cash_line": round(line),
+        "lowest_balance": round(forecast.lowest.balance_p50),
+        "lowest_worst_case": round(worst.balance_p10),
+        "lowest_date": worst.date.isoformat(),
+        "weeks_ahead": weeks_ahead,
+        "chance_below_line_pct": chance_pct(forecast.chance_below(line)),
+        "top_outflows": forecast.top_outflows(worst.date),
+        "possible_actions": POSSIBLE_ACTIONS,
+    }
+    return AlertFacts("watch", "low", weeks_ahead, worst.date, facts)
+
+
+def charge_alerts(insights: list[dict], today: date) -> list[AlertFacts]:
+    """Roadmap R.1: a doubled or an unusual charge is something to do today, so it is an alert as
+    well as a thing we noticed (the facts and the action keys come from the pattern rules)."""
+    found = []
+    for insight in insights:
+        if insight["type"] not in CHARGE_TYPES:
+            continue
+        facts = {"type": insight["type"], **insight["facts"], "possible_actions": insight["actions"]}
+        severity = "medium" if insight["type"] == "duplicate_charge" else "low"
+        found.append(AlertFacts(insight["type"], severity, 0, date.fromisoformat(facts["date"]), facts))
+    return found
+
+
 def detect_idle_cash(
     forecast: ForecastResult, business: Business, avg_monthly_outflow: float, today: date
 ) -> AlertFacts | None:
@@ -92,20 +131,26 @@ def detect_alerts(
 ) -> list[AlertFacts]:
     candidates = [
         detect_shortfall(forecast, business, today),
+        detect_watch(forecast, business, today),
         detect_idle_cash(forecast, business, avg_monthly_outflow, today),
     ]
     return [c for c in candidates if c is not None]
 
 
 def find_duplicate(existing: list[Alert], new: AlertFacts) -> Alert | None:
-    """An open alert of the same type with a risk date within ±3 days is updated, not duplicated."""
+    """An alert not solved yet (open or dismissed) for the same thing is updated, not raised again:
+    a shortfall or watch with its risk date within ±3 days, the same charge, or idle cash."""
     for alert in existing:
         if alert.type != new.type:
             continue
-        key = "lowest_date" if new.type == "shortfall" else None
-        if key is None:
+        if new.type in CHARGE_TYPES:
+            same = ("payee", "amount", "date")
+            if all(alert.facts.get(k) == new.facts.get(k) for k in same):
+                return alert
+            continue
+        if new.type not in ("shortfall", "watch"):
             return alert
-        previous = date.fromisoformat(alert.facts.get(key, new.risk_date.isoformat()))
+        previous = date.fromisoformat(alert.facts.get("lowest_date", new.risk_date.isoformat()))
         if abs((previous - new.risk_date).days) <= DUPLICATE_WINDOW_DAYS:
             return alert
     return None

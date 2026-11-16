@@ -197,18 +197,17 @@ NEXT_PAYMENT = "Next big payment"
 CHART_TITLE = "Cash flow forecast, next 8 weeks"
 UPCOMING_ALERTS = "Upcoming alerts"
 NO_ALERTS = "No alerts. Your cash looks healthy for the next 8 weeks."
-WATCH_NO_ALERTS = (
-    "No alerts, but in a bad month your cash could dip to {worst}, below your {line} line. Keep an eye on it."
-)
+# roadmap R.1: after Dismiss the numbers haven't changed, so the page mustn't say all is well
+ONLY_DISMISSED = "No open alerts. You dismissed {what}; the forecast still shows it."
+BRING_BACK = "Show dismissed alerts"
 ASK_BOX = "Ask Aheadly"
 ASK_PLACEHOLDER = "Ask a question…"
 
 ALERTS_TITLE = "Alerts"
 WHY_IT_MATTERS = "Why it matters"
-WHAT_YOU_CAN_DO = "What you can do"
 TOP_OUTFLOWS = "Top cash outflows in {weeks}"
-SEE_WHY = "See why"
-TEST_WHAT_IF = "Test a what-if"
+ASK_ABOUT_ALERT = "Ask about this alert"
+ASK_ABOUT_ALERT_QUESTION = "What's causing my alert \"{title}\", and what's my best option?"
 DISMISS = "Dismiss"
 ALERT_FOOTER = "Plan ahead and take action now to stay on track."
 
@@ -292,7 +291,15 @@ BASIS_COLUMNS = {
 BASIS_PAUSED = "Paused"
 BASIS_ENDS = "Ends {date}"
 BASIS_MAYBE = "Maybe: counted in 3 of 4 scenarios"
-BASIS_EDIT = "Change a payment"
+BASIS_EDIT_REGULAR = "Change one of these regular payments"
+BASIS_EDIT_ONE_OFF = "Change one of these one-off payments"
+BASIS_ONE_OFF_DATE = "Date"
+BASIS_HOW_SURE = "How sure is it?"
+BASIS_SURE = {"confirmed": "Certain", "maybe": "Maybe (it might not happen)"}
+BASIS_COMING_IN = "Coming in"
+BASIS_GOING_OUT = "Going out"
+BASIS_TOTAL_30 = "about {total} in the next 30 days"
+BASIS_TOTAL_ONE_OFFS = "{total} in all"
 BASIS_PICK = "Which one?"
 BASIS_AMOUNT = "Amount"
 BASIS_NEXT_DATE = "Date"
@@ -307,6 +314,19 @@ BASIS_CONFIRMED = "Marked as confirmed. It won't be changed by a new upload."
 BASIS_EFFECT = "{what}. Lowest balance: {before} → {after}."
 BASIS_RISK_CHANGED = " Your status went from {before} to {after}."
 RISK_NAMES = {"act_now": "act now", "watch": "watch", "safe": "on track"}
+RISK_URGENT = "urgent"  # roadmap R.1: act now with the balance below zero (display only)
+URGENT_PILL = "URGENT"
+SHORT_BY = "Short by {short} on {date}"
+
+
+def risk_name(level: str, lowest: float | None = None) -> str:
+    """The status in words; "act now" with the balance below zero reads "urgent" (roadmap R.1,
+    display only: the forecast's own levels stay safe / watch / act_now)."""
+    if level == "act_now" and lowest is not None and lowest < 0:
+        return RISK_URGENT
+    return RISK_NAMES.get(level, level)
+
+
 BASIS_SAVED = "Saved {label}"
 BASIS_PAUSED_DONE = "Paused {label}"
 BASIS_RESUMED_DONE = "{label} counts again"
@@ -392,7 +412,9 @@ NOTHING_ELSE = "Nothing else for now"
 # ---------------------------------------------------------------- forecast confidence (2.8)
 CONFIDENCE_TITLE = "How much to trust this forecast: {level}"
 CONFIDENCE_LEVELS = {"high": "high", "medium": "medium", "low": "low"}
-CONFIDENCE_ALL = "All the checks"
+CONFIDENCE_COUNT = "{passed} of {total} checks pass"
+CONFIDENCE_BETTER = "What would make it better:"
+CONFIDENCE_PASSED = "The {n} checks that pass"
 NOTHING_PLANNED = "This forecast assumes no big one-off payments in the next 8 weeks. Planning any?"
 NOTHING_PLANNED_GO = "Tell us"
 
@@ -417,10 +439,7 @@ ACTION_HOW = "How to do it"
 ACTION_DRAFT = "Draft a message"
 ACTION_DRAFT_NOTE = "Copy it and send it yourself: Aheadly never sends messages."
 ACTION_SAVED = "Plan saved. The forecast and alerts now use it."
-ACTION_AFTER = "Lowest balance after: {after}"
 STILL_SHORT = "Even the best change here leaves your base case about {gap} below your line. Covering that may need money from outside the business: talk to your bank or accountant."
-WATCH_FIXES = "Your base case stays above your line, but a bad month could dip below it. These changes, tested on your numbers, would help."
-SEE_FIXES = "See what would help"
 ACTION_GENERAL = "General advice: we couldn't test this one for you."
 
 
@@ -586,3 +605,22 @@ INSIGHT_CHART_NOTES = {
 }
 INSIGHTS_TOO_SHORT = "The charts need at least two complete months of statement."
 INSIGHT_PILLS = {"medium": "Worth a look", "low": "Good to know"}
+SAVING_ANSWER = "Saving your answer…"
+WHY_SHORTFALL = (
+    "Payments of {total} land in the same week, and your balance would fall to {lowest} around {date}, "
+    "below your {line} safety line."
+)
+WHY_BELOW_ZERO = (
+    "Payments of {total} land in the same week. Around {date} your account would be about {short} short: "
+    "payments due then could bounce or go into overdraft."
+)
+WHY_WATCH = (
+    "In the most likely case you stay above your {line} line, but a bad month could take you to {worst} "
+    "around {date}. Acting early keeps that from happening."
+)
+CHARGED_ON = "charged on {date}"
+WHY_CHARGE = {
+    "duplicate_charge": "If the same charge went through twice by mistake, that money can usually be recovered.",
+    "unusual_charge": "A new payee charging more than your usual payments is worth checking the same day.",
+}
+WHY_IDLE = "Even in a bad case you keep {worst}, more than three months of outflows ({three_months})."

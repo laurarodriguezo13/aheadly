@@ -153,7 +153,7 @@ class ForecastResult:
 @dataclass
 class Alert:
     id: int
-    type: str  # shortfall | idle_cash
+    type: str  # shortfall | watch | idle_cash | duplicate_charge | unusual_charge (roadmap R.1)
     severity: str  # low | medium | high
     weeks_ahead: int
     title: str

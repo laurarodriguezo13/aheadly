@@ -61,6 +61,18 @@ MIGRATIONS: list[list[str]] = [
         "ALTER TABLE scheduled_items ADD COLUMN first_due_date TEXT",
         "UPDATE scheduled_items SET first_due_date = due_date",
     ],
+    # 3 · roadmap R.1: alerts for "close to the line" and for charges to check (schema.sql only allows
+    # shortfall and idle_cash, and SQLite can't change a CHECK, so the table is rebuilt)
+    [
+        "CREATE TABLE alerts_v3 (id INTEGER PRIMARY KEY, business_id INTEGER, run_id INTEGER, type TEXT "
+        "CHECK (type IN ('shortfall','watch','idle_cash','duplicate_charge','unusual_charge')), "
+        "severity TEXT, weeks_ahead INTEGER, facts_json TEXT, title TEXT, body TEXT, actions_json TEXT, "
+        "created_at TEXT, read_at TEXT, dismissed INTEGER DEFAULT 0, resolved INTEGER DEFAULT 0)",
+        "INSERT INTO alerts_v3 SELECT id, business_id, run_id, type, severity, weeks_ahead, facts_json, "
+        "title, body, actions_json, created_at, read_at, dismissed, resolved FROM alerts",
+        "DROP TABLE alerts",
+        "ALTER TABLE alerts_v3 RENAME TO alerts",
+    ],
 ]
 
 
@@ -493,8 +505,18 @@ class Repository:
 
     def update_scheduled_item(self, item_id: int, **fields) -> None:
         """Change an item the owner edited (label, amount, due_date, end_date, paused, active,
-        status, user_edited)."""
-        allowed = {"label", "amount", "due_date", "end_date", "paused", "active", "status", "user_edited"}
+        status, user_edited, certainty)."""
+        allowed = {
+            "label",
+            "amount",
+            "due_date",
+            "end_date",
+            "paused",
+            "active",
+            "status",
+            "user_edited",
+            "certainty",
+        }
         bad = set(fields) - allowed
         if bad:
             raise ValueError(f"Can't change {', '.join(sorted(bad))}")
@@ -734,31 +756,45 @@ class Repository:
         query = "SELECT * FROM alerts WHERE business_id=?"
         if open_only:
             query += " AND dismissed=0 AND resolved=0"
-        rows = self._conn.execute(query + " ORDER BY id DESC", (business_id,)).fetchall()
+        # the most serious first (roadmap R.1: several kinds can be open at once), then the newest
+        order = " ORDER BY CASE severity WHEN 'high' THEN 0 WHEN 'medium' THEN 1 ELSE 2 END, id DESC"
+        rows = self._conn.execute(query + order, (business_id,)).fetchall()
         return [self._row_to_alert(r) for r in rows]
 
-    def unread_alert_count(self, business_id: int) -> int:
+    def unresolved_alerts(self, business_id: int) -> list[Alert]:
+        """Open and dismissed alerts that are not solved yet: a dismissed one is updated, not raised again."""
+        rows = self._conn.execute(
+            "SELECT * FROM alerts WHERE business_id=? AND resolved=0 ORDER BY id DESC", (business_id,)
+        ).fetchall()
+        return [self._row_to_alert(r) for r in rows]
+
+    def open_alert_count(self, business_id: int) -> int:
         row = self._conn.execute(
-            "SELECT COUNT(*) AS n FROM alerts WHERE business_id=? AND read_at IS NULL AND dismissed=0 AND resolved=0",
+            "SELECT COUNT(*) AS n FROM alerts WHERE business_id=? AND dismissed=0 AND resolved=0",
             (business_id,),
         ).fetchone()
         return int(row["n"])
-
-    def mark_alert_read(self, alert_id: int) -> None:
-        self._conn.execute("UPDATE alerts SET read_at=? WHERE id=? AND read_at IS NULL", (_now(), alert_id))
-        self._conn.commit()
 
     def dismiss_alert(self, alert_id: int) -> None:
         self._conn.execute("UPDATE alerts SET dismissed=1 WHERE id=?", (alert_id,))
         self._conn.commit()
 
-    def resolve_alerts(self, business_id: int, alert_type: str) -> int:
-        cur = self._conn.execute(
-            "UPDATE alerts SET resolved=1 WHERE business_id=? AND type=? AND dismissed=0 AND resolved=0",
-            (business_id, alert_type),
+    def dismissed_alerts(self, business_id: int) -> list[Alert]:
+        rows = self._conn.execute(
+            "SELECT * FROM alerts WHERE business_id=? AND dismissed=1 AND resolved=0 ORDER BY id DESC",
+            (business_id,),
+        ).fetchall()
+        return [self._row_to_alert(r) for r in rows]
+
+    def bring_back_alerts(self, business_id: int) -> None:
+        self._conn.execute(
+            "UPDATE alerts SET dismissed=0 WHERE business_id=? AND dismissed=1 AND resolved=0", (business_id,)
         )
         self._conn.commit()
-        return cur.rowcount
+
+    def resolve_alert(self, alert_id: int) -> None:
+        self._conn.execute("UPDATE alerts SET resolved=1 WHERE id=?", (alert_id,))
+        self._conn.commit()
 
     @staticmethod
     def _row_to_alert(r: sqlite3.Row) -> Alert:

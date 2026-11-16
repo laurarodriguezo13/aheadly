@@ -15,7 +15,7 @@ def test_frames_2_to_6_connect_alert_whatif_save_plan(core):
 
     alerts = core.get_alerts()  # frame 4: early warning
     assert len(alerts) == 1 and alerts[0].type == "shortfall" and alerts[0].severity in ("medium", "high")
-    assert core.unread_alert_count() == 1
+    assert core.open_alert_count() == 1
     assert len(alerts[0].actions) >= 2 and len(alerts[0].facts["top_outflows"]) == 3
 
     answer = core.ask("What if I buy the new oven next month instead?")  # frame 5: ask in plain words

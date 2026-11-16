@@ -12,8 +12,11 @@ require_data(core)
 st.caption(copy.QUESTIONS_INTRO)
 example = core.example_answers()
 
+# R.1: the note always has its place, so the next question is drawn where the old one was and the
+# old one never shows twice while it loads
+notes = st.container()
 for note in st.session_state.pop("question_notes", []):
-    st.success(note)
+    notes.success(note)
 
 with st.spinner(copy.QUESTIONS_WORKING):
     state = core.onboarding()
@@ -39,8 +42,19 @@ def _next(note: str | None = None) -> None:
     st.rerun()
 
 
+def _save(work, note=None) -> None:
+    """Clear the question at once and say it's saving: an answer can take a few seconds (it sorts
+    the payments again and reruns the forecast), and the old question must not linger (R.1)."""
+    area.empty()
+    with saving.container(), st.spinner(copy.SAVING_ANSWER):
+        result = work()
+    _next(note(result) if callable(note) else note)
+
+
 question = questions[0]
-with st.container(border=True):
+saving = st.empty()
+area = st.empty()
+with area.container(border=True):
     st.subheader(question.title)
     if question.detail:
         st.markdown(question.detail)
@@ -60,8 +74,7 @@ with st.container(border=True):
         save, skip = st.columns(2)
         if save.button(copy.SAVE_ANSWER, type="primary"):
             if kind.strip() or pay.strip():
-                core.answer_business(kind, pay)
-                _next()
+                _save(lambda: core.answer_business(kind, pay))
             else:
                 st.warning(copy.ANSWER_FIRST)
 
@@ -71,18 +84,19 @@ with st.container(border=True):
         )
         save, skip = st.columns(2)
         if save.button(copy.SAVE_ANSWER, type="primary"):
-            with st.spinner(copy.CHAT_THINKING):
-                core.answer_seasons(busy, slow, changes)
-            _next(copy.SEASONS_SAVED if busy or slow else None)
+            _save(
+                lambda: core.answer_seasons(busy, slow, changes), copy.SEASONS_SAVED if busy or slow else None
+            )
 
     elif question.kind == "owner_pay":
         yes, no, skip = st.columns(3)
         if yes.button(copy.OWNER_PAY_YES, type="primary"):
-            core.answer_owner_pay(question.payee, True)
-            _next(copy.MYSTERY_SAVED.format(payee=question.payee, category=copy.CATEGORY_NAMES["owner_pay"]))
+            _save(
+                lambda: core.answer_owner_pay(question.payee, True),
+                copy.MYSTERY_SAVED.format(payee=question.payee, category=copy.CATEGORY_NAMES["owner_pay"]),
+            )
         if no.button(copy.OWNER_PAY_NO):
-            core.answer_owner_pay(question.payee, False)
-            _next()
+            _save(lambda: core.answer_owner_pay(question.payee, False))
 
     elif question.kind == "mystery":
         if question.suggestion:
@@ -106,11 +120,11 @@ with st.container(border=True):
             if not (picked or said.strip()):
                 st.warning(copy.ANSWER_FIRST)  # no st.stop(): the Skip button below must still show
             else:
-                category = core.answer_mystery(question.payee, picked, said)
-                _next(
-                    copy.MYSTERY_SAVED.format(
+                _save(
+                    lambda: core.answer_mystery(question.payee, picked, said),
+                    lambda category: copy.MYSTERY_SAVED.format(
                         payee=question.payee, category=copy.CATEGORY_NAMES.get(category, category)
-                    )
+                    ),
                 )
 
     else:  # coming_up: "just say it", the same as on How we built it
@@ -137,9 +151,7 @@ with st.container(border=True):
                     st.rerun()
         if st.button(copy.NOTHING_ELSE, type="primary"):
             st.session_state.pop("plan_proposals", None)
-            core.skip_question(question.id)
-            _next()
+            _save(lambda: core.nothing_coming_up(question.id))
 
     if question.kind != "coming_up" and skip.button(copy.SKIP, key=f"skip-{question.id}"):
-        core.skip_question(question.id)
-        _next()
+        _save(lambda: core.skip_question(question.id))

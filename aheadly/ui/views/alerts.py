@@ -11,7 +11,7 @@ from aheadly.ui.components import (
     action_rows,
     banner,
     card,
-    check_list_html,
+    dismissed_words,
     info_card,
     money,
     rows_html,
@@ -29,14 +29,26 @@ def why_it_matters(alert) -> str:
     facts = alert.facts
     if alert.type == "shortfall":
         total = sum(o["amount"] for o in facts["top_outflows"])
-        return (
-            f"Payments of {money(total)} land in the same week, and your balance would fall to "
-            f"{money(facts['lowest_balance'])} around {date.fromisoformat(facts['lowest_date']):%b %d}, below your "
-            f"{money(facts['low_cash_line'])} safety line."
+        when = f"{date.fromisoformat(facts['lowest_date']):%b} {date.fromisoformat(facts['lowest_date']).day}"
+        if facts["lowest_balance"] < 0:  # R.1: below zero says what it means
+            return copy.WHY_BELOW_ZERO.format(
+                total=money(total), short=money(-facts["lowest_balance"]), date=when
+            )
+        return copy.WHY_SHORTFALL.format(
+            total=money(total),
+            lowest=money(facts["lowest_balance"]),
+            date=when,
+            line=money(facts["low_cash_line"]),
         )
-    return (
-        f"Even in a bad case you keep {money(facts['lowest_worst_case'])}, more than three months "
-        f"of outflows ({money(facts['three_months_of_outflows'])})."
+    if alert.type == "watch":
+        when = f"{date.fromisoformat(facts['lowest_date']):%b} {date.fromisoformat(facts['lowest_date']).day}"
+        return copy.WHY_WATCH.format(
+            line=money(facts["low_cash_line"]), worst=money(facts["lowest_worst_case"]), date=when
+        )
+    if alert.type in ("duplicate_charge", "unusual_charge"):
+        return copy.WHY_CHARGE[alert.type]
+    return copy.WHY_IDLE.format(
+        worst=money(facts["lowest_worst_case"]), three_months=money(facts["three_months_of_outflows"])
     )
 
 
@@ -162,57 +174,43 @@ def financing_section(expanded: bool) -> None:
         _option_form()
 
 
-if not alerts:
-    fixes = core.suggested_fixes()
-    if fixes:  # "watch": no alert, but the worst case dips below the line (roadmap 3.3)
-        st.info(copy.WATCH_FIXES)
-        action_rows(core, fixes, "watch")
-        financing_section(expanded=False)
+if not alerts:  # "watch" has its own alert now (roadmap R.1), so nothing open means nothing to do
+    dismissed = core.dismissed_alerts()
+    if dismissed:
+        st.info(copy.ONLY_DISMISSED.format(what=dismissed_words(dismissed)))
+        if st.button(copy.BRING_BACK):
+            core.bring_back_alerts()
+            st.rerun()
     else:
         st.success(copy.NO_ALERTS)
 
 financing_shown = False
 for alert in alerts:
-    core.mark_alert_read(alert.id)
     card(
-        f"{severity_pill(alert.severity)}<h3>{html.escape(alert.title)}</h3>"
+        f"{severity_pill(alert.severity, alert.type == 'shortfall' and alert.facts['lowest_balance'] < 0)}<h3>{html.escape(alert.title)}</h3>"
         f'<p style="font-size:1.05rem">{html.escape(alert.body)}</p>',
         "lav",
     )
+    # R.1: the alert's own buttons right under it, so it's clear what they're about
+    with st.container(horizontal=True):
+        if st.button(copy.ASK_ABOUT_ALERT, key=f"why-{alert.id}", type="primary"):
+            go_to("ask", copy.ASK_ABOUT_ALERT_QUESTION.format(title=alert.title))
+        if st.button(copy.DISMISS, key=f"dismiss-{alert.id}"):
+            core.dismiss_alert(alert.id)
+            st.rerun()
 
-    c1, c2, c3 = st.columns(3)
+    outflows = [(o["label"], money(o["amount"])) for o in alert.facts.get("top_outflows", [])]
+    c1, c2 = st.columns(2)
     with c1:
         info_card(copy.WHY_IT_MATTERS, f"<p>{html.escape(why_it_matters(alert))}</p>", "lav", icon="i")
-    with c2:
-        actions = [
-            (
-                a["label"],
-                (
-                    copy.ACTION_AFTER.format(after=money(a["impact"]["lowest_after"]))
-                    if a.get("impact")
-                    else a.get("detail", "")
-                ),
-            )
-            for a in alert.actions
-        ]
-        info_card(copy.WHAT_YOU_CAN_DO, check_list_html(actions))
-    with c3:
-        outflows = [(o["label"], money(o["amount"])) for o in alert.facts.get("top_outflows", [])]
-        if outflows:
+    if outflows:
+        with c2:
             title = copy.TOP_OUTFLOWS.format(weeks=weeks(alert.weeks_ahead))
             info_card(title, rows_html(outflows), "sky")
 
     action_rows(core, alert.actions, f"action-{alert.id}")
-    if alert.type == "shortfall" and not financing_shown:
+    if alert.type in ("shortfall", "watch") and not financing_shown:
         financing_section(expanded=still_short_note())
         financing_shown = True
-
-    with st.container(horizontal=True):  # each button as wide as its words
-        if st.button(copy.SEE_WHY, key=f"why-{alert.id}", type="primary"):
-            go_to("ask", f"Why do I have this alert: {alert.title}?")
-        if st.button(copy.TEST_WHAT_IF, key=f"whatif-{alert.id}"):
-            go_to("whatif")
-        if st.button(copy.DISMISS, key=f"dismiss-{alert.id}"):
-            core.dismiss_alert(alert.id)
-            st.rerun()
+if alerts:
     banner(copy.ALERT_FOOTER)

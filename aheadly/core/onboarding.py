@@ -47,6 +47,17 @@ class Question:
     extra: dict = field(default_factory=dict)
 
 
+MONEY_IN_KINDS = {"sales", "other_income"}
+EITHER_WAY = {"loan", "other", "transfer_internal", "card_payment"}
+
+
+def fits_direction(category: str, amount: float) -> bool:
+    """A guess for money going out can't be a kind of income, and the other way round."""
+    if category in EITHER_WAY:
+        return True
+    return (category in MONEY_IN_KINDS) == (amount > 0)
+
+
 def build(
     profile: dict,
     payees: list[dict],
@@ -85,6 +96,8 @@ def build(
     for p in mysteries[:MAX_MYSTERIES]:
         key = plain(p["description"])
         category, reason = suggestions.get(p["description"], (None, ""))
+        if category and not fits_direction(category, p["total"]):
+            category, reason = None, ""  # roadmap R.1: the AI called a payment going out "Other income"
         questions.append(
             Question(
                 f"mystery:{key}",

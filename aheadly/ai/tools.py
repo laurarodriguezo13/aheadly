@@ -113,7 +113,10 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     },
     {
         "name": "get_alerts",
-        "description": "Open alerts with the facts behind them.",
+        "description": (
+            "Open alerts with the facts behind them and what would help (fixes; the ones with 'tested' "
+            "were run on the forecast: lowest balance and status before and after)."
+        ),
         "parameters": {"type": "object", "properties": {}},
     },
     {

@@ -85,7 +85,7 @@ class Dashboard:
     history: pd.DataFrame
     alerts: list[Alert]
     next_payment: tuple[date, float, str] | None
-    unread_alerts: int = 0
+    open_alerts: int = 0
     scheduled: list = field(default_factory=list)
 
 
@@ -368,15 +368,23 @@ class AppCore:
 
     def answer_mystery(self, payee: str, category: str | None = None, words: str = "") -> str:
         """What a payee is: a category picked from the list, or the owner's own words (or both).
+        The words win when they name a kind of payment (roadmap R.1: on the live site the list,
+        still on the AI's guess "Other income", beat "loan repayment"); the list decides otherwise.
         Returns the category used."""
+        said = categorizer.category_from_answer(words) if words.strip() else "other"
+        if said != "other" or (words.strip() and not category):
+            category = said
         if category:
             self.set_payee_rule(payee, category, words or payee)
-        elif words.strip():
-            category = self.answer_payee(payee, words)
         else:
             raise ValueError("Pick a category or say in your own words what it is.")
         self._question_done(f"mystery:{categorizer.match_key(payee)}")
         return category
+
+    def nothing_coming_up(self, question_id: str = "coming_up") -> None:
+        """'Nothing else for now' answers the question (nothing big is coming): it counts as answered,
+        not skipped (roadmap R.1: the trust box said 4 of 5 after it)."""
+        self._question_done(question_id)
 
     def skip_question(self, question_id: str) -> None:
         """Skipped: not asked again, but not counted as answered (confidence, roadmap 2.8)."""
@@ -523,9 +531,11 @@ class AppCore:
         }
 
     def update_plan_item(self, item_id: int, **changes) -> dict:
-        """The owner changes an item (amount, label, next date, end date). From now on it's theirs:
-        a later upload suggests changes but never overwrites them. Returns the effect."""
+        """The owner changes an item (amount, label, next date, end date, certain or maybe). From now
+        on it's theirs: a later upload suggests changes but never overwrites them. Returns the effect."""
         item = self._own_item(item_id)
+        if changes.get("certainty") not in (None, "confirmed", "maybe"):
+            raise ValueError("certainty is confirmed or maybe")
         if "amount" in changes and changes["amount"] is not None:
             amount = abs(float(changes["amount"]))
             changes["amount"] = amount if item.amount > 0 else -amount
@@ -611,6 +621,15 @@ class AppCore:
             "end_date": item.end_date,
             "past_due": not item.recurrence and item.due_date < self.today,
             "category": item.category,
+            # what it adds up to in the next 30 days (R.1: totals for money in and out)
+            "next_30_days": round(
+                (
+                    sum(a for d, a, _ in upcoming if d < self.today + timedelta(days=30))
+                    if not item.paused
+                    else 0.0
+                ),
+                2,
+            ),
         }
 
     def _update_suggestions(self, items: list[ScheduledItem], found: dict) -> list[dict]:
@@ -887,16 +906,21 @@ class AppCore:
         )
 
         detected = alert_rules.detect_alerts(forecast, business, self._avg_monthly_outflow(), self.today)
-        open_alerts = self.repo.list_alerts(business.id)
+        detected += alert_rules.charge_alerts(self.insights(), self.today)  # roadmap R.1
+        open_alerts = self.repo.unresolved_alerts(business.id)  # dismissed ones too, so they stay dismissed
         summary = DailyRunSummary(ran=True, forecast=forecast)
+        still_there = set()
         for facts in detected:
             for key in ("top_outflows", "expected_inflows_before"):
                 if key in facts.facts:
                     facts.facts[key] = self._plain_names(facts.facts[key])
+            if "payee" in facts.facts:
+                facts.facts["payee"] = templates.payee_name(facts.facts["payee"])
             text = self.translator.write_alert(facts.facts)
             text.actions = self._actions_for(facts.facts, forecast)
             duplicate = alert_rules.find_duplicate(open_alerts, facts)
             if duplicate:
+                still_there.add(duplicate.id)
                 self.repo.update_alert(
                     duplicate.id,
                     facts.severity,
@@ -920,9 +944,10 @@ class AppCore:
                     text.actions,
                 )
                 summary.alerts_raised += 1
-        detected_types = {f.type for f in detected}
-        for alert_type in {a.type for a in open_alerts} - detected_types:
-            summary.alerts_resolved += self.repo.resolve_alerts(business.id, alert_type)
+        for alert in open_alerts:  # what today's check no longer finds is solved
+            if alert.id not in still_there:
+                self.repo.resolve_alert(alert.id)
+                summary.alerts_resolved += 1
         logger.info(
             "daily check: raised=%s updated=%s resolved=%s",
             summary.alerts_raised,
@@ -952,7 +977,7 @@ class AppCore:
             history=history,
             alerts=self.repo.list_alerts(business.id),
             next_payment=next_payment,
-            unread_alerts=self.repo.unread_alert_count(business.id),
+            open_alerts=self.repo.open_alert_count(business.id),
             scheduled=forecast.scheduled if forecast else [],
         )
 
@@ -960,15 +985,21 @@ class AppCore:
     def get_alerts(self, open_only: bool = True) -> list[Alert]:
         return self.repo.list_alerts(self._business().id, open_only=open_only)
 
-    def unread_alert_count(self) -> int:
+    def open_alert_count(self) -> int:
+        """The sidebar badge: alerts stay counted until they are dismissed or solved, not just seen."""
         business = self.repo.get_business()
-        return self.repo.unread_alert_count(business.id) if business else 0
-
-    def mark_alert_read(self, alert_id: int) -> None:
-        self.repo.mark_alert_read(alert_id)
+        return self.repo.open_alert_count(business.id) if business else 0
 
     def dismiss_alert(self, alert_id: int) -> None:
         self.repo.dismiss_alert(alert_id)
+
+    def dismissed_alerts(self) -> list[Alert]:
+        """Dismissed but not solved: the pages don't say "cash looks healthy" while there are any (R.1)."""
+        business = self.repo.get_business()
+        return self.repo.dismissed_alerts(business.id) if business else []
+
+    def bring_back_alerts(self) -> None:
+        self.repo.bring_back_alerts(self._business().id)
 
     # ------------------------------------------------------------------ chat
     def ask(self, question: str) -> ChatAnswer:
@@ -1014,7 +1045,7 @@ class AppCore:
         """2–3 actions for an alert: worked out and measured by code when it can (roadmap 3.2–3.3),
         general advice (without a what-if) to fill up to two, and for idle cash."""
         generic = templates.alert_text(facts)["actions"]
-        if facts["type"] != "shortfall":
+        if facts["type"] not in ("shortfall", "watch"):
             return generic
         found = self._fixes(forecast)
         return found + generic[: max(0, 2 - len(found))]
@@ -1170,6 +1201,9 @@ class AppCore:
                     "body": text.body,
                     "actions": [self._insight_action(a, insight, baseline) for a in text.actions],
                     "facts": insight["facts"],
+                    # roadmap R.1: a charge to check and idle cash are alerts too, so the Insights page
+                    # and the dashboard leave them out (the chat still sees them)
+                    "is_alert": insight["type"] in (*alert_rules.CHARGE_TYPES, "idle_cash"),
                 }
             )
         self._cards_cache = {"key": key, "cards": cards}
@@ -1231,6 +1265,10 @@ class AppCore:
             "adjustments": adjustments,
             "impact": effect,
         }
+
+    def noticed_cards(self) -> list[dict]:
+        """The things we noticed the Insights page and the dashboard show: not the ones on Alerts."""
+        return [card for card in self.insight_cards() if not card["is_alert"]]
 
     def insights_for_chat(self) -> dict:
         """The get_insights chat tool (roadmap 4.3): what we noticed, with the numbers behind it."""
@@ -1705,6 +1743,15 @@ class AppCore:
                 "severity": a.severity,
                 "weeks_ahead": a.weeks_ahead,
                 "facts": a.facts,
+                # roadmap R.1: "How do I fix my alert?" gets the fixes, tested ones first
+                "fixes": [
+                    {
+                        "label": action["label"],
+                        "detail": action.get("detail", ""),
+                        **({"tested": action["impact"]} if action.get("impact") else {}),
+                    }
+                    for action in sorted(a.actions, key=lambda action: not action.get("impact"))[:3]
+                ],
             }
             for a in self.get_alerts()
         ]

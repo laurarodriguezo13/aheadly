@@ -376,6 +376,8 @@ class InsightTranslator:
         usable = [(name, data) for name, data in zip(tool_names, evidence) if "error" not in data]
         if not usable:  # nothing fetched yet, or only failed calls: let the offline planner choose
             call = StubClient().plan(question, self._tools.scheduled_labels())
+            if isinstance(call, str):  # the offline planner asks for what's missing (roadmap R.1)
+                return ChatAnswer(text=call, tool_names=tool_names, used_fallback=True)
             usable, tool_names = [
                 (call.name, self._tools.dispatch(call.name, call.arguments))
             ], tool_names + [call.name]
