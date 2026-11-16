@@ -19,16 +19,30 @@ PAGES = {
     name: f"{VIEWS}/{name}.py"
     for name in (
         "dashboard",
-        "questions",
         "alerts",
         "insights",
-        "basis",
         "ask",
         "whatif",
+        "surprises",
+        "financing",
         "accounts",
+        "questions",
+        "basis",
         "settings",
     )
 }
+# roadmap R.2: the sidebar's four entries and their sub-tabs, in order (each sub-tab is its own page,
+# so a button or a link can open it; Streamlit's own tabs can't be opened from outside)
+GROUPS = {
+    "home": ("dashboard", "alerts", "insights"),
+    "ask": ("ask", "whatif", "surprises", "financing"),
+    "business": ("accounts", "questions", "basis"),
+    "settings": ("settings",),
+}
+
+
+def group_of(page: str) -> str:
+    return next(group for group, pages in GROUPS.items() if page in pages)
 
 
 def get_settings() -> Settings:

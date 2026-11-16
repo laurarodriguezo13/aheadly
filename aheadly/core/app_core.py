@@ -344,10 +344,16 @@ class AppCore:
         return {"questions": pending, "done": len(done), "total": len(done) + len(pending)}
 
     def questions_left(self) -> int | None:
-        """How many questions were left the last time they were worked out (cheap: for the sidebar);
-        None before the first time."""
+        """How many questions are left, for the sidebar: kept since they were last worked out, and
+        worked out the first time when there's data (roadmap R.2, issue 17: the sidebar is drawn
+        before the Questions page, so the count only showed after the first answer). None without data."""
         business = self.repo.get_business()
-        return self.repo.get_profile(business.id).get("questions_left") if business else None
+        if not business:
+            return None
+        left = self.repo.get_profile(business.id).get("questions_left")
+        if left is None and self.status().connected:
+            left = len(self.onboarding()["questions"])
+        return left
 
     def answer_business(self, business_type: str, customers_pay: str = "") -> None:
         changes = {"business_type": business_type.strip(), "customers_pay": customers_pay.strip()}
@@ -1449,6 +1455,45 @@ class AppCore:
         return self._scenario(test["adjustments"], test["label"])
 
     # -------------------------------------------------------------- financing helper (3.6)
+    def test_loan(
+        self, amount: float, yearly_rate: float, months: int, fees: float = 0.0, start: date | None = None
+    ) -> dict:
+        """Roadmap R.2: a loan the owner is thinking about, on their own numbers (no lender, no offer).
+        The monthly payment and what it costs come from code; the what-if shows what it does to the
+        next 8 weeks. Not kept in the history until the owner saves it as the plan."""
+        start = start or self.today
+        if start < self.today:
+            raise ValueError("The money can't come in before today.")
+        adjustment = {
+            "type": "loan",
+            "amount": amount,
+            "yearly_rate": yearly_rate,
+            "months": months,
+            "fees": fees,
+            "start_date": start.isoformat(),
+            "label": f"Loan of ${amount:,.0f}",
+        }
+        result = self._scenario([adjustment], f"Loan of ${amount:,.0f} over {months} months")
+        schedule = financing.loan_payments(amount, yearly_rate, months, start)
+        end = self.today + timedelta(days=self.settings.horizon_days - 1)
+        in_window = [pay for when, pay in schedule if when <= end]
+        line = result.low_cash_line
+        paid = round(sum(pay for _, pay in schedule), 2)
+        return {
+            "result": result,
+            "monthly_payment": financing.monthly_payment(amount, yearly_rate, months),
+            "payments": len(schedule),
+            "last_payment": schedule[-1][0],
+            "interest": round(paid - amount, 2),
+            "total_cost": round(paid - amount + fees, 2),
+            "payments_in_window": len(in_window),
+            "paid_in_window": round(sum(in_window), 2),
+            "lowest_before": round(result.baseline.lowest.balance_p50),
+            "lowest_after": round(result.scenario.lowest.balance_p50),
+            "risk_before": result.baseline.risk_level(line),
+            "risk_after": result.scenario.risk_level(line),
+        }
+
     def financing_options(self) -> list[dict]:
         """The ways to cover a gap the owner says they have (nothing is offered by the app)."""
         return list(self.repo.get_profile(self._business().id).get("financing_options", []))

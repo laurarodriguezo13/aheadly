@@ -1,8 +1,8 @@
 """Aheadly: Streamlit entry point.
 
 `st.set_page_config` must be the first Streamlit call. Page scripts live in `aheadly/ui/views/`
-and are registered with `st.navigation` so the sidebar shows titles, icons and
-the open-alert badge.
+and are registered with `st.navigation`; the sidebar shows four entries (roadmap R.2), each with
+a row of sub-tabs at the top of its pages, and the counts of open alerts and questions left.
 """
 
 import streamlit as st
@@ -23,41 +23,77 @@ except ImportError:  # an old copy of version.py is still in memory (roadmap iss
 forget_old_code()  # after an update, load the new code everywhere (roadmap issue 19)
 
 from aheadly.ui import copy  # noqa: E402  (imports after set_page_config on purpose)
-from aheadly.ui.bootstrap import PAGES, get_core, get_settings  # noqa: E402
+from aheadly.ui.bootstrap import GROUPS, PAGES, get_core, get_settings, group_of  # noqa: E402
+from aheadly.ui.theme import inject_theme  # noqa: E402
+
+ICONS = {
+    "dashboard": ":material/home:",
+    "alerts": ":material/notifications:",
+    "insights": ":material/insights:",
+    "ask": ":material/chat:",
+    "whatif": ":material/science:",
+    "surprises": ":material/thunderstorm:",
+    "financing": ":material/payments:",
+    "accounts": ":material/account_balance:",
+    "questions": ":material/quiz:",
+    "basis": ":material/fact_check:",
+    "settings": ":material/settings:",
+}
+GROUP_ICONS = {
+    "home": ":material/home:",
+    "ask": ":material/chat:",
+    "business": ":material/storefront:",
+    "settings": ":material/settings:",
+}
 
 
-def alerts_badge() -> str:
-    """Counts open alerts: one stays counted until it is dismissed or solved, not just seen."""
+def counts() -> dict[str, int]:
+    """Open alerts (counted until dismissed or solved, not just seen) and questions left."""
     try:
         get_settings().validate()
-        count = get_core().open_alert_count()
+        core = get_core()
+        return {"alerts": core.open_alert_count(), "questions": core.questions_left() or 0}
     except (ValueError, RuntimeError):
-        count = 0
-    return f"{copy.NAV['alerts']} ({count})" if count else copy.NAV["alerts"]
+        return {"alerts": 0, "questions": 0}
 
 
-def questions_badge() -> str:
-    try:
-        get_settings().validate()
-        left = get_core().questions_left()
-    except (ValueError, RuntimeError):
-        left = None
-    return f"{copy.NAV['questions']} ({left})" if left else copy.NAV["questions"]
+def with_count(label: str, n: int) -> str:
+    return f"{label} ({n})" if n else label
 
 
-pages = [
-    st.Page(PAGES["dashboard"], title=copy.NAV["dashboard"], icon=":material/home:", default=True),
-    st.Page(PAGES["questions"], title=questions_badge(), icon=":material/quiz:"),
-    st.Page(PAGES["alerts"], title=alerts_badge(), icon=":material/notifications:"),
-    st.Page(PAGES["insights"], title=copy.NAV["insights"], icon=":material/insights:"),
-    st.Page(PAGES["basis"], title=copy.NAV["basis"], icon=":material/fact_check:"),
-    st.Page(PAGES["ask"], title=copy.NAV["ask"], icon=":material/chat:"),
-    st.Page(PAGES["whatif"], title=copy.NAV["whatif"], icon=":material/science:"),
-    st.Page(PAGES["accounts"], title=copy.NAV["accounts"], icon=":material/account_balance:"),
-    st.Page(PAGES["settings"], title=copy.NAV["settings"], icon=":material/settings:"),
-]
+badges = counts()
+group_badges = {"home": badges["alerts"], "business": badges["questions"]}
+pages = {
+    key: st.Page(
+        path,
+        title=with_count(copy.NAV[key], badges.get(key, 0)),
+        icon=ICONS[key],
+        default=key == "dashboard",
+    )
+    for key, path in PAGES.items()
+}
+
+# roadmap R.2: nine sidebar entries became four, each with its own row of sub-tabs
+current = st.navigation(list(pages.values()), position="hidden")
+here = next((key for key, page in pages.items() if page.url_path == current.url_path), "dashboard")
 
 st.logo("assets/logo_wordmark_transparent.png", icon_image="assets/logo_mark_transparent.png", size="large")
-st.sidebar.caption(copy.TAGLINE)
+with st.sidebar:
+    for group, members in GROUPS.items():
+        # the entry opens the page the owner is on when it's in that group, so it shows as active
+        target = here if here in members else members[0]
+        st.page_link(
+            pages[target],
+            label=with_count(copy.NAV_GROUPS[group], group_badges.get(group, 0)),
+            icon=GROUP_ICONS[group],
+        )
+    st.caption(copy.TAGLINE)
 
-st.navigation(pages).run()
+members = GROUPS[group_of(here)]
+if len(members) > 1:
+    inject_theme()
+    with st.container(horizontal=True, key="subtabs"):
+        for key in members:
+            st.page_link(pages[key], label=pages[key].title, icon=ICONS[key])
+
+current.run()

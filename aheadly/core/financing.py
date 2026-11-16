@@ -10,10 +10,12 @@ named. Rates and fees come from the owner. Every number is computed here; the mo
   goes out and the base case recovers within the horizon) or "structural" (it doesn't: borrowing only
   delays the problem).
 - plan(): one option turned into what-if adjustments, with its cost in dollars and as a yearly rate.
+- loan_payments(): a loan the owner is thinking about, paid back in equal monthly payments (roadmap R.2).
 """
 
 from __future__ import annotations
 
+import calendar
 import math
 from datetime import date, timedelta
 
@@ -265,3 +267,32 @@ def rank_key(p: dict) -> tuple:
     """Usable and covering first, then the cheapest, then the one that leaves the most room."""
     covers = p.get("impact", {}).get("covers", False)
     return (not p["feasible"], not covers, p["cost"], -p.get("impact", {}).get("lowest_after", 0))
+
+
+def add_months(start: date, months: int) -> date:
+    """The same day `months` later, or the month's last day when it's shorter (Jan 31 → Feb 28)."""
+    month = start.month - 1 + months
+    year, month = start.year + month // 12, month % 12 + 1
+    return date(year, month, min(start.day, calendar.monthrange(year, month)[1]))
+
+
+def monthly_payment(amount: float, yearly_rate: float, months: int) -> float:
+    """Equal payments that pay the loan off in `months` (rate in percent a year; 0% = equal parts)."""
+    r = yearly_rate / 100 / 12
+    if r == 0:
+        return round(amount / months, 2)
+    return round(amount * r / (1 - (1 + r) ** -months), 2)
+
+
+def loan_payments(amount: float, yearly_rate: float, months: int, start: date) -> list[tuple[date, float]]:
+    """(date, payment) for each month, the first one a month after the money comes in. The last
+    payment takes the rounding, so the payments add up to the loan plus its interest exactly."""
+    each = monthly_payment(amount, yearly_rate, months)
+    r = yearly_rate / 100 / 12
+    left, schedule = amount, []
+    for k in range(1, months + 1):
+        interest = left * r
+        pay = each if k < months else round(left + interest, 2)
+        left = left + interest - pay
+        schedule.append((add_months(start, k), round(pay, 2)))
+    return schedule

@@ -2,15 +2,24 @@
 
 TAGLINE = "Clarity today. A brighter tomorrow."
 
-NAV = {
-    "dashboard": "Dashboard",
-    "questions": "Questions",
-    "alerts": "Alerts",
+# roadmap R.2: four sidebar entries, each with sub-tabs; the four use case names are sub-tab names
+NAV_GROUPS = {
+    "home": "Dashboard",
     "ask": "Ask Aheadly",
-    "whatif": "What-if",
-    "accounts": "Accounts",
-    "basis": "How we built it",
+    "business": "Your business",
+    "settings": "Settings",
+}
+NAV = {
+    "dashboard": "Overview",
+    "alerts": "Early-warning alerts",
     "insights": "Insights",
+    "ask": "Ask about my numbers",
+    "whatif": "Test a what-if",
+    "surprises": "Bad surprises",
+    "financing": "Financing",
+    "accounts": "Connect accounts",
+    "questions": "Questions",
+    "basis": "Behind the forecast",
     "settings": "Settings",
 }
 
@@ -20,7 +29,7 @@ WELCOME_BODY = (
     "and answers your questions in plain words."
 )
 ALL_SET = "All set. We'll check your money every time you open Aheadly."
-NOT_CONNECTED = "No data yet. Upload your bank statement on **Accounts** to get started."
+NOT_CONNECTED = "No data yet. Upload your bank statement under **Your business** to get started."
 GO_TO_ACCOUNTS = "Upload my bank statement"
 UPLOAD_TITLE = "Upload your bank statements"
 UPLOAD_HELP = (
@@ -244,12 +253,12 @@ BACKTEST = "Compare forecast models (backtest)"
 
 
 # ---------------------------------------------------------------- how we built your forecast (2.6)
-BASIS_TITLE = "How we built your forecast"
+BASIS_TITLE = "Behind the forecast"
 BASIS_INTRO = (
     "Everything the forecast counts on, in one place. Change anything that's wrong and you'll see "
     "what it does to your lowest balance."
 )
-BASIS_LINK = "How we built this forecast"
+BASIS_LINK = "Behind the forecast"
 BASIS_START = "Where it starts"
 BASIS_START_ROWS = {
     "balance": "Cash on the statement's last day",
@@ -454,9 +463,9 @@ SAFE_PAY_UNKNOWN = "Tell us which payment is your own pay (Questions) to see thi
 
 
 # ---------------------------------------------------------------- stress tests (3.5)
+SURPRISES_TITLE = "Bad surprises"
 STRESS_TITLE = "How would you handle a bad surprise?"
 STRESS_INTRO = "Four surprises built from your own numbers, each tested on your forecast. Nothing is saved."
-STRESS_RUN = "Check four surprises"
 STRESS_WORKING = "Testing four surprises on your forecast…"
 STRESS_FINE = "You'd be fine: your lowest balance would be about {lowest}."
 STRESS_SHORT = "You'd need about {gap} more to stay above your line."
@@ -472,7 +481,39 @@ STRESS_CHART = "See the chart"
 
 
 # ---------------------------------------------------------------- financing helper (3.6)
+FINANCING_TITLE = "Financing"
+FINANCING_INTRO = "Compare the ways you already have to cover a gap, or test a loan you're thinking about."
 FIN_TITLE = "How could you cover a gap?"
+FIN_SEE = "How could you cover it?"
+# a loan the owner is thinking about (roadmap R.2): their own numbers, no lender, no offer
+LOAN_TITLE = "Test a loan"
+LOAN_INTRO = (
+    "Put in the loan you're thinking about, with the rate and fees you were quoted, and see the "
+    "payments and what they do to your cash. Nothing is saved unless you save it as your plan."
+)
+LOAN_FIELDS = {
+    "amount": "How much ($)",
+    "rate": "Yearly interest rate (%)",
+    "months": "Paid back over (months)",
+    "fees": "Fees when you take it ($)",
+    "start": "When the money comes in",
+}
+LOAN_RUN = "Test this loan"
+LOAN_WORKING = "Testing the loan on your forecast…"
+LOAN_RESULT = (
+    "**{monthly} a month** for {months} months (last payment {last}). Interest {interest}, and with the "
+    "fees it costs you **{cost}** in all."
+)
+LOAN_RESULT_NO_FEES = (
+    "**{monthly} a month** for {months} months (last payment {last}). It costs you **{cost}** in interest."
+)
+LOAN_WINDOW = (
+    "{n} of the payments ({paid}) fall in the next 8 weeks; the rest come after what the forecast shows."
+)
+LOAN_WINDOW_ONE = (
+    "The first payment ({paid}) falls in the next 8 weeks; the rest come after what the forecast shows."
+)
+LOAN_WINDOW_NONE = "No payment falls in the next 8 weeks; the first one comes after what the forecast shows."
 FIN_WORKING = "Testing your options on your forecast…"
 FIN_NOTE = (
     "Aheadly compares only the options you tell it you have. It doesn't offer credit or recommend "
