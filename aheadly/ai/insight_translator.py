@@ -187,6 +187,7 @@ class InsightTranslator:
             tool_names=tool_names,
             scenario=self._tools.last_scenario,
             proposals=self._tools.last_proposals,
+            facts=evidence,
         )
 
     # ------------------------------------------------------ owner's files: what kind is it
@@ -435,6 +436,7 @@ class InsightTranslator:
             scenario=self._tools.last_scenario,
             used_fallback=True,
             proposals=self._tools.last_proposals,
+            facts=[data for _, data in usable],
         )
 
 

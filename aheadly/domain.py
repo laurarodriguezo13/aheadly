@@ -229,6 +229,7 @@ class ChatAnswer:
     scenario: ScenarioResult | None = None
     used_fallback: bool = False
     proposals: list = field(default_factory=list)  # plan items to confirm (roadmap 2.4), never saved yet
+    facts: list = field(default_factory=list)  # the tool results the answer may use (5.4 checks its numbers)
 
 
 def chance_pct(chance: float | None) -> int | None:

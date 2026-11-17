@@ -25,6 +25,7 @@ Other commands:
 uv run pytest -q                      # all offline, about three minutes; ends with the test-business scorecard
 uv run black .                        # formatting
 uv run python -m aheadly.jobs.daily_run   # the daily check from the command line (cron-able)
+uv run python -m scripts.eval_live      # the chat test set on the connected model (uses quota; see tests/eval_questions.json)
 ```
 
 ## Demo script (storyboard frames 1 to 6)

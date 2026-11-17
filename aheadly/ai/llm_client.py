@@ -24,7 +24,14 @@ from dataclasses import dataclass, field
 from datetime import date
 
 from aheadly.ai.plan_text import amounts_in, dates_in, read_by_rules
-from aheadly.ai.templates import alert_text, answer_from_tool, chart_summary, insight_body, message_text
+from aheadly.ai.templates import (
+    alert_text,
+    answer_from_tool,
+    chart_summary,
+    insight_body,
+    message_text,
+    payee_name,
+)
 from aheadly.domain import NEXT_MONTH, end_of_next_month
 from aheadly.config import Settings
 
@@ -343,12 +350,20 @@ class StubClient:
                 "name": f"Move {label} to {dates[0]:%b} {dates[0].day}",
                 "adjustments": [{"type": "move_item", "label": label, "new_date": dates[0].isoformat()}],
             }
-        # issue 20: no day given ("next month", or none): code tries every weekday of next month
-        return {
-            "name": f"Move {label} to next month",
-            "adjustments": [{"type": "move_item", "label": label, "new_date": NEXT_MONTH}],
-        }
+        if "next month" in q or "próximo mes" in q or "proximo mes" in q:
+            # issue 20: code tries every weekday of next month and keeps the best day
+            return {
+                "name": f"Move {label} to next month",
+                "adjustments": [{"type": "move_item", "label": label, "new_date": NEXT_MONTH}],
+            }
+        # no day at all ("stops paying", "pay it later"): ask, never guess a move (roadmap 5.4)
+        return WHICH_DAY.format(label=payee_name(label))
 
+
+WHICH_DAY = (
+    "To test moving {label}, I need the new day it would be paid, for example "
+    '"to Dec 20" or "to next month".'
+)
 
 WHAT_TO_TEST = (
     "I can test that, but I need a bit more: which payment to move or change, or what you'd buy, "

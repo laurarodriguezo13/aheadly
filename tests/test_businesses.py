@@ -61,7 +61,12 @@ PENDING: dict[str, dict[str, str]] = {
     "insights": {},
     "words": {},
     "timing_or_structural": {},
-    "what_ifs": {"*": "5.4 chatbot test set (free-text what-ifs)"},
+    "what_ifs": {
+        "*": "the offline chat can't read most of the keys' what-ifs (remove a payment, prices, a new "
+        "regular cost, a loan, every future payment late): see tests/eval_questions.json (5.4)",
+        "panaderia-la-esquina": "the key's 'next month' is Dec 31; DECISIONS #56 picks Dec 16, the earliest "
+        "day that works; and 'both cafés pay a week late' moves one payment",
+    },
 }
 
 
@@ -434,7 +439,8 @@ def test_what_ifs(slug):
     core = import_business(slug, with_one_offs=True)
     for what_if in KEYS[slug]["expected"]["what_ifs"]:
         result = core.ask(what_if["question"]).scenario
-        change = result.summary()["lowest_change"]
+        assert result is not None, what_if["question"]
+        change = result.summary()["change_in_lowest_base_case"]
         assert change == pytest.approx(what_if["approx_change"], abs=what_if["tolerance"])
 
 
