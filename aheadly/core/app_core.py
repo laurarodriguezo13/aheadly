@@ -32,7 +32,9 @@ from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
 from aheadly.ai import owner_notes, templates
 from aheadly.core import actions as alert_actions
-from aheadly.core import alert_rules, financing, insight_charts, onboarding, pattern_rules, safe, stress
+from aheadly import version
+from aheadly.core import alert_rules, data_file, financing, insight_charts, onboarding, pattern_rules
+from aheadly.core import safe, stress
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
@@ -246,6 +248,30 @@ class AppCore:
                 for name, content in example.statements
             ]
         )
+
+    # ------------------------------------------------- download / load my data (roadmap 5.1)
+    def export_data(self) -> tuple[str, bytes]:
+        """Everything this visit knows about the business, as one file: (file name, content)."""
+        business = self._business()
+        tables = self.repo.export_tables(business.id, data_file.TABLES, data_file.LEFT_OUT)
+        content = data_file.pack(tables, self.repo.schema_version(), version.LOADED, business.name)
+        return data_file.file_name(business.name, self.real_today()), content
+
+    def load_data(self, content: bytes) -> dict:
+        """Replace this visit's data with a downloaded file's, then check the forecast again as
+        if it had just been uploaded. Raises `data_file.DataFileError` (nothing changed) for a file
+        that isn't one of ours, is damaged, too big, or comes from a newer version of the app."""
+        loaded = data_file.unpack(
+            content, self.repo.schema_version(), self.repo.table_columns(data_file.TABLES)
+        )
+        self.repo.import_tables(loaded.tables)
+        self._clear_caches()
+        self.run_daily_check(force=True)
+        return {
+            "business_name": loaded.business_name,
+            "transactions": len(loaded.tables["transactions"]),
+            "saved_on": loaded.exported_at[:10],
+        }
 
     def example(self) -> str | None:
         """The example business being shown, or None for the owner's own data."""

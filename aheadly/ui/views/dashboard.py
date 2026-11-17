@@ -1,5 +1,7 @@
 """Dashboard (storyboard frame 3: always watching)."""
 
+from datetime import date
+
 import streamlit as st
 
 from aheadly.core import alert_rules
@@ -21,6 +23,10 @@ from aheadly.ui.components import (
 
 core = start_page(copy.DASHBOARD_TITLE)
 require_data(core)
+loaded = st.session_state.pop("data_loaded", None)  # roadmap 5.1: just came back with a saved file
+if loaded:
+    saved_on = day(date.fromisoformat(loaded["saved_on"])) if loaded["saved_on"] else "?"
+    st.success(copy.LOADED.format(name=loaded["business_name"], saved_on=saved_on, n=loaded["transactions"]))
 
 with st.spinner(copy.CHECKING_MONEY):
     core.ensure_fresh()

@@ -772,3 +772,29 @@ WHY_CHARGE = {
     "unusual_charge": "A new payee charging more than your usual payments is worth checking the same day.",
 }
 WHY_IDLE = "Even in a bad case you keep {worst}, more than three months of outflows ({three_months})."
+
+# ---------------------------------------------------------------- download / load my data (roadmap 5.1)
+MY_DATA_TITLE = "Your data"
+MY_DATA_HELP = (
+    "Nothing you upload is kept after you leave, and an update to Aheadly starts every visit over. "
+    "Download your data to pick up where you left off next time: your statements, your answers, your "
+    "plan, what you told us and the chat, in one file."
+)
+MY_DATA_DOWNLOAD = "Download my data"
+MY_DATA_PRIVATE = (
+    "Keep the file somewhere private, like your bank statements: it holds the same information. "
+    "It isn't locked with a password."
+)
+LOAD_TITLE = "Coming back? Load your saved file"
+LOAD_HELP = "The file you downloaded last time (it ends in .aheadly). Everything comes back as you left it."
+LOAD_FILE = "Your Aheadly file"
+LOAD_BUTTON = "Load my data"
+LOAD_REPLACES = "Loading a file replaces what's here now: download this first if you want to keep it."
+LOAD_SPINNER = "Loading your data…"
+LOADED = "Welcome back to {name}: the data you saved on {saved_on} is loaded ({n:,} transactions)."
+LOAD_ERRORS = {
+    "not_ours": "That isn't a file Aheadly saved. To add a bank statement, use the upload above.",
+    "broken": "That file looks damaged or changed, so nothing was loaded. Try the file exactly as you downloaded it.",
+    "too_big": "That file is too big to be one Aheadly saved, so nothing was loaded.",
+    "newer": "That file comes from a newer version of Aheadly, so nothing was loaded. Reload the page and try again.",
+}

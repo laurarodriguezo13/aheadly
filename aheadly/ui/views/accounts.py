@@ -5,7 +5,7 @@ import html
 import streamlit as st
 
 from aheadly.data.connectors.csv_connector import CsvConnector
-from aheadly.ui import copy
+from aheadly.ui import copy, my_data
 from aheadly.ui.bootstrap import go_to, start_page
 from aheadly.ui.components import (
     card,
@@ -97,6 +97,11 @@ if not status.connected:
                 st.error(copy.UPLOAD_FAILED.format(error=exc))
             else:
                 go_to("questions")
+    st.write("")
+    with st.container(border=True):  # roadmap 5.1: an owner coming back
+        section_title(copy.LOAD_TITLE)
+        st.caption(copy.LOAD_HELP)
+        my_data.load(core, "accounts", replaces=False)
 else:
 
     def _account_row(a: dict) -> str:
@@ -186,5 +191,9 @@ else:
                 "amount": st.column_config.NumberColumn("Amount", format="dollar"),
             },
         )
+    with st.container(border=True):  # roadmap 5.1
+        section_title(copy.MY_DATA_TITLE)
+        st.caption(copy.MY_DATA_HELP)
+        my_data.download(core, "accounts")
     if st.button(copy.GO_TO_DASHBOARD, type="primary"):
         go_to("dashboard")

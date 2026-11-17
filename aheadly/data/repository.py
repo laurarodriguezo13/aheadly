@@ -923,6 +923,62 @@ class Repository:
         self._conn.commit()
 
     # ------------------------------------------------------------------ admin
+    # ---------------------------------------------------------------- download / load (roadmap 5.1)
+    def table_columns(self, tables: tuple[str, ...]) -> dict[str, set[str]]:
+        return {
+            t: {r["name"] for r in self._conn.execute(f"PRAGMA table_info({t})").fetchall()} for t in tables
+        }
+
+    def export_tables(self, business_id: int, tables: tuple[str, ...], left_out: dict) -> dict:
+        """Every row the business owns, as plain values (forecast points through their runs)."""
+        out = {}
+        for table in tables:
+            if table == "businesses":
+                sql, args = "SELECT * FROM businesses WHERE id=?", (business_id,)
+            elif table == "forecast_points":
+                sql = (
+                    "SELECT * FROM forecast_points WHERE run_id IN "
+                    "(SELECT id FROM forecast_runs WHERE business_id=?) ORDER BY run_id, date"
+                )
+                args = (business_id,)
+            else:
+                sql, args = f"SELECT * FROM {table} WHERE business_id=?", (business_id,)
+            rows = [dict(r) for r in self._conn.execute(sql, args).fetchall()]
+            for row in rows:
+                for column in left_out.get(table, ()):
+                    row.pop(column, None)
+            out[table] = rows
+        return out
+
+    def import_tables(self, tables: dict[str, list[dict]]) -> None:
+        """Replace everything with a loaded file's rows, all or nothing. Table and column names come
+        from this database (`table_columns`), never from the file: the file only gives values."""
+        columns = self.table_columns(tuple(tables))
+        with self._conn:  # one transaction: a failure leaves the visit as it was
+            for table in (
+                "uploaded_files",
+                "insights",
+                "payee_rules",
+                "business_profile",
+                "chat_messages",
+                "scenarios",
+                "alerts",
+                "forecast_points",
+                "forecast_runs",
+                "scheduled_items",
+                "transactions",
+                "accounts",
+                "businesses",
+            ):
+                self._conn.execute(f"DELETE FROM {table}")
+            for table, rows in tables.items():
+                for row in rows:
+                    names = [c for c in row if c in columns[table]]
+                    self._conn.execute(
+                        f"INSERT INTO {table} ({', '.join(names)}) VALUES ({', '.join('?' * len(names))})",
+                        [row[c] for c in names],
+                    )
+
     def reset(self) -> None:
         """Wipe everything (Settings → 'Reset demo')."""
         for table in (

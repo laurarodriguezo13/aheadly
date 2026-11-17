@@ -3,7 +3,7 @@
 import pandas as pd
 import streamlit as st
 
-from aheadly.ui import copy
+from aheadly.ui import copy, my_data
 from aheadly.ui.bootstrap import require_data, reset_core, start_page
 from aheadly.ui.components import local_time, section_title
 
@@ -63,6 +63,8 @@ with st.container(border=True):
             hide_index=True,
         )
         st.caption(copy.BACKTEST_NOTE)
+
+my_data.card(core, "settings")  # roadmap 5.1
 
 with st.container(border=True):
     section_title(copy.RESET_DEMO)
