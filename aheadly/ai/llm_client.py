@@ -25,7 +25,7 @@ from datetime import date
 
 from aheadly.ai.plan_text import amounts_in, dates_in, read_by_rules
 from aheadly.ai.templates import alert_text, answer_from_tool, chart_summary, insight_body, message_text
-from aheadly.domain import end_of_next_month
+from aheadly.domain import NEXT_MONTH, end_of_next_month
 from aheadly.config import Settings
 
 logger = logging.getLogger(__name__)
@@ -338,10 +338,15 @@ class StubClient:
             }
         if not label:
             return WHAT_TO_TEST
-        new_date = when if when and when > self.today else end_of_next_month(self.today)
+        if dates and dates[0] > self.today:
+            return {
+                "name": f"Move {label} to {dates[0]:%b} {dates[0].day}",
+                "adjustments": [{"type": "move_item", "label": label, "new_date": dates[0].isoformat()}],
+            }
+        # issue 20: no day given ("next month", or none): code tries every weekday of next month
         return {
-            "name": f"Move {label} to {new_date:%b} {new_date.day}",
-            "adjustments": [{"type": "move_item", "label": label, "new_date": new_date.isoformat()}],
+            "name": f"Move {label} to next month",
+            "adjustments": [{"type": "move_item", "label": label, "new_date": NEXT_MONTH}],
         }
 
 

@@ -45,6 +45,7 @@ from aheadly.domain import (
     SCHEDULED_CATEGORIES,
     Alert,
     Business,
+    NEXT_MONTH,
     ChatAnswer,
     ForecastResult,
     ScenarioResult,
@@ -1168,11 +1169,46 @@ class AppCore:
 
     # --------------------------------------------------------------- what-if
     def run_what_if(self, adjustments: list[dict], name: str = "Scenario") -> ScenarioResult:
+        adjustments, name, picked = self._next_month_day(adjustments, name)
         result = self._scenario(adjustments, name)
+        result.picked = picked
         result.scenario_id = self.repo.save_scenario(
             self._business().id, name, adjustments, result.summary(), False
         )
         return result
+
+    def _next_month_day(self, adjustments: list[dict], name: str) -> tuple[list[dict], str, dict | None]:
+        """Issue 20: a move "to next month" without a day (new_date = NEXT_MONTH) is tried on every
+        weekday of next month, and the best day kept (`alert_actions.pick_day`). Only the first such
+        move is searched; the chat sends one at a time."""
+        index = next(
+            (i for i, a in enumerate(adjustments) if a.get("new_date") == NEXT_MONTH),
+            None,
+        )
+        if index is None:
+            return adjustments, name, None
+        first = (self.today.replace(day=1) + timedelta(days=32)).replace(day=1)
+        days = [
+            first + timedelta(days=n)
+            for n in range((end_of_next_month(self.today) - first).days + 1)
+            if (first + timedelta(days=n)).weekday() < 5
+        ]
+        baseline = self._baseline_forecast()
+        line = self._business().low_cash_line
+        tried = []
+        for day in days:
+            trial = [dict(a) for a in adjustments]
+            trial[index]["new_date"] = day.isoformat()
+            forecast = self._scenario(trial, name, baseline=baseline).scenario
+            tried.append((day, forecast.risk_level(line), forecast.lowest.balance_p50))
+        day, why = alert_actions.pick_day(tried)
+        chosen = [dict(a) for a in adjustments]
+        chosen[index]["new_date"] = day.isoformat()
+        label = chosen[index].get("label", "")
+        picked = {"label": label, "day": day.isoformat(), "why": why, "days_tried": len(days)}
+        if adjustments[index].get("type") == "move_item":
+            name = f"Move {label} to {day:%b} {day.day}"
+        return chosen, name, picked
 
     def _scenario(
         self, adjustments: list[dict], name: str = "Scenario", baseline: ForecastResult | None = None

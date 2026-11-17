@@ -94,6 +94,17 @@ def rank_key(action: dict) -> tuple:
     return (RISK_ORDER[i["risk_after"]], action["cost"], -i["worst_after"], -i["lowest_after"])
 
 
+def pick_day(tried: list[tuple[date, str, float]]) -> tuple[date, str]:
+    """Issue 20: of the days tried for "next month" (day, risk level, lowest base case), the earliest
+    with the best status when that keeps the base case above the line, else the one that leaves the
+    most (the same idea as the suggestions: the smallest change that gets the best result)."""
+    best = min(RISK_ORDER[risk] for _, risk, _ in tried)
+    top = [t for t in tried if RISK_ORDER[t[1]] == best]
+    if best < RISK_ORDER["act_now"]:
+        return min(t[0] for t in top), "earliest_above_line"
+    return max(top, key=lambda t: (t[2], -t[0].toordinal()))[0], "highest_lowest_balance"
+
+
 def _helps(i: dict, low_cash_line: float) -> bool:
     """Worth showing: the status gets better, the chance drops by 5 points or more, or the lowest
     balance rises by at least a tenth of the line (not a $20 nudge)."""

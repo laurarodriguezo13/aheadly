@@ -48,8 +48,8 @@ ADJUSTMENT_SCHEMA = {
         "new_date": {
             "type": "string",
             "description": (
-                "move_item / collect_early: new ISO date. 'Next month' means the same day next month "
-                "(Nov 14 -> Dec 14), not the end of next month."
+                "move_item / collect_early: new ISO date. For a move 'to next month' with no day, use "
+                "'next_month': Aheadly tries every weekday of next month and picks the best one."
             ),
         },
         "amount_delta": {"type": "number", "description": "recurring_change: signed change per occurrence"},

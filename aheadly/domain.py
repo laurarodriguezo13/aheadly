@@ -182,6 +182,7 @@ class ScenarioResult:
     scenario: ForecastResult
     low_cash_line: float
     scenario_id: int | None = None
+    picked: dict | None = None  # issue 20: the day code chose for "next month" (label, day, why, days_tried)
 
     @property
     def stays_above_line(self) -> bool:
@@ -217,6 +218,7 @@ class ScenarioResult:
             "change_in_lowest_base_case": round(scen.lowest.balance_p50 - base.lowest.balance_p50),
             "stays_above_low_cash_line": self.stays_above_line,
             "risk_level": self.scenario.risk_level(self.low_cash_line),
+            **({"picked_day": self.picked} if self.picked else {}),
         }
 
 
@@ -240,6 +242,11 @@ def chance_pct(chance: float | None) -> int | None:
     if chance < 1 and pct == 100:
         return 99
     return pct
+
+
+# Issue 20: what the chat sends as a move's new date when the owner says "next month" without a day;
+# AppCore tries every weekday of next month and keeps the best (actions.pick_day).
+NEXT_MONTH = "next_month"
 
 
 def end_of_next_month(today: date) -> date:

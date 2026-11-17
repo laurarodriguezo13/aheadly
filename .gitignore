@@ -10,3 +10,4 @@ data/*.db-journal
 .DS_Store
 .streamlit/secrets.toml
 .idea/
+data/samples/

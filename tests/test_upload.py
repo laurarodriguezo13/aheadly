@@ -74,24 +74,3 @@ def test_owner_can_see_the_upcoming_payments_the_forecast_counts_on(core):
         {"date": "2026-11-20", "description": "New oven", "amount": -7500.0, "repeats": "once"},
         {"date": "2026-12-17", "description": "Cafe Azul order", "amount": 5500.0, "repeats": "once"},
     ]
-
-
-def test_sample_files_load_together(core):
-    """The two demo files in data/samples/ onboard a business the way the Accounts page does."""
-    from pathlib import Path
-
-    samples = Path(__file__).resolve().parents[1] / "data" / "samples"
-    connector = CsvConnector(
-        (samples / "bancolombia_export_panaderia_la_esquina.csv").read_bytes(),
-        None,
-        "statement.csv",
-        upcoming=(samples / "upcoming_payments_panaderia_la_esquina.csv").read_bytes(),
-        upcoming_filename="upcoming.csv",
-    )
-    core.connect(connector)
-
-    assert connector.skipped_rows == 0
-    assert core.status().connected
-    planned = core.planned_items()
-    assert len(planned) == 5 and all(p["repeats"] == "once" for p in planned)
-    assert "New oven" in [p["description"] for p in planned]

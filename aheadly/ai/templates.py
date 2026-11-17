@@ -26,6 +26,17 @@ def weeks(n: int) -> str:
     return "1 week" if n == 1 else f"{n} weeks"
 
 
+def _picked_clause(picked: dict | None) -> str:
+    """Issue 20: which day code chose for "next month", and why."""
+    if not picked:
+        return ""
+    when = day(picked["day"])
+    tried = f"I tried all {picked['days_tried']} weekdays next month for {picked['label']}: "
+    if picked["why"] == "earliest_above_line":
+        return tried + f"{when} is the earliest that keeps you above your low cash line. "
+    return tried + f"none keeps you above your low cash line, and {when} leaves you the most. "
+
+
 def answer_from_tool(tool: str, data: dict) -> str:
     if "error" in data:
         return f"I couldn't do that: {data['error']} Try asking in another way."
@@ -40,7 +51,8 @@ def answer_from_tool(tool: str, data: dict) -> str:
             "act_now": "That still looks tight, so I would wait or change something else first.",
         }[data["risk_level"]]
         return (
-            f"If you do that, your lowest balance would be about {money(s['lowest_base_case'])} "
+            _picked_clause(data.get("picked_day"))
+            + f"If you do that, your lowest balance would be about {money(s['lowest_base_case'])} "
             f"around {day(s['lowest_date'])} (worst case {money(s['lowest_worst_case'])}, best case "
             f"{money(s['lowest_best_case'])}). Your low cash line is {money(data['low_cash_line'])}. {verdict}"
             + chance_clause(s.get("chance_below_line_pct"))
