@@ -52,14 +52,25 @@
 
   <rect class="card" x="100" y="640" width="360" height="150" rx="18"/>
   <text class="card-t" x="124" y="684">What the owner sees</text>
-  <text class="card-b" x="124" y="716">Dashboard · Alerts · Ask · What-if</text>
+  <text class="card-b" x="124" y="716">Dashboard · Ask · Your business</text>
   <text class="card-b" x="124" y="744">Screens only: the browser keeps</text>
   <text class="card-b" x="124" y="770">no copy of the data</text>
+
+  <rect class="card" x="100" y="430" width="360" height="150" rx="18"/>
+  <text class="card-t" x="124" y="474">Your saved file</text>
+  <text class="card-b" x="124" y="506">One .aheadly file, only when the</text>
+  <text class="card-b" x="124" y="532">owner clicks Download my data.</text>
+  <text class="card-b" x="124" y="558">Load my data brings it back.</text>
 </g>
 
 <!-- upload arrow -->
 <path class="flow" d="M460,260 L530,260 L530,230 L600,230" marker-end="url(#ar)"/>
 <text class="lbl" x="470" y="296">upload</text>
+
+<!-- download / load arrow -->
+<path class="flow" d="M460,505 L600,505" marker-end="url(#ar)" marker-start="url(#ar)"/>
+<text class="lbl" x="472" y="492">download</text>
+<text class="lbl" x="511" y="532">load</text>
 
 <!-- screens arrow back to the owner -->
 <path class="flow-grey" d="M600,715 L460,715" marker-end="url(#arg)"/>
@@ -85,8 +96,8 @@
   <!-- Streamlit UI -->
   <rect class="card" x="600" y="660" width="300" height="130" rx="18"/>
   <text class="card-t" x="624" y="702">Streamlit UI</text>
-  <text class="card-b" x="624" y="732">Six pages. Asks App Core for</text>
-  <text class="card-b" x="624" y="758">everything it shows; runs no SQL</text>
+  <text class="card-b" x="624" y="732">14 pages in 4 sections. Asks</text>
+  <text class="card-b" x="624" y="758">App Core for all of it; no SQL</text>
 
   <!-- Forecast engine -->
   <rect class="card" x="990" y="170" width="430" height="120" rx="18"/>
@@ -97,7 +108,7 @@
   <!-- Insight translator -->
   <rect class="card" x="990" y="330" width="430" height="150" rx="18"/>
   <text class="card-t" x="1014" y="372">Insight Translator</text>
-  <text class="card-b" x="1014" y="402">6 tools pull numbers from App Core,</text>
+  <text class="card-b" x="1014" y="402">11 tools pull numbers from App Core,</text>
   <text class="card-b" x="1014" y="428">Gemini turns them into words,</text>
   <text class="card-b" x="1014" y="454">a guardrail checks every figure</text>
 
@@ -122,29 +133,34 @@
 <text class="lbl" x="972" y="712" fill="#8A86B8">screens</text>
 
 <!-- lifetime note -->
-<text class="tick" x="600" y="836">Lifetime of the data: while the tab is open · wiped by "Start over" · gone when the app restarts</text>
+<text class="tick" x="600" y="830">Lifetime of the data: while the tab is open · wiped by "Delete my data now" or "Start over"</text>
+<text class="tick" x="600" y="858">· gone when the app restarts or is updated (Download my data keeps a copy for the owner)</text>
 
 <!-- ============ ZONE C: GEMINI ============ -->
 <g filter="url(#sh)">
-  <rect class="card" x="1560" y="140" width="340" height="110" rx="18"/>
-  <text class="card-t" x="1584" y="182">API key</text>
-  <text class="card-b" x="1584" y="212">Streamlit Cloud secrets only.</text>
-  <text class="card-b" x="1584" y="236">Not in the code, not on GitHub.</text>
+  <rect class="card" x="1560" y="130" width="340" height="135" rx="18"/>
+  <text class="card-t" x="1584" y="172">API key</text>
+  <text class="card-b" x="1584" y="204">Streamlit Cloud secrets only.</text>
+  <text class="card-b" x="1584" y="230">Not in the code, not on GitHub.</text>
 
-  <rect class="dark" x="1560" y="330" width="340" height="150" rx="18"/>
-  <text class="dark-t" x="1584" y="372">Gemini API</text>
-  <text class="dark-b" x="1584" y="402">gemini-3.5-flash-lite</text>
-  <text class="dark-b" x="1584" y="428">Writes the alert text and the</text>
-  <text class="dark-b" x="1584" y="454">chat answers. Stores nothing of ours.</text>
+  <rect class="dark" x="1560" y="300" width="340" height="205" rx="18"/>
+  <text class="dark-t" x="1584" y="342">Gemini API · free tier</text>
+  <text class="dark-b" x="1584" y="372">gemini-3.5-flash-lite</text>
+  <text class="dark-b" x="1584" y="398">Writes alerts, insights and the</text>
+  <text class="dark-b" x="1584" y="424">chat answers. On the free tier</text>
+  <text class="dark-b" x="1584" y="450">Google may keep and read what</text>
+  <text class="dark-b" x="1584" y="476">it gets: made-up businesses only.</text>
 
-  <rect class="card" x="1560" y="520" width="340" height="270" rx="18" stroke="#EF4F5F" stroke-width="3"/>
+  <rect class="card" x="1560" y="525" width="340" height="335" rx="18" stroke="#EF4F5F" stroke-width="3"/>
   <text class="card-t" x="1584" y="564">Never leaves the server</text>
   <text class="card-b" x="1584" y="602">✕  The uploaded files</text>
   <text class="card-b" x="1584" y="634">✕  The full transaction history</text>
-  <text class="card-b" x="1584" y="682" font-weight="700" fill="#13134A">Sent with each question</text>
-  <text class="card-b" x="1584" y="714">✓  Business name and today's date</text>
-  <text class="card-b" x="1584" y="746">✓  Totals, weekly forecast, payment</text>
-  <text class="card-b" x="1584" y="772">     labels, at most 50 transaction lines</text>
+  <text class="card-b" x="1584" y="666">✕  Employee names and salaries</text>
+  <text class="card-b" x="1584" y="712" font-weight="700" fill="#13134A">Sent to Gemini</text>
+  <text class="card-b" x="1584" y="744">✓  Totals, forecast, payment names</text>
+  <text class="card-b" x="1584" y="776">✓  Business and owner's names</text>
+  <text class="card-b" x="1584" y="808">✓  What the owner asks or types</text>
+  <text class="card-b" x="1584" y="840">✓  At most 50 transaction lines</text>
 </g>
 
 <!-- translator <-> gemini -->
@@ -157,7 +173,7 @@
 <g>
   <rect class="pill" x="60" y="915" width="600" height="70" rx="35"/>
   <text class="pill-t" x="100" y="946">0 bytes on disk</text>
-  <text class="pill-b" x="100" y="970">the data lives in memory for one session only</text>
+  <text class="pill-b" x="100" y="970">in memory for one visit, unless the owner downloads it</text>
 
   <rect class="pill" x="700" y="915" width="600" height="70" rx="35"/>
   <text class="pill-t" x="740" y="946">1 database per visitor</text>

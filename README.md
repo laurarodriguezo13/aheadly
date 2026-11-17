@@ -66,7 +66,7 @@ Rules we keep: the UI only calls `AppCore`; only the Insight Translator talks to
 | `aheadly/data/` | `schema.sql` + numbered migrations, `Repository`, `seed_demo`, `connectors/` (bank statements, the owner's own files) |
 | `aheadly/jobs/` | `daily_run` (cron-able) |
 | `tests/` | pytest: unit tests per component, the demo script as a functional test, and `test_businesses.py`, which runs the six test businesses in `tests/businesses/` against their answer keys |
-| `docs/` | `ROADMAP.md` (the plan to the final version, kept current), UML diagrams, milestone check-in |
+| `docs/` | `ROADMAP.md` (the plan to the final version, kept current), UML diagrams, `data_flow_diagram` (where the owner's data goes), milestone check-in |
 
 ## How the AI works
 
@@ -106,4 +106,4 @@ A list of upcoming **one-off** payments and expected income (`Date, Description,
 
 No files at hand? On Connect accounts, **Try the example bakery** loads Panadería La Esquina (`aheadly/examples/`): a year of statements from the test businesses plus the one-off payments its owner knows about. It is always shown as of the day after its statement ends (Nov 11, 2026). Settings → Start over goes back to your own upload.
 
-Two demo upload files for the demo bakery are in `data/samples/` (CSV and Excel of each): a bank export and an upcoming-payments file with one-off items only. Their dates are relative to the day they were generated, so regenerate them on demo day with `uv run python -m scripts.make_sample_export`, upload both on Accounts and leave the balance field empty. For realistic files, use the statements in `tests/businesses/<business>/statements/`: six test businesses made separately from the code, each with an answer key (DECISIONS #25).
+Two demo upload files for the demo bakery are in `data/samples/` (CSV and Excel of each): a bank export and an upcoming-payments file with one-off items only. Their dates are relative to the day they were generated, so regenerate them on demo day with `uv run python -m scripts.make_sample_export`, upload both on Your business → Connect accounts and leave the balance field empty. They are the original demo bakery (`aheadly/data/seed_demo.py`), not the same numbers as *Try the example bakery*. For realistic files, use the statements in `tests/businesses/<business>/statements/`: six test businesses made separately from the code, each with an answer key (DECISIONS #25).
