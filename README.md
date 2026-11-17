@@ -100,6 +100,8 @@ Your business → Connect accounts → upload one or more bank statements (CSV o
 
 A list of upcoming **one-off** payments and expected income (`Date, Description, Amount`, minus = money going out) is one of the files you keep: a planned purchase, a big supplier order, a customer order. Regular payments (payroll, rent, suppliers) are learned from the statement; one you list anyway is recognised and counted once.
 
+**Privacy.** Settings → Privacy says what Aheadly keeps (only the visit), what goes to the AI and what the AI provider's terms mean, and has *Delete my data now*. With Gemini, set `LLM_PAID_TIER=true` only once the key's Google Cloud project has billing on: on the free tier Google may keep and read what it receives (DECISIONS #54, roadmap issue 38).
+
 **Coming back?** Nothing is kept after a visit ends, so *Download my data* (Connect accounts or Settings) saves everything in one `.aheadly` file, and *Load my data* brings it back as you left it; a newer statement uploaded afterwards adds only its new lines (DECISIONS #53).
 
 No files at hand? On Connect accounts, **Try the example bakery** loads Panadería La Esquina (`aheadly/examples/`): a year of statements from the test businesses plus the one-off payments its owner knows about. It is always shown as of the day after its statement ends (Nov 11, 2026). Settings → Start over goes back to your own upload.

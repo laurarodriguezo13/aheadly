@@ -20,6 +20,8 @@ from aheadly.ui.components import (
 
 core = start_page(copy.NAV["accounts"])
 status = core.status()
+if st.session_state.pop("data_deleted", False):  # roadmap 5.2: back from Delete my data now
+    st.success(copy.PRIVACY_DELETED)
 
 if not status.connected:
     hero(copy.WELCOME_TITLE, copy.WELCOME_BODY)

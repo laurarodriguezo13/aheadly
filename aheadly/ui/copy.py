@@ -23,6 +23,7 @@ NAV = {
     "basis": "Behind the forecast",
     "told": "What you told us",
     "settings": "Settings",
+    "privacy": "Privacy",
 }
 
 WELCOME_TITLE = "Know what's coming."
@@ -798,3 +799,64 @@ LOAD_ERRORS = {
     "too_big": "That file is too big to be one Aheadly saved, so nothing was loaded.",
     "newer": "That file comes from a newer version of Aheadly, so nothing was loaded. Reload the page and try again.",
 }
+
+# ---------------------------------------------------------------- privacy (roadmap 5.2)
+PRIVACY_TITLE = "Privacy"
+PRIVACY_INTRO = "What Aheadly keeps, what it sends to the AI that writes its words, and how to delete it all."
+PRIVACY_KEPT_TITLE = "What Aheadly keeps"
+PRIVACY_KEPT = (
+    "- Your files, your answers and everything worked out from them live only in this visit's memory, "
+    "on the computer that runs Aheadly. Nothing is written to a database or a file there.\n"
+    "- Nobody else using Aheadly can see them, and they're gone soon after you close this tab, when you "
+    "press **Delete my data now** (below) or **Start over**, or when Aheadly is updated.\n"
+    "- **Download my data** (Settings) saves a copy on your own computer. It isn't locked with a password, "
+    "so keep it somewhere private, like your bank statements."
+)
+PRIVACY_KEPT_LOCAL = (
+    "- On this computer, Aheadly is set up to keep one shared database file (`{path}`) instead: "
+    "it stays until you delete it or press **Delete my data now**."
+)
+PRIVACY_SENT_TITLE = "What goes to the AI"
+PRIVACY_SENT = (
+    "Aheadly works out every number itself. The AI only writes the words around them, and for that it gets:\n"
+    "- the numbers Aheadly worked out (balances, dates, amounts) and your payments' names as your bank "
+    "writes them, which can include people's names;\n"
+    "- your business's name and yours, your questions in the chat, and what you type in "
+    "*Anything else we should know?* and *Just say it*;\n"
+    "- in the chat, up to 50 of your transactions at a time when a question needs them;\n"
+    "- for a file you keep, only its column titles.\n\n"
+    "It never gets an employee list's names or salaries, or a whole statement at once."
+)
+PRIVACY_AI = {
+    "stub": "No AI is connected here, so nothing leaves Aheadly: the words come from fixed wording.",
+    "gemini_free": (
+        "The AI here is Google's Gemini, on Google's free tier. Under Google's terms for the free tier, "
+        "Google may keep what it receives and use it to improve its products, and people at Google may "
+        "read it. Until that changes, try Aheadly with the example business, or with statements you're "
+        "comfortable sharing that way (you can remove names first)."
+    ),
+    "gemini_paid": (
+        "The AI here is Google's Gemini on a paid plan: under Google's terms for paid use, what it "
+        "receives isn't used to improve Google's products."
+    ),
+    "anthropic": (
+        "The AI here is Anthropic's Claude, through its paid service: under Anthropic's commercial "
+        "terms, what it receives isn't used to train its models."
+    ),
+}
+PRIVACY_SENT_GONE = "Deleting your data here can't call back what the AI has already received."
+PRIVACY_DELETE_TITLE = "Delete my data now"
+PRIVACY_DELETE_HELP = (
+    "Deletes everything from this visit: your files, answers, plan, chat and what you told us. "
+    "Download it first if you want to come back to it."
+)
+PRIVACY_DELETE = "Delete my data now"
+PRIVACY_DELETE_SURE = "Yes, delete everything from this visit"
+PRIVACY_DELETED = "Your data is deleted. Nothing from your last visit is left here."
+
+
+def privacy_ai(provider: str, paid: bool) -> str:
+    """Which paragraph says what happens to what the AI receives (roadmap 5.2)."""
+    if provider == "gemini":
+        return PRIVACY_AI["gemini_paid" if paid else "gemini_free"]
+    return PRIVACY_AI.get(provider, PRIVACY_AI["stub"])
