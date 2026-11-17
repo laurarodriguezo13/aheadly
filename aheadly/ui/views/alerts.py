@@ -11,6 +11,7 @@ from aheadly.ui.components import (
     banner,
     card,
     dismissed_words,
+    glossary,
     info_card,
     money,
     rows_html,
@@ -114,3 +115,4 @@ for alert in alerts:
         financing_shown = True
 if alerts:
     banner(copy.ALERT_FOOTER)
+glossary()  # roadmap 5.3

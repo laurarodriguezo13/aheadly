@@ -45,7 +45,13 @@ ADJUSTMENT_SCHEMA = {
             "type": "string",
             "description": "Name of the scheduled item (e.g. 'oven') or of the new expense",
         },
-        "new_date": {"type": "string", "description": "move_item / collect_early: new ISO date"},
+        "new_date": {
+            "type": "string",
+            "description": (
+                "move_item / collect_early: new ISO date. 'Next month' means the same day next month "
+                "(Nov 14 -> Dec 14), not the end of next month."
+            ),
+        },
         "amount_delta": {"type": "number", "description": "recurring_change: signed change per occurrence"},
         "percent": {"type": "number", "description": "revenue_change: +10 means sales up 10%"},
         "weeks": {

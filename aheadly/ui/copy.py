@@ -23,6 +23,7 @@ NAV = {
     "basis": "Behind the forecast",
     "told": "What you told us",
     "settings": "Settings",
+    "privacy": "Privacy",
 }
 
 WELCOME_TITLE = "Know what's coming."
@@ -248,7 +249,9 @@ CHANCE_SCENARIO = "With this change: {after} in the next 8 weeks (today: {before
 
 SETTINGS_TITLE = "Settings"
 LOW_CASH_LINE = "Low cash line"
-LOW_CASH_HELP = "Your safety buffer. Below this line Aheadly warns you."
+LOW_CASH_HELP = (
+    "The lowest balance you're comfortable with. Aheadly warns you before your cash is likely to go below it."
+)
 RUN_CHECK = "Run today's check"
 RESET_DEMO = "Start over"
 BACKTEST = "Compare forecast models (backtest)"
@@ -499,7 +502,6 @@ CHANGE_FIELDS = {
     "recurring_change": "Pay yourself less by (%)",
     "revenue_change": "Raise prices by (%)",
 }
-CHANGE_WHICH = "{label}"
 USE_THIS_VERSION = "Use this version"
 BACK_TO_SUGGESTION = "Back to the suggestion"
 # ---------------------------------------------------------------- what the owner tells us (R.3c)
@@ -773,3 +775,138 @@ WHY_CHARGE = {
     "unusual_charge": "A new payee charging more than your usual payments is worth checking the same day.",
 }
 WHY_IDLE = "Even in a bad case you keep {worst}, more than three months of outflows ({three_months})."
+
+# ---------------------------------------------------------------- download / load my data (roadmap 5.1)
+MY_DATA_TITLE = "Your data"
+MY_DATA_HELP = (
+    "Nothing you upload is kept after you leave, and an update to Aheadly starts every visit over. "
+    "Download your data to pick up where you left off next time: your statements, your answers, your "
+    "plan, what you told us and the chat, in one file."
+)
+MY_DATA_DOWNLOAD = "Download my data"
+MY_DATA_PRIVATE = (
+    "Keep the file somewhere private, like your bank statements: it holds the same information. "
+    "It isn't locked with a password."
+)
+LOAD_TITLE = "Coming back? Load your saved file"
+LOAD_HELP = "The file you downloaded last time (it ends in .aheadly). Everything comes back as you left it."
+LOAD_FILE = "Your Aheadly file"
+LOAD_BUTTON = "Load my data"
+LOAD_REPLACES = "Loading a file replaces what's here now: download this first if you want to keep it."
+LOAD_SPINNER = "Loading your data…"
+LOADED = "Welcome back to {name}: the data you saved on {saved_on} is loaded ({n:,} transactions)."
+LOAD_ERRORS = {
+    "not_ours": "That isn't a file Aheadly saved. To add a bank statement, use the upload above.",
+    "broken": "That file looks damaged or changed, so nothing was loaded. Try the file exactly as you downloaded it.",
+    "too_big": "That file is too big to be one Aheadly saved, so nothing was loaded.",
+    "newer": "That file comes from a newer version of Aheadly, so nothing was loaded. Reload the page and try again.",
+}
+
+# ---------------------------------------------------------------- privacy (roadmap 5.2)
+PRIVACY_TITLE = "Privacy"
+PRIVACY_INTRO = "What Aheadly keeps, what it sends to the AI that writes its words, and how to delete it all."
+PRIVACY_KEPT_TITLE = "What Aheadly keeps"
+PRIVACY_KEPT = (
+    "- Your files, your answers and everything worked out from them live only in this visit's memory, "
+    "on the computer that runs Aheadly. Nothing is written to a database or a file there.\n"
+    "- Nobody else using Aheadly can see them, and they're gone soon after you close this tab, when you "
+    "press **Delete my data now** (below) or **Start over**, or when Aheadly is updated.\n"
+    "- **Download my data** (Settings) saves a copy on your own computer. It isn't locked with a password, "
+    "so keep it somewhere private, like your bank statements."
+)
+PRIVACY_KEPT_LOCAL = (
+    "- On this computer, Aheadly is set up to keep one shared database file (`{path}`) instead: "
+    "it stays until you delete it or press **Delete my data now**."
+)
+PRIVACY_SENT_TITLE = "What goes to the AI"
+PRIVACY_SENT = (
+    "Aheadly works out every number itself. The AI only writes the words around them, and for that it gets:\n"
+    "- the numbers Aheadly worked out (balances, dates, amounts) and your payments' names as your bank "
+    "writes them, which can include people's names;\n"
+    "- your business's name and yours, your questions in the chat, and what you type in "
+    "*Anything else we should know?* and *Just say it*;\n"
+    "- in the chat, up to 50 of your transactions at a time when a question needs them;\n"
+    "- for a file you keep, only its column titles.\n\n"
+    "It never gets an employee list's names or salaries, or a whole statement at once."
+)
+PRIVACY_AI = {
+    "stub": "No AI is connected here, so nothing leaves Aheadly: the words come from fixed wording.",
+    "gemini_free": (
+        "The AI here is Google's Gemini, on Google's free tier. Under Google's terms for the free tier, "
+        "Google may keep what it receives and use it to improve its products, and people at Google may "
+        "read it. Until that changes, try Aheadly with the example business, or with statements you're "
+        "comfortable sharing that way (you can remove names first)."
+    ),
+    "gemini_paid": (
+        "The AI here is Google's Gemini on a paid plan: under Google's terms for paid use, what it "
+        "receives isn't used to improve Google's products."
+    ),
+    "anthropic": (
+        "The AI here is Anthropic's Claude, through its paid service: under Anthropic's commercial "
+        "terms, what it receives isn't used to train its models."
+    ),
+}
+PRIVACY_SENT_GONE = "Deleting your data here can't call back what the AI has already received."
+PRIVACY_DELETE_TITLE = "Delete my data now"
+PRIVACY_DELETE_HELP = (
+    "Deletes everything from this visit: your files, answers, plan, chat and what you told us. "
+    "Download it first if you want to come back to it."
+)
+PRIVACY_DELETE = "Delete my data now"
+PRIVACY_DELETE_SURE = "Yes, delete everything from this visit"
+PRIVACY_DELETED = "Your data is deleted. Nothing from your last visit is left here."
+
+
+def privacy_ai(provider: str, paid: bool) -> str:
+    """Which paragraph says what happens to what the AI receives (roadmap 5.2)."""
+    if provider == "gemini":
+        return PRIVACY_AI["gemini_paid" if paid else "gemini_free"]
+    return PRIVACY_AI.get(provider, PRIVACY_AI["stub"])
+
+
+# ---------------------------------------------------------------- glossary (roadmap 5.3)
+GLOSSARY_TITLE = "What the words mean"
+GLOSSARY_HELP = "Point at the ⓘ next to a word to see what it means; they're all here too."
+GLOSSARY = {
+    "low_cash_line": ("Low cash line", LOW_CASH_HELP + " You can change it in Settings."),
+    "base_case": (
+        "Base case (most likely)",
+        "The most likely way the next 8 weeks go: half of the ways Aheadly tries end up above it, half below.",
+    ),
+    "worst_case": (
+        "Worst case (a bad month)",
+        "A bad stretch: only 1 in 10 of the ways the next 8 weeks could go end up lower than this.",
+    ),
+    "best_case": (
+        "Best case (a good month)",
+        "A good stretch: only 1 in 10 of the ways the next 8 weeks could go end up higher than this.",
+    ),
+    "lowest_projected": (
+        "Lowest projected",
+        "The lowest your balance gets in the base case over the next 8 weeks, and the day it happens.",
+    ),
+    "chance_below": (
+        "Chance of dipping below your line",
+        "Aheadly tries 500 ways the next 8 weeks could go, based on how your money has moved before. This "
+        "is the share of them in which your balance goes below your low cash line at least once.",
+    ),
+    "safe_to_spend": (
+        "Safe to spend today",
+        "The most you could spend today on something extra and still stay above your low cash line, even "
+        "in a bad month.",
+    ),
+    "safe_pay": (
+        "Safe pay for yourself",
+        "The most you could pay yourself each time over the next 8 weeks and still stay above your low "
+        "cash line, even in a bad month.",
+    ),
+    "cash_cushion": (
+        "Cash cushion",
+        "How many weeks your cash would cover your normal spending if no money came in.",
+    ),
+}
+
+
+def meaning(term: str) -> str:
+    """The glossary's words for a term, for help= and the ⓘ next to it (roadmap 5.3)."""
+    return GLOSSARY[term][1]

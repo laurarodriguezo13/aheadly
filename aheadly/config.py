@@ -35,6 +35,9 @@ class Settings:
     gemini_model: str = "gemini-3.5-flash-lite"
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-sonnet-5-5"
+    # roadmap 5.2: whether the AI key is on the provider's paid tier (Google treats free-tier requests
+    # differently); only changes what the privacy page says
+    llm_paid_tier: bool = False
     db_path: Path = PROJECT_ROOT / "data" / "aheadly.db"
     currency: str = "USD"
     horizon_days: int = 56
@@ -77,6 +80,7 @@ def load_settings() -> Settings:
         gemini_model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite"),
         anthropic_api_key=os.getenv("ANTHROPIC_API_KEY", ""),
         anthropic_model=os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5"),
+        llm_paid_tier=_env_bool("LLM_PAID_TIER", False),
         db_path=Path(os.getenv("DB_PATH", str(PROJECT_ROOT / "data" / "aheadly.db"))),
         currency=os.getenv("CURRENCY", "USD"),
         horizon_days=int(os.getenv("HORIZON_DAYS", "56")),

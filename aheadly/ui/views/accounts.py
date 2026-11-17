@@ -5,7 +5,7 @@ import html
 import streamlit as st
 
 from aheadly.data.connectors.csv_connector import CsvConnector
-from aheadly.ui import copy
+from aheadly.ui import copy, my_data
 from aheadly.ui.bootstrap import go_to, start_page
 from aheadly.ui.components import (
     card,
@@ -20,6 +20,8 @@ from aheadly.ui.components import (
 
 core = start_page(copy.NAV["accounts"])
 status = core.status()
+if st.session_state.pop("data_deleted", False):  # roadmap 5.2: back from Delete my data now
+    st.success(copy.PRIVACY_DELETED)
 
 if not status.connected:
     hero(copy.WELCOME_TITLE, copy.WELCOME_BODY)
@@ -35,7 +37,12 @@ if not status.connected:
         st.caption(copy.UPCOMING_HELP)
         line_col, balance_col = st.columns(2)
         line = line_col.number_input(
-            copy.LOW_CASH_LINE_INPUT, min_value=0.0, value=2000.0, step=100.0, format="%.0f"
+            copy.LOW_CASH_LINE_INPUT,
+            min_value=0.0,
+            value=2000.0,
+            step=100.0,
+            format="%.0f",
+            help=copy.LOW_CASH_HELP,
         )
         balance = balance_col.number_input(
             copy.BALANCE_INPUT,
@@ -97,6 +104,11 @@ if not status.connected:
                 st.error(copy.UPLOAD_FAILED.format(error=exc))
             else:
                 go_to("questions")
+    st.write("")
+    with st.container(border=True):  # roadmap 5.1: an owner coming back
+        section_title(copy.LOAD_TITLE)
+        st.caption(copy.LOAD_HELP)
+        my_data.load(core, "accounts", replaces=False)
 else:
 
     def _account_row(a: dict) -> str:
@@ -186,5 +198,9 @@ else:
                 "amount": st.column_config.NumberColumn("Amount", format="dollar"),
             },
         )
+    with st.container(border=True):  # roadmap 5.1
+        section_title(copy.MY_DATA_TITLE)
+        st.caption(copy.MY_DATA_HELP)
+        my_data.download(core, "accounts")
     if st.button(copy.GO_TO_DASHBOARD, type="primary"):
         go_to("dashboard")

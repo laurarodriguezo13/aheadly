@@ -40,6 +40,7 @@ ICONS = {
     "basis": ":material/fact_check:",
     "told": ":material/record_voice_over:",
     "settings": ":material/settings:",
+    "privacy": ":material/lock:",
 }
 GROUP_ICONS = {
     "home": ":material/home:",

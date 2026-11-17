@@ -31,6 +31,7 @@ PAGES = {
         "basis",
         "told",
         "settings",
+        "privacy",
     )
 }
 # roadmap R.2: the sidebar's four entries and their sub-tabs, in order (each sub-tab is its own page,
@@ -39,7 +40,7 @@ GROUPS = {
     "home": ("dashboard", "alerts", "insights"),
     "ask": ("ask", "whatif", "suggestion", "surprises", "financing"),
     "business": ("accounts", "questions", "basis", "told"),
-    "settings": ("settings",),
+    "settings": ("settings", "privacy"),  # roadmap 5.2
 }
 
 

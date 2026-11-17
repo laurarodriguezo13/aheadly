@@ -32,7 +32,9 @@ from aheadly.ai.tools import ToolDispatcher
 from aheadly.config import Settings
 from aheadly.ai import owner_notes, templates
 from aheadly.core import actions as alert_actions
-from aheadly.core import alert_rules, financing, insight_charts, onboarding, pattern_rules, safe, stress
+from aheadly import version
+from aheadly.core import alert_rules, data_file, financing, insight_charts, onboarding, pattern_rules
+from aheadly.core import safe, stress
 from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
@@ -246,6 +248,30 @@ class AppCore:
                 for name, content in example.statements
             ]
         )
+
+    # ------------------------------------------------- download / load my data (roadmap 5.1)
+    def export_data(self) -> tuple[str, bytes]:
+        """Everything this visit knows about the business, as one file: (file name, content)."""
+        business = self._business()
+        tables = self.repo.export_tables(business.id, data_file.TABLES, data_file.LEFT_OUT)
+        content = data_file.pack(tables, self.repo.schema_version(), version.LOADED, business.name)
+        return data_file.file_name(business.name, self.real_today()), content
+
+    def load_data(self, content: bytes) -> dict:
+        """Replace this visit's data with a downloaded file's, then check the forecast again as
+        if it had just been uploaded. Raises `data_file.DataFileError` (nothing changed) for a file
+        that isn't one of ours, is damaged, too big, or comes from a newer version of the app."""
+        loaded = data_file.unpack(
+            content, self.repo.schema_version(), self.repo.table_columns(data_file.TABLES)
+        )
+        self.repo.import_tables(loaded.tables)
+        self._clear_caches()
+        self.run_daily_check(force=True)
+        return {
+            "business_name": loaded.business_name,
+            "transactions": len(loaded.tables["transactions"]),
+            "saved_on": loaded.exported_at[:10],
+        }
 
     def example(self) -> str | None:
         """The example business being shown, or None for the owner's own data."""
@@ -1251,7 +1277,7 @@ class AppCore:
             "lowest_worst_case": spend["lowest_worst_case"],
             "owner_pay": (
                 {
-                    "payment": pay["label"],
+                    "payment": templates.CATEGORY_WORDS["owner_pay"],  # not the bank's wording
                     "now_per_payment": pay["now"],
                     "safe_per_payment": pay["safe"],
                     "how_often": pay["how_often"],
@@ -1324,7 +1350,9 @@ class AppCore:
                     "severity": insight["severity"],
                     "title": text.title,
                     "body": text.body,
-                    "actions": [self._insight_action(a, insight, baseline) for a in text.actions],
+                    "actions": [
+                        a for a in (self._insight_action(a, insight, baseline) for a in text.actions) if a
+                    ],
                     "facts": insight["facts"],
                     # roadmap R.1: a charge to check and idle cash are alerts too, so the Insights page
                     # and the dashboard leave them out (the chat still sees them)
@@ -1334,8 +1362,13 @@ class AppCore:
         self._cards_cache = {"key": key, "cards": cards}
         return cards
 
-    def _insight_action(self, action: dict, insight: dict, baseline: ForecastResult) -> dict:
-        """An insight's action, tested on the forecast when it maps to a what-if (roadmap 4.3)."""
+    def _insight_action(self, action: dict, insight: dict, baseline: ForecastResult) -> dict | None:
+        """An insight's action, tested on the forecast when it maps to a what-if (roadmap 4.3).
+        None when the owner ruled out that kind of change: not even as untested advice (issue 30)."""
+        declined = self.declined_suggestions()
+        kind = INSIGHT_ACTION_KINDS.get(action["key"])
+        if kind and alert_actions.ruled_out([r for r in declined if "label" not in r], kind):
+            return None
         items = [i for i in self.repo.list_scheduled_items(self._business().id) if i.active and not i.paused]
         found = None
         if action["key"] == "lower_owner_pay_for_a_while":
@@ -1377,10 +1410,8 @@ class AppCore:
         words, adjustments = found
         kind = INSIGHT_ACTION_KINDS[action["key"]]
         payment = adjustments[0].get("label") if kind in ("owner_pay", "cancel") else None
-        if alert_actions.ruled_out(
-            self.declined_suggestions(), kind, payment, alert_actions.suggestion_id(adjustments)
-        ):
-            return action  # the owner said no to this kind of change (roadmap R.3): advice only
+        if alert_actions.ruled_out(declined, kind, payment, alert_actions.suggestion_id(adjustments)):
+            return None  # the owner said no to this change (roadmap R.3)
         result = self._scenario(adjustments, words["label"], baseline=baseline)
         effect = alert_actions.impact(result)
         if (
