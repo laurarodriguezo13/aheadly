@@ -9,6 +9,7 @@ from aheadly.ui import copy
 from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.charts import forecast_chart
 from aheadly.ui.components import (
+    glossary,
     alert_list_html,
     dismissed_words,
     chart_note,
@@ -65,6 +66,7 @@ with col2:
             when,
             "red" if below else "teal",
             "rose" if below else "mint",
+            "lowest_projected",
         )
 with col3:
     if dash.next_payment:
@@ -78,21 +80,26 @@ if forecast:  # roadmap 3.4: how much is safe to spend, and to pay yourself
     with col4:
         if spend["amount"] > 0:
             sub = copy.SAFE_SPEND_SUB.format(line=money(spend["low_cash_line"]))
-            stat_card(copy.SAFE_SPEND, money(spend["amount"]), sub, "teal", "mint")
+            stat_card(copy.SAFE_SPEND, money(spend["amount"]), sub, "teal", "mint", "safe_to_spend")
         else:
             sub = copy.SAFE_SPEND_NONE.format(worst=money(spend["lowest_worst_case"]))
-            stat_card(copy.SAFE_SPEND, money(0), sub, "red", "rose")
+            stat_card(copy.SAFE_SPEND, money(0), sub, "red", "rose", "safe_to_spend")
     with col5:
         if pay is None:
-            stat_card(copy.SAFE_PAY, "?", copy.SAFE_PAY_UNKNOWN, "", "lav")
+            stat_card(copy.SAFE_PAY, "?", copy.SAFE_PAY_UNKNOWN, "", "lav", "safe_pay")
             if core.questions_left() and st.button(copy.QUESTIONS_GO, key="dashboard-pay-questions"):
                 go_to("questions")
         elif pay["safe"] > 0:
             sub = copy.SAFE_PAY_SUB.format(now=money(pay["now"]), how_often=pay["how_often"])
-            stat_card(copy.SAFE_PAY, money(pay["safe"]), sub, "purple", "lav")
+            stat_card(copy.SAFE_PAY, money(pay["safe"]), sub, "purple", "lav", "safe_pay")
         else:
             stat_card(
-                copy.SAFE_PAY, money(0), copy.SAFE_PAY_NONE.format(now=money(pay["now"])), "red", "rose"
+                copy.SAFE_PAY,
+                money(0),
+                copy.SAFE_PAY_NONE.format(now=money(pay["now"])),
+                "red",
+                "rose",
+                "safe_pay",
             )
 
 with st.container(border=True):
@@ -161,3 +168,5 @@ with right, st.container(border=True):
     question = box.text_input(copy.ASK_BOX, placeholder=copy.ASK_PLACEHOLDER, label_visibility="collapsed")
     if send.button("Ask", type="primary", width="stretch") and question.strip():
         go_to("ask", question.strip())
+
+glossary()  # roadmap 5.3

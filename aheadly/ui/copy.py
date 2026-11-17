@@ -249,7 +249,9 @@ CHANCE_SCENARIO = "With this change: {after} in the next 8 weeks (today: {before
 
 SETTINGS_TITLE = "Settings"
 LOW_CASH_LINE = "Low cash line"
-LOW_CASH_HELP = "Your safety buffer. Below this line Aheadly warns you."
+LOW_CASH_HELP = (
+    "The lowest balance you're comfortable with. Aheadly warns you before your cash is likely to go below it."
+)
 RUN_CHECK = "Run today's check"
 RESET_DEMO = "Start over"
 BACKTEST = "Compare forecast models (backtest)"
@@ -860,3 +862,51 @@ def privacy_ai(provider: str, paid: bool) -> str:
     if provider == "gemini":
         return PRIVACY_AI["gemini_paid" if paid else "gemini_free"]
     return PRIVACY_AI.get(provider, PRIVACY_AI["stub"])
+
+
+# ---------------------------------------------------------------- glossary (roadmap 5.3)
+GLOSSARY_TITLE = "What the words mean"
+GLOSSARY_HELP = "Point at the ⓘ next to a word to see what it means; they're all here too."
+GLOSSARY = {
+    "low_cash_line": ("Low cash line", LOW_CASH_HELP + " You can change it in Settings."),
+    "base_case": (
+        "Base case (most likely)",
+        "The most likely way the next 8 weeks go: half of the ways Aheadly tries end up above it, half below.",
+    ),
+    "worst_case": (
+        "Worst case (a bad month)",
+        "A bad stretch: only 1 in 10 of the ways the next 8 weeks could go end up lower than this.",
+    ),
+    "best_case": (
+        "Best case (a good month)",
+        "A good stretch: only 1 in 10 of the ways the next 8 weeks could go end up higher than this.",
+    ),
+    "lowest_projected": (
+        "Lowest projected",
+        "The lowest your balance gets in the base case over the next 8 weeks, and the day it happens.",
+    ),
+    "chance_below": (
+        "Chance of dipping below your line",
+        "Aheadly tries 500 ways the next 8 weeks could go, based on how your money has moved before. This "
+        "is the share of them in which your balance goes below your low cash line at least once.",
+    ),
+    "safe_to_spend": (
+        "Safe to spend today",
+        "The most you could spend today on something extra and still stay above your low cash line, even "
+        "in a bad month.",
+    ),
+    "safe_pay": (
+        "Safe pay for yourself",
+        "The most you could pay yourself each time over the next 8 weeks and still stay above your low "
+        "cash line, even in a bad month.",
+    ),
+    "cash_cushion": (
+        "Cash cushion",
+        "How many weeks your cash would cover your normal spending if no money came in.",
+    ),
+}
+
+
+def meaning(term: str) -> str:
+    """The glossary's words for a term, for help= and the ⓘ next to it (roadmap 5.3)."""
+    return GLOSSARY[term][1]

@@ -68,6 +68,7 @@ h2, h3 {{ letter-spacing: -0.02em; }}
 .ah-card p {{ margin: 0; color: var(--ink); line-height: 1.5; }}
 .ah-card h3 {{ margin: .5rem 0 .4rem; font-size: 1.45rem; }}
 .ah-label {{ font-size: .85rem; font-weight: 600; color: var(--ink); margin-bottom: .3rem; }}
+.ah-help {{ cursor: help; color: var(--purple); font-weight: 400; }}
 .ah-value {{ font-size: 2.3rem; font-weight: 800; line-height: 1.1; color: var(--navy); letter-spacing: -0.03em; }}
 .ah-value.purple {{ color: var(--purple); }} .ah-value.red {{ color: var(--red); }} .ah-value.teal {{ color: #15807A; }}
 .ah-sub {{ font-size: .9rem; color: var(--ink); margin-top: .4rem; }}

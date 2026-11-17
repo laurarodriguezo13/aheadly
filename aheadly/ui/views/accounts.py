@@ -37,7 +37,12 @@ if not status.connected:
         st.caption(copy.UPCOMING_HELP)
         line_col, balance_col = st.columns(2)
         line = line_col.number_input(
-            copy.LOW_CASH_LINE_INPUT, min_value=0.0, value=2000.0, step=100.0, format="%.0f"
+            copy.LOW_CASH_LINE_INPUT,
+            min_value=0.0,
+            value=2000.0,
+            step=100.0,
+            format="%.0f",
+            help=copy.LOW_CASH_HELP,
         )
         balance = balance_col.number_input(
             copy.BALANCE_INPUT,

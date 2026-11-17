@@ -2,7 +2,7 @@
 
 > **For whoever builds the final version (and their Claude).** One person builds everything, in the order below. This is the plan from the Milestone 2 check-in to the final demo; `PROGRESS.md` says where the work stands. The team also has a plain-language version of this plan.
 >
-> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-17 after 5.2 (privacy page)** (590 tests: 581 pass, 8 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
+> Written on 2026-11-11 from `main` after PR #1 (69 tests passing, CI green, live site checked with Gemini `gemini-3.5-flash-lite` and Prophet). **Last updated 2026-11-17 after 5.3 (glossary)** (593 tests: 584 pass, 8 wait for later items, 1 needs Prophet). Keep it updated: every new idea, decision or change of plan goes here the same day (and into the team's plain-language version). Read `aheadly-build-kit/AHEADLY_APP_SPEC.md` and `aheadly-build-kit/COURSE_GUIDE.md` first; re-check file and function names below if the code has moved on.
 
 ---
 
@@ -17,7 +17,7 @@
 
 - **Code computes every number; the LLM only writes words; `aheadly/ai/guardrails.py` checks every number; `aheadly/ai/templates.py` is the fallback.** Applies to every new text: actions, how-to steps, drafted messages, insights, chart summaries, file-type explanations, financing.
 - UI calls only `AppCore`; only `repository.py` has SQL; only `llm_client.py` talks to providers; user-facing strings in `aheadly/ui/copy.py`.
-- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#55**).
+- TDD with pytest (failing test first), `black`, CI green. `PROGRESS.md` after each item; `DECISIONS.md` for every deviation (next free number: **#56**).
 - Works with `LLM_PROVIDER=stub` and with Gemini. Free-tier quota: cache LLM outputs per facts hash so Streamlit reruns don't call the provider again.
 - Every chart gets a 1–3 sentence summary (4.2). Every warning, alert or insight gets 2–3 `Action`s (3.2).
 - The owner can always see and correct what the forecast assumes (2.6).
@@ -30,7 +30,7 @@
 
 ## 2. Current state (what exists, where)
 
-**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1, 2 and 3 done (1.1–3.6) and live (Phase 3 merged by pull request #4 on Nov 13); Phase 4 done (4.1–4.3), merged by pull request #5 (Nov 13) and checked on the live site after Laura's reboot (Nov 16; issues 27–29, fixed with R.1). Miguel then reviewed the app with the example bakery: the agreed changes are Phase R below (R.1–R.3), done before Phase 5; Phase 6 (more AI) comes after Phase 5. Phase R done (R.1 polish, R.2 sidebar regrouping, R.3 suggestions you can work with and what the owner tells us), merged by pull request #6 (Nov 16) and checked on the live site with no reboot (issue 19's fix held; issues 30–31). Then everything was reviewed (code, GitHub, documents, the live and the local app; issues 32–37, DECISIONS #52). 5.1 and 5.2 done on `Migue` (Nov 17; issue 38: only made-up businesses for the class). Next: 5.3. Test-business scorecard: 87 checks pass, 8 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
+**Progress (work on branch `Migue`, merged into `main` by pull request):** Milestone 2 presented Thu Nov 12; the professor has the repo link. After the presentation the pull request `Migue` → `main` was merged (Nov 12), Laura rebooted the live app, and the live site was checked page by page with the example bakery (Gemini `gemini-3.5-flash-lite` and Prophet): everything works, findings in issues 18–22. Phase 1, 2 and 3 done (1.1–3.6) and live (Phase 3 merged by pull request #4 on Nov 13); Phase 4 done (4.1–4.3), merged by pull request #5 (Nov 13) and checked on the live site after Laura's reboot (Nov 16; issues 27–29, fixed with R.1). Miguel then reviewed the app with the example bakery: the agreed changes are Phase R below (R.1–R.3), done before Phase 5; Phase 6 (more AI) comes after Phase 5. Phase R done (R.1 polish, R.2 sidebar regrouping, R.3 suggestions you can work with and what the owner tells us), merged by pull request #6 (Nov 16) and checked on the live site with no reboot (issue 19's fix held; issues 30–31). Then everything was reviewed (code, GitHub, documents, the live and the local app; issues 32–37, DECISIONS #52). 5.1, 5.2 and 5.3 done on `Migue` (Nov 17; issue 38: only made-up businesses for the class). Next: a pull request for the review fixes and 5.1–5.3 and the live check, then 5.4. Test-business scorecard: 87 checks pass, 8 wait for later items (`PENDING` in `tests/test_businesses.py`), 0 fail. Details per item: "Built" notes in section 4 and `PROGRESS.md`.
 
 - **Session / config:** `aheadly/core/session.py`, `aheadly/config.py`, `aheadly/ui/bootstrap.py` (`get_settings` not cached; `get_engine` / `get_llm` / `_shared_core` cached per code fingerprint `aheadly/version.py`, so a deploy can't reuse old objects; `start_page` reads the browser time zone).
 - **Import:** `aheadly/data/connectors/csv_connector.py`: real bank exports (comma/semicolon/tab, UTF-8/Windows-1252, preambles, Spanish months, Latin American amounts, newest-first), Balance column checked line by line, stable content-hash ids, card statements (owed balance), account names from file names, `read_upcoming` with skipped-line count. Several files per upload: `AppCore.connect_files`. The owner's own files: `aheadly/data/connectors/owner_files.py` (`read_owner_file`: five kinds from the column titles), `AppCore.read_owner_file` / `use_owner_file` / `uploaded_files`.
@@ -132,8 +132,8 @@
 | R.3 | Suggestions you can work with: detail view, change and re-test, "Not for me", chat "Use this version", suggestions chat tool, "Anything else we should know?", "What you told us" | Must | M–L | R.2 | Done |
 | 5.1 | Download / Load my data | Must | M | 1.4, 1.3 | Done |
 | 5.2 | Privacy page + delete my data | Must | S | none | Done |
-| 5.3 | Glossary tooltips | Should | S | none | **Next** |
-| 5.4 | Chatbot evaluation set in CI | Should | S | 1.1 |  |
+| 5.3 | Glossary tooltips | Should | S | none | Done |
+| 5.4 | Chatbot evaluation set in CI | Should | S | 1.1 | **Next** |
 | 5.5 | Final demo with two test businesses | Must | S | all Must |  |
 | 6.1 | AI payment names ("PAGO PSE MOLINOS EL TRIGAL" → "Flour supplier (Molinos El Trigal)") | Should | S | R.3 | before 5.5 if time |
 | 6.2 | AI-proposed suggestions, tested by code before they're shown | Should | M | R.3 | before 5.5 if time |
@@ -358,6 +358,7 @@ What is stored, where, for how long (this session only unless downloaded), what 
 
 #### 5.3 Glossary tooltips · Should · S
 `help=` text and short definitions: worst case, base case, chance below the line, cash cushion, low cash line, safe to spend.
+**Built (2026-11-17, DECISIONS #55):** one glossary in `copy.GLOSSARY` (nine words: low cash line, base, worst and best case, lowest projected, chance of dipping below the line, safe to spend, safe pay, cash cushion), each meaning written from how the app works it out (500 ways, 8 weeks, 1 in 10: a test holds them to the engine and the settings). An ⓘ next to the word on the dashboard's cards and on every best / base / worst result shows the meaning when pointed at (`stat_card(..., term=)`, an HTML title); *What the words mean*, folded at the bottom of the dashboard and the alerts page, lists them all (the ⓘ doesn't work on a phone); the low cash line's help says the same on Settings and on the upload page. `tests/test_glossary.py`.
 
 #### 5.4 Chatbot evaluation set · Should · S
 `tests/eval_questions.json`: 20–30 questions (Spanish and English) across the 1.1 businesses: expected tool(s), checks (risk word present, no unverified numbers, < 120 words). Stub in CI; `scripts/eval_live.py` runs it on Gemini manually (quota). Include Miguel's two from the review: "How can I fix my alert?" (must give the tested fixes) and "What if I buy a new fridge?" (must ask the amount and date, never move another payment).

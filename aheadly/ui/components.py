@@ -51,9 +51,17 @@ def weeks(n: int) -> str:
     return "1 week" if n == 1 else f"{n} weeks"
 
 
-def stat_card(label: str, value: str, sub: str = "", tone: str = "", background: str = "lav") -> None:
+def stat_card(
+    label: str, value: str, sub: str = "", tone: str = "", background: str = "lav", term: str | None = None
+) -> None:
+    """`term`: a glossary word; its meaning shows on the ⓘ next to the label (roadmap 5.3)."""
+    tip = (
+        f' <span class="ah-help" title="{html.escape(copy.meaning(term), quote=True)}">ⓘ</span>'
+        if term
+        else ""
+    )
     st.markdown(
-        f'<div class="ah-card {background}"><div class="ah-label">{html.escape(label)}</div>'
+        f'<div class="ah-card {background}"><div class="ah-label">{html.escape(label)}{tip}</div>'
         f'<div class="ah-value {tone}">{html.escape(value)}</div>'
         f'<div class="ah-sub">{html.escape(sub)}</div></div>',
         unsafe_allow_html=True,
@@ -148,14 +156,16 @@ def scenario_metrics(result) -> None:
     scen = result.scenario
     cols = st.columns(3)
     values = [
-        (copy.BEST_CASE, scen.min_p90, "teal"),
-        (copy.BASE_CASE, scen.lowest.balance_p50, "purple"),
-        (copy.WORST_CASE, scen.min_p10, ""),
+        (copy.BEST_CASE, scen.min_p90, "teal", "best_case"),
+        (copy.BASE_CASE, scen.lowest.balance_p50, "purple", "base_case"),
+        (copy.WORST_CASE, scen.min_p10, "", "worst_case"),
     ]
-    for col, (label, value, tone) in zip(cols, values):
+    for col, (label, value, tone, term) in zip(cols, values):
         tone = "red" if value < result.low_cash_line else tone
         with col:
-            stat_card(label, money(value), copy.LOWEST_BALANCE, tone, "sky" if tone != "red" else "rose")
+            stat_card(
+                label, money(value), copy.LOWEST_BALANCE, tone, "sky" if tone != "red" else "rose", term
+            )
     numbers = result.summary()  # the chance before and after (roadmap 3.1)
     before, after = numbers["baseline"]["chance_below_line_pct"], numbers["scenario"]["chance_below_line_pct"]
     if after is not None:
@@ -468,3 +478,10 @@ def action_rows(core, actions: list[dict], key_prefix: str, title: str = copy.AC
                         st.session_state.pop(f"{key}-result", None)
                         st.toast(copy.ACTION_SAVED)
                         st.rerun()
+
+
+def glossary() -> None:
+    """Roadmap 5.3: every money word and what it means, folded (the ⓘ tips don't work on a phone)."""
+    with st.expander(copy.GLOSSARY_TITLE):
+        st.caption(copy.GLOSSARY_HELP)
+        st.markdown("\n".join(f"- **{name}**: {text}" for name, text in copy.GLOSSARY.values()))
