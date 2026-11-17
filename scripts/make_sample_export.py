@@ -1,7 +1,11 @@
-"""Write a realistic bank export of Panadería La Esquina (CSV + Excel) into data/samples/.
+"""Write the two demo upload files for Panadería La Esquina (CSV + Excel) into data/samples/.
 
-The client can upload these on the Accounts page while the Plaid connection is pending.
-Run:  uv run python -m scripts.make_sample_export
+1. A realistic bank statement (past): Date / Description / Counterparty / Category / Debit / Credit / Balance.
+2. An upcoming-payments file (future): Date / Description / Amount, one-off items only, so the forecast
+   does not count payroll and rent twice (those are learned from the statement).
+
+Both are dated relative to today, so regenerate them on demo day:
+    uv run python -m scripts.make_sample_export
 """
 
 from __future__ import annotations
@@ -14,7 +18,8 @@ import pandas as pd
 from aheadly.data.seed_demo import DEMO_OPENING_BALANCE, build_demo_dataset
 
 OUT = Path(__file__).resolve().parents[1] / "data" / "samples"
-BASENAME = "bancolombia_export_panaderia_la_esquina"
+STATEMENT_BASENAME = "bancolombia_export_panaderia_la_esquina"
+UPCOMING_BASENAME = "upcoming_payments_panaderia_la_esquina"
 
 
 def bank_export(today: date | None = None) -> pd.DataFrame:
@@ -35,16 +40,34 @@ def bank_export(today: date | None = None) -> pd.DataFrame:
     return frame.iloc[::-1].reset_index(drop=True)
 
 
+def upcoming_payments(today: date | None = None) -> pd.DataFrame:
+    """The owner's one-off plans: minus = money going out, plus = money coming in. Recurring items are left out."""
+    items = [i for i in build_demo_dataset(today).scheduled_items if i.recurrence is None]
+    items.sort(key=lambda i: i.due_date)
+    return pd.DataFrame(
+        {
+            "Date": [i.due_date for i in items],
+            "Description": [i.label for i in items],
+            "Amount": [float(i.amount) for i in items],
+        }
+    )
+
+
+def _write(frame: pd.DataFrame, basename: str, sheet: str, widths: tuple[int, ...]) -> None:
+    frame.to_csv(OUT / f"{basename}.csv", index=False)
+    with pd.ExcelWriter(OUT / f"{basename}.xlsx") as writer:
+        frame.to_excel(writer, index=False, sheet_name=sheet)
+        for column, width in zip("ABCDEFG", widths):
+            writer.sheets[sheet].column_dimensions[column].width = width
+
+
 def main() -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    frame = bank_export()
-    frame.to_csv(OUT / f"{BASENAME}.csv", index=False)
-    with pd.ExcelWriter(OUT / f"{BASENAME}.xlsx") as writer:
-        frame.to_excel(writer, index=False, sheet_name="Movimientos")
-        sheet = writer.sheets["Movimientos"]
-        for column, width in zip("ABCDEFG", (12, 28, 24, 14, 12, 12, 12)):
-            sheet.column_dimensions[column].width = width
-    print(f"{len(frame)} rows -> {OUT}")
+    statement = bank_export()
+    _write(statement, STATEMENT_BASENAME, "Movimientos", (12, 28, 24, 14, 12, 12, 12))
+    upcoming = upcoming_payments()
+    _write(upcoming, UPCOMING_BASENAME, "Pagos", (12, 40, 12))
+    print(f"{len(statement)} statement rows + {len(upcoming)} upcoming payments -> {OUT}")
 
 
 if __name__ == "__main__":
