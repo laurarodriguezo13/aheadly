@@ -7,6 +7,9 @@ best status is kept):
   due between today and the low point, moved 1, 2 or 3 weeks later, to the day after the low point,
   or to the day after money that comes in once later. Weekly or monthly payments are never moved
   once: moving one would move them all.
+- split_payment (roadmap 3.7): a big payment of the same kind (at least a fifth of the low cash line)
+  paid in two halves, the second 3, 4 or 5 weeks later, after the low point or after money that comes
+  in once later.
 - collect_early: the two biggest amounts coming in once after cash first drops below the line,
   asked for the day before.
 - owner_pay: the owner's own pay (once the owner said which transfer it is) 25%, 50% or 100% lower
@@ -34,13 +37,15 @@ from aheadly.ai.forecast_engine import expand_scheduled_items
 from aheadly.domain import ForecastResult, ScenarioResult, ScheduledItem, chance_pct
 
 RISK_ORDER = {"safe": 0, "watch": 1, "act_now": 2}
-COST = {"move_payment": 0, "collect_early": 0, "owner_pay": 1, "price": 2}
+COST = {"move_payment": 0, "split_payment": 0, "collect_early": 0, "owner_pay": 1, "price": 2}
 MAX_ACTIONS = 3
 PAIR_POOL = 5
 MOVE_WEEKS = (1, 2, 3)
 PAY_CUTS = (25, 50, 100)
 PRICE_RISES = (5, 10)
-MESSAGE_KINDS = ("move_payment", "collect_early")
+SPLIT_WEEKS = (3, 4, 5)
+SPLIT_MIN_SHARE = 0.2  # of the low cash line: only a big payment is worth asking to split
+MESSAGE_KINDS = ("move_payment", "split_payment", "collect_early")
 # payments that aren't the owner's to move: wages, taxes, loan instalments and utility bills (late
 # fees, legal dates, cut-offs). The owner's own pay has its own suggestion.
 NEVER_MOVE = frozenset({"payroll", "taxes", "loan", "utilities", "bank_fees", "owner_pay"})
@@ -55,11 +60,19 @@ def suggestion_id(adjustments: list[dict]) -> str:
     return hashlib.sha1(json.dumps(adjustments, sort_keys=True).encode()).hexdigest()[:10]
 
 
+# Both ask whoever is paid to wait (for all or half), so a "no" to one is a "no" to the other (#63).
+PAY_LATER = {"move_payment", "split_payment"}
+
+
+def _same_kind(rule_kind: str | None, kind: str) -> bool:
+    return rule_kind == kind or (rule_kind in PAY_LATER and kind in PAY_LATER)
+
+
 def ruled_out(rules: list[dict], kind: str, label: str | None = None, sid: str | None = None) -> bool:
     for rule in rules:
         if sid and rule.get("id") == sid:
             return True
-        if rule.get("kind") == kind and rule.get("label") in (None, label):
+        if _same_kind(rule.get("kind"), kind) and rule.get("label") in (None, label):
             return True
     return False
 
@@ -153,6 +166,19 @@ def _families(baseline, line, items, today, end, weekly_sales, exclude=frozenset
             ]
             if options:
                 families.append({"kind": "move_payment", "item": item, "when": when, "options": options})
+            if -item.amount >= max(500.0, SPLIT_MIN_SHARE * line):  # roadmap 3.7: half now, half later
+                second = {when + timedelta(days=7 * w) for w in SPLIT_WEEKS} | {low_date + timedelta(days=1)}
+                second = {_weekday(d) for d in second | {d + timedelta(days=1) for d in later_in[:3]}}
+                splits = [
+                    (
+                        [{"type": "split_item", "label": item.label, "new_date": d.isoformat()}],
+                        (d - when).days,
+                    )
+                    for d in sorted(second)
+                    if when < d <= end
+                ]
+                if splits:
+                    families.append({"kind": "split_payment", "item": item, "when": when, "options": splits})
 
     coming = sorted(
         ((i, d) for i, d in once if i.amount > 0 and first_below < d <= end), key=lambda p: -p[0].amount
@@ -273,6 +299,8 @@ def build(
         for a, b in combinations(singles[:PAIR_POOL], 2):
             if a["kind"] == b["kind"] and a["kind"] in ("owner_pay", "price"):
                 continue
+            if a["payment"] and a["payment"] == b["payment"]:  # moving and splitting the same payment
+                continue
             adjs = a["adjustments"] + b["adjustments"]
             if ruled_out(declined, "pair", sid=suggestion_id(adjs)):
                 continue
@@ -309,10 +337,16 @@ def pair_words(a: dict, b: dict) -> dict:
 def message_facts(action: dict, business_name: str, owner_name: str) -> dict:
     """What a drafted message may say: nothing beyond the action itself."""
     adjustment = action["adjustments"][0]
+    part = (
+        {"part": round(action["amount"] * float(adjustment.get("share", 0.5)))}
+        if action["kind"] == "split_payment"
+        else {}
+    )
     return {
         "kind": action["kind"],
         "payee": adjustment["label"],
         "amount": action["amount"],
+        **part,
         "date": action["when"],
         "new_date": adjustment["new_date"],
         "business": business_name,

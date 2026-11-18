@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import re
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -39,7 +40,7 @@ from aheadly.core.examples import DEFAULT_EXAMPLE, example_names, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
 from aheadly.data.connectors import owner_files
-from aheadly.data.connectors.csv_connector import CsvConnector
+from aheadly.data.connectors.csv_connector import CsvConnector, describe_statement
 from aheadly.data.repository import Repository
 from aheadly.domain import (
     SCHEDULED_CATEGORIES,
@@ -100,6 +101,9 @@ INSIGHT_ACTION_KINDS = {
     "cancel_if_not_needed": "cancel",
 }
 DECLINE_REASONS = ("wont_agree", "cant_lower_pay", "cant_raise_prices", "already_done", "other", "told_us")
+
+
+CARD_PAYMENT = re.compile(r"\b(tarjeta|visa|mastercard|master card|amex|credit card|card payment|tc)\b")
 
 
 class AppCore:
@@ -197,6 +201,30 @@ class AppCore:
         """Feature 1: link a data source once; transactions then live in the repository."""
         return self.connect_files([connector])
 
+    @staticmethod
+    def balances_needed(files: list[tuple[str, bytes]]) -> list[dict]:
+        """The statements whose balance today can't be read anywhere in the file (no Balance column, no
+        "Saldo actual" above the table): the page asks the owner for each, what's owed for a card."""
+        needed = []
+        for name, content in files:
+            try:
+                info = describe_statement(content, name)
+            except ValueError:  # a file we can't read at all: the upload itself says why
+                continue
+            if not info["balance_found"]:
+                needed.append({"name": name, "card": info["card"]})
+        return needed
+
+    def connect_statements(self, files: list[tuple[str, bytes]], balances: dict, profile: dict) -> list:
+        """The upload page's statements: (file name, content) each, a typed balance by file name for
+        those that need one, and the business's profile. Returns the connectors (what they found)."""
+        connectors = [
+            CsvConnector(content, balances.get(name), name, business_profile=profile)
+            for name, content in files
+        ]
+        self.connect_files(connectors)
+        return connectors
+
     def connect_files(self, connectors: list[Connector]) -> int:
         """Upload one or more statements. A statement that shares lines with an account already here
         is another period of that account (its balance is the newest file's); any other file is a
@@ -224,6 +252,10 @@ class AppCore:
                 if newest is not None and (last is None or newest >= last):
                     self.repo.set_account_balance(account_id, payload.balance)
             added += self.repo.add_transactions(business.id, account_id, payload.transactions)
+            if getattr(payload, "holder", None) and not self.repo.get_profile(business.id).get(
+                "statement_holder"
+            ):
+                self.repo.save_profile(business.id, {"statement_holder": payload.holder})  # owner's pay hint
             if payload.scheduled_items:
                 self.repo.add_scheduled_items(business.id, payload.scheduled_items)
         self._mark_internal_transfers(business.id)
@@ -580,9 +612,11 @@ class AppCore:
             if abs(p["total"]) >= floor or categorizer.match_key(p["description"]) in how_often
         ]
         names = [p["description"] for p in payees[: onboarding.MAX_MYSTERIES + 2]]
-        return onboarding.build(
-            self.repo.get_profile(business.id), payees, self._category_suggestions(names), how_often
+        profile = self.repo.get_profile(business.id)
+        owner_words = onboarding.owner_name_words(
+            profile.get("statement_holder", ""), business.owner_name or "", business.name or ""
         )
+        return onboarding.build(profile, payees, self._category_suggestions(names), how_often, owner_words)
 
     def _category_suggestions(self, payees: list[str]) -> dict[str, tuple[str, str]]:
         """The connected model's guess for each payee (names only, one call, kept so reruns don't
@@ -876,7 +910,7 @@ class AppCore:
         `kind`: what the owner says it is, when the app guessed wrong or couldn't tell; `columns`:
         which of the file's columns holds what (role → title), when the titles didn't say."""
         read = owner_files.read_owner_file(content, filename, self.today, kind, columns)
-        if read.kind is None and kind is None and read.headers:
+        if read.kind is None and kind is None and read.headers and not read.details.get("looks_like"):
             guess = self.translator.classify_owner_file(read.headers)
             if guess:
                 kind_guess, columns = guess
@@ -884,6 +918,13 @@ class AppCore:
                 read.details["kind_from"] = "ai"
         if read.kind == "employees" and not read.problem:
             read.details["payroll_found_per_month"] = self._payroll_per_month()
+        if read.items and any(a["kind"] == "card" for a in self.repo.list_accounts(self._business().id)):
+            # the card's statement is here: its purchases already count as spending, so paying the
+            # card from the bank must not count again (DECISIONS #62)
+            card = [i for i in read.items if i.amount < 0 and CARD_PAYMENT.search(categorizer.plain(i.label))]
+            read.items = [i for i in read.items if i not in card]
+            if card:
+                read.details["card_payments_left_out"] = len(card)
         if read.items:
             planned = [
                 i for i in self.repo.list_scheduled_items(self._business().id) if not _from_statement(i)
@@ -913,8 +954,13 @@ class AppCore:
         per_month = {"weekly": 52 / 12, "every two weeks": 26 / 12, "twice a month": 2.0, "monthly": 1.0}
         total = 0.0
         for r in self.detected_recurring():
-            wages = any(w in r.match_key for w in ("nomina", "payroll", "salari", "sueldo", "wages"))
-            extra = any(w in r.match_key for w in ("prima", "pila", "aportes", "temporada", "bonus"))
+            wages = any(
+                w in r.match_key for w in ("nomina", "payroll", "salari", "sueldo", "wages", "planilla")
+            )
+            extra = any(
+                w in r.match_key
+                for w in ("prima", "pila", "aportes", "temporada", "bonus", "css", "xiii", "decimo")
+            )
             if r.category == "payroll" and wages and not extra and not r.seasonal and r.cadence in per_month:
                 total += -r.amount * per_month[r.cadence]
         return round(total, 2)

@@ -428,27 +428,45 @@ def recurrence_for(rule: str) -> str:
 
 
 # ------------------------------------------------------------- no double counting
+# words that don't tell one payment from another ("PAGO DE SERVICIO …", "ACH ENVIADO …")
+COMMON_WORDS = {
+    "pago", "pagos", "del", "los", "las", "ach", "enviado", "recibido", "transf", "transferencia", "terceros",
+    "servicio", "servicios", "cta", "cuenta", "debito", "automatico", "banco", "the", "and", "payment", "for",
+    "por", "con", "upcoming", "invoice", "overdue",
+}  # fmt: skip
+
+
+def _words(label: str) -> set[str]:
+    return {w for w in re.split(r"[^a-z]+", plain(label or "")) if len(w) >= 3 and w not in COMMON_WORDS}
+
+
 def pair_duplicates(events: list[tuple]) -> dict[int, int]:
     """events: (date, amount, label, detected, ...). Which detected event (index) each one-off the
     owner told us about (index) stands in for: the closest within 10 days, same sign, amount within
-    40% (an insurer's payments vary a lot)."""
+    40% (an insurer's payments vary a lot). Pairs that share a word of their names come first
+    ("Planilla – Quincena 31 dic" and "Pago de planilla …"), so a payment of about the same size on
+    the same day can't take another's place (the Dec 31 income tax once stood in for payroll)."""
     pairs: dict[int, int] = {}
-    for k, (when, amount, _label, is_detected, *_rest) in enumerate(events):
-        if is_detected:
-            continue
-        best, best_gap = None, None
-        for i, (d_when, d_amount, _l, d_detected, *_r) in enumerate(events):
-            if not d_detected or i in pairs or (d_amount > 0) != (amount > 0):
+    for by_name in (True, False):
+        for k, (when, amount, label, is_detected, *_rest) in enumerate(events):
+            if is_detected or k in pairs.values():
                 continue
-            gap = abs((d_when - when).days)
-            if (
-                gap <= 10
-                and abs(d_amount - amount) <= 0.4 * abs(amount)
-                and (best_gap is None or gap < best_gap)
-            ):
-                best, best_gap = i, gap
-        if best is not None:
-            pairs[best] = k
+            words = _words(label)
+            best, best_gap = None, None
+            for i, (d_when, d_amount, d_label, d_detected, *_r) in enumerate(events):
+                if not d_detected or i in pairs or (d_amount > 0) != (amount > 0):
+                    continue
+                if by_name and not words & _words(d_label):
+                    continue
+                gap = abs((d_when - when).days)
+                if (
+                    gap <= 10
+                    and abs(d_amount - amount) <= 0.4 * abs(amount)
+                    and (best_gap is None or gap < best_gap)
+                ):
+                    best, best_gap = i, gap
+            if best is not None:
+                pairs[best] = k
     return pairs
 
 

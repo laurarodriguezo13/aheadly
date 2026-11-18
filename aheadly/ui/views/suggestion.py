@@ -21,7 +21,7 @@ def _change_controls(adjustments: list[dict], action: dict) -> list[dict]:
     for n, adjustment in enumerate(adjustments):
         kind, label = adjustment["type"], copy.CHANGE_FIELDS.get(adjustment["type"])
         key = f"change-{action.get('id')}-{n}"
-        if kind == "move_item":
+        if kind in ("move_item", "split_item"):
             picked = st.date_input(
                 f"{label} ({adjustment['label']})",
                 value=date.fromisoformat(adjustment["new_date"]),
@@ -69,7 +69,7 @@ def detail(opened: dict) -> None:
 
     with st.expander(copy.ACTION_HOW, expanded=True):
         st.markdown("\n".join(f"{n}. {step}" for n, step in enumerate(action.get("how_to", []), 1)))
-        if action.get("kind") in ("move_payment", "collect_early"):
+        if action.get("kind") in ("move_payment", "split_payment", "collect_early"):
             mine = st.session_state.get("suggestion_mine")
             if st.button(copy.ACTION_DRAFT, key="suggestion-draft"):
                 version = {**action, "adjustments": mine["adjustments"]} if mine else action

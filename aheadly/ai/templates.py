@@ -349,6 +349,19 @@ def action_words(
             ],
         }
     old, new = _short_date(when), _short_date(new_when)
+    if kind == "split_payment":  # roadmap 3.7
+        return {
+            "label": f"Pay {payee} in two parts",
+            "detail": (
+                f"Ask to pay half ({money(amount / 2)}) on {old} as planned and the other half on {new}, "
+                f"instead of all {money(amount)} on {old}."
+            ),
+            "how_to": [
+                f"Call or message them this week, before {old}: many suppliers accept part now, part later.",
+                f"Agree on {money(amount / 2)} on {old} and {money(amount / 2)} on {new}, in writing.",
+                "If they agree, press Save as my plan so the forecast uses both dates.",
+            ],
+        }
     if kind == "move_payment":
         return {
             "label": f"Move {payee} to {new}",
@@ -458,6 +471,12 @@ def message_text(facts: dict) -> str:
         else f"This is {facts['business']}"
     )
     old, new = _short_date(facts["date"]), _short_date(facts["new_date"])
+    if facts["kind"] == "split_payment":
+        part = money(facts.get("part", facts["amount"] / 2))
+        return (
+            f"Hi! {who}. About the {facts['payee']} payment of {money(facts['amount'])} due {old}: could we pay "
+            f"it in two parts, {part} on {old} and {part} on {new}? It would really help us this month. Thank you!"
+        )
     if facts["kind"] == "move_payment":
         return (
             f"Hi! {who}. Could we move the {facts['payee']} payment of {money(facts['amount'])} from {old} "

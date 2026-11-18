@@ -19,6 +19,7 @@ ADJUSTMENT_TYPES = (
     "recurring_change",  # {label, amount_delta, recurrence, start_date}
     "revenue_change",  # {percent, start_date, weeks?}  (a weekly line; `weeks` ends it, roadmap 3.5)
     "collect_early",  # {label, new_date}
+    "split_item",  # {label, new_date, share?}  (part stays, the rest moves; roadmap 3.7)
     "financing",  # {amount, start_date, repay_date, cost, label}  (money in, then back with its cost; 3.6)
     "loan",  # {amount, start_date, yearly_rate, months, fees, label}  (money in, monthly payments; R.2)
 )
@@ -28,6 +29,7 @@ REQUIRED = {
     "one_time_expense": ("amount",),
     "move_item": ("label", "new_date"),
     "collect_early": ("label", "new_date"),
+    "split_item": ("label", "new_date"),
     "remove_item": ("label",),
     "recurring_change": ("label", "amount_delta"),
     "revenue_change": ("percent",),
@@ -50,6 +52,8 @@ def parse_adjustment(raw: dict) -> Adjustment:
     missing = [field for field in REQUIRED.get(kind, ()) if params.get(field) in (None, "")]
     if missing:  # said in words the model can act on (the Gemini run got "'new_date'")
         raise ValueError(f"{kind} needs {' and '.join(missing)}: {REQUIRED_HELP[missing[0]]}")
+    if kind == "split_item" and not 0 < float(params.get("share", 0.5)) < 1:
+        raise ValueError("split_item needs a share between 0 and 1 (0.5: half moves to new_date)")
     if kind == "one_time_expense" and float(params.get("amount", 0)) <= 0:
         raise ValueError("one_time_expense needs a positive amount")
     if kind == "financing":
@@ -139,6 +143,21 @@ def _apply_one(
         target.due_date = p["new_date"]
         target.user_edited = True  # a later upload must not undo the owner's plan
         return items
+    if adj.type == "split_item":  # roadmap 3.7: part stays on its date, the rest is paid later
+        target = _find(items, p["label"])
+        part = round(target.amount * float(p.get("share", 0.5)), 2)
+        target.amount = round(target.amount - part, 2)
+        target.user_edited = True
+        return items + [
+            ScheduledItem(
+                f"{target.label} (second part)",
+                part,
+                p["new_date"],
+                kind=target.kind,
+                source="scenario",
+                category=target.category,
+            )
+        ]
     if adj.type == "remove_item":
         target = _find(items, p["label"])
         target.active = False
