@@ -302,6 +302,19 @@ BASIS_RHYTHM_BODY = (
     "{busiest} is your busiest day for money in, {slowest} the slowest. The forecast repeats this rhythm, "
     "with the ups and downs your past weeks had."
 )
+# DECISIONS #64: a weekly payee whose amount changes sits in the normal week; the owner can take it out
+BASIS_WEEKLY_PAYEES = (
+    "Your normal week includes these weekly payments, a different amount each time. To change one, pause "
+    "it or set when it starts again (a supplier you'll barely buy from for a while), plan it on its own:"
+)
+BASIS_WEEKLY_PAYEE = "**{label}** · about {amount} a week"
+BASIS_PLAN_ON_ITS_OWN = "Plan it on its own"
+BASIS_PLANNED_ON_ITS_OWN = (
+    "{label} is now a regular payment of about {amount} a week. Change it, pause it or set a later next "
+    "date under Regular payments."
+)
+BASIS_BACK_TO_NORMAL = "Back to my normal week"
+BASIS_BACK_DONE = "{label} is back in your normal week"
 BASIS_REGULAR = "Regular payments"
 BASIS_REGULAR_HELP = (
     "Each one goes on its own dates. ≈ means the amount varies; we use a typical recent amount."

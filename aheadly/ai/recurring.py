@@ -78,6 +78,13 @@ class Recurring:
         frequent = self.cadence in ("daily", "weekly", "twice a week") or self.cadence.endswith("a week")
         return not (frequent and self.amount_varies)
 
+    @property
+    def in_normal_week(self) -> bool:
+        """A payee paid some days every week, amount changing, left in the history: the owner may
+        plan it on its own (a supplier he'll barely buy from in the slow months, DECISIONS #64).
+        Daily money (card sales) is the normal week itself."""
+        return not (self.internal or self.seasonal or self.scheduled or self.cadence == "daily")
+
 
 # ------------------------------------------------------------- calendar helpers
 def _month_add(year: int, month: int, n: int) -> tuple[int, int]:

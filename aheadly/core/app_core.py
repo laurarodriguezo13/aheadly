@@ -765,6 +765,9 @@ class AppCore:
         before = self.get_dashboard().forecast
         self.repo.update_scheduled_item(item_id, **fields)
         self.run_daily_check(force=True)
+        return self._effect(before)
+
+    def _effect(self, before) -> dict:
         after = self.get_dashboard().forecast
         line = self._business().low_cash_line
         return {
@@ -797,6 +800,8 @@ class AppCore:
             "due": item.due_date,
             "badge": badge,
             "varies": bool(detected and detected.amount_varies),
+            # a weekly payee the owner took out of the normal week: it can go back (#64)
+            "weekly_payee": bool(detected and detected.in_normal_week and item.user_edited),
             "maybe": item.certainty == "maybe",
             "paused": item.paused,
             "end_date": item.end_date,
@@ -1026,10 +1031,12 @@ class AppCore:
         edited = self.repo.edited_items_by_key(business_id)
         items, keep_links = [], {}
         for found_item in found:
-            if not found_item.scheduled or _kind(found_item.category, found_item.amount) in covered:
+            if _kind(found_item.category, found_item.amount) in covered:
                 continue
-            if found_item.match_key in edited:
+            if found_item.match_key in edited:  # also a weekly payee the owner planned on its own (#64)
                 keep_links[edited[found_item.match_key]] = found_item.transaction_ids
+                continue
+            if not found_item.scheduled:
                 continue
             for i, (rule, nominal) in enumerate(zip(found_item.rules, found_item.next_dates)):
                 item = ScheduledItem(
@@ -1047,6 +1054,106 @@ class AppCore:
                 # every line of the payee is linked to its first item (that's what leaves the history)
                 items.append((item, found_item.transaction_ids if i == 0 else []))
         self.repo.replace_detected_items(business_id, items, keep_links)
+
+    # ------------------------------------------- weekly payees in the normal week (DECISIONS #64)
+    def weekly_payees(self) -> list[dict]:
+        """Payees paid every week whose amount changes each time: they sit in the normal
+        week the forecast learns from, so the owner couldn't change or pause them. Each with what it
+        came to a week in the last 8 weeks of the statement, so the owner can plan it on its own."""
+        business = self._business()
+        planned = self.repo.edited_items_by_key(business.id)
+        end = self.statement_end() or self.today
+        out = []
+        for found in self.detected_recurring():
+            # payments only (money in every week is the normal week itself), and not taxes or fees
+            if not found.in_normal_week or found.match_key in planned or found.direction != "out":
+                continue
+            if found.category in ("taxes", "bank_fees"):
+                continue
+            per_week = self._per_week(found, end)
+            if abs(per_week) < 1:
+                continue
+            out.append(
+                {
+                    "match_key": found.match_key,
+                    "label": found.label,
+                    "direction": found.direction,
+                    "how_often": found.cadence,
+                    "per_week": per_week,
+                    "times": found.occurrences,
+                }
+            )
+        return sorted(out, key=lambda p: -abs(p["per_week"]))
+
+    def _per_week(self, found: recurring.Recurring, end: date) -> float:
+        """What a payee came to a week over the statement's last 8 weeks (weeks without it count)."""
+        first = self.repo.statement_summary(self._business().id)["first"]
+        since = max(end - timedelta(weeks=8), date.fromisoformat(first) - timedelta(days=1) if first else end)
+        weeks = max(1.0, (end - since).days / 7)
+        ids = set(found.transaction_ids)
+        lines = [r for r in self.repo.recurring_lines(self._business().id) if r[0] in ids]
+        total = sum(r[2] for r in lines if since < date.fromisoformat(r[1]) <= end)
+        return round(total / weeks, 2)
+
+    def plan_weekly_payee(self, match_key: str) -> dict:
+        """The owner plans a weekly payee on its own: a regular payment at what it came to a week
+        (spread over its days of the week), taken out of the normal week. From then on it can be
+        changed, paused, given an end date or a later next date like any regular payment. Returns
+        the effect on the lowest balance."""
+        business = self._business()
+        found = next((f for f in self.weekly_payees() if f["match_key"] == match_key), None)
+        detected = next((r for r in self.detected_recurring() if r.match_key == match_key), None)
+        if found is None or detected is None:
+            raise ValueError("That payment isn't a weekly one in your normal week any more.")
+        before = self.get_dashboard().forecast
+        share = round(found["per_week"] / len(detected.rules), 2)
+        self.repo.add_scheduled_items(
+            business.id,
+            [
+                ScheduledItem(
+                    label=detected.label,
+                    amount=share,
+                    due_date=nominal,
+                    kind=_kind(detected.category, detected.amount),
+                    recurrence="weekly",
+                    source="statement",
+                    status="detected",
+                    category=detected.category,
+                    match_key=match_key,
+                    user_edited=True,
+                )
+                for nominal in detected.next_dates
+            ],
+        )
+        self._detect_recurring(business.id)  # links its past lines: they leave the normal week
+        self.run_daily_check(force=True)
+        return self._effect(before)
+
+    def _in_normal_week(self, adjustments) -> str | None:
+        """A what-if about a weekly payee still in the normal week can't change it: say how to (#64)."""
+        names = [str(a.params.get("label", "")).lower().strip() for a in adjustments]
+        for payee in self.weekly_payees():
+            words = recurring._words(payee["label"])
+            if any(n and (n in payee["match_key"] or words & recurring._words(n)) for n in names):
+                return (
+                    f"'{payee['label']}' is a weekly payment with a different amount each time, so it is part "
+                    f"of the normal week (about {abs(payee['per_week']):,.0f} a week), not a payment I can "
+                    "change in a what-if. Tell the owner: on How we built your forecast, under Your normal "
+                    "week, 'Plan it on its own' makes it a regular payment they can change, pause or start "
+                    "again later; then I can test it."
+                )
+        return None
+
+    def back_to_normal_week(self, item_id: int) -> dict:
+        """Undo `plan_weekly_payee`: the payee goes back into the normal week."""
+        item = self._own_item(item_id)
+        if not item.match_key:
+            raise ValueError("Only a payment found in your statement can go back to your normal week.")
+        before = self.get_dashboard().forecast
+        self.repo.forget_items(self._business().id, item.match_key)
+        self._detect_recurring(self._business().id)
+        self.run_daily_check(force=True)
+        return self._effect(before)
 
     def _categorize(self, business_id: int) -> int:
         rules = [categorizer.PayeeRule(*r) for r in self.repo.payee_rules(business_id)]
@@ -1270,9 +1377,12 @@ class AppCore:
         if not parsed:
             raise ValueError("A scenario needs at least one adjustment")
         items = self.repo.list_scheduled_items(business.id)
-        adjusted = apply_adjustments(
-            items, parsed, self.today, self.settings.horizon_days, self.weekly_sales()
-        )
+        try:
+            adjusted = apply_adjustments(
+                items, parsed, self.today, self.settings.horizon_days, self.weekly_sales()
+            )
+        except ValueError as exc:
+            raise ValueError(self._in_normal_week(parsed) or str(exc)) from exc
         baseline = baseline or self._baseline_forecast()
         scenario = self._forecast_for(adjusted)
         return ScenarioResult(name, parsed, baseline, scenario, business.low_cash_line)
