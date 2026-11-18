@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import re
 from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -39,7 +40,7 @@ from aheadly.core.examples import DEFAULT_EXAMPLE, example_names, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
 from aheadly.data.connectors import owner_files
-from aheadly.data.connectors.csv_connector import CsvConnector
+from aheadly.data.connectors.csv_connector import CsvConnector, describe_statement
 from aheadly.data.repository import Repository
 from aheadly.domain import (
     SCHEDULED_CATEGORIES,
@@ -100,6 +101,9 @@ INSIGHT_ACTION_KINDS = {
     "cancel_if_not_needed": "cancel",
 }
 DECLINE_REASONS = ("wont_agree", "cant_lower_pay", "cant_raise_prices", "already_done", "other", "told_us")
+
+
+CARD_PAYMENT = re.compile(r"\b(tarjeta|visa|mastercard|master card|amex|credit card|card payment|tc)\b")
 
 
 class AppCore:
@@ -197,6 +201,30 @@ class AppCore:
         """Feature 1: link a data source once; transactions then live in the repository."""
         return self.connect_files([connector])
 
+    @staticmethod
+    def balances_needed(files: list[tuple[str, bytes]]) -> list[dict]:
+        """The statements whose balance today can't be read anywhere in the file (no Balance column, no
+        "Saldo actual" above the table): the page asks the owner for each, what's owed for a card."""
+        needed = []
+        for name, content in files:
+            try:
+                info = describe_statement(content, name)
+            except ValueError:  # a file we can't read at all: the upload itself says why
+                continue
+            if not info["balance_found"]:
+                needed.append({"name": name, "card": info["card"]})
+        return needed
+
+    def connect_statements(self, files: list[tuple[str, bytes]], balances: dict, profile: dict) -> list:
+        """The upload page's statements: (file name, content) each, a typed balance by file name for
+        those that need one, and the business's profile. Returns the connectors (what they found)."""
+        connectors = [
+            CsvConnector(content, balances.get(name), name, business_profile=profile)
+            for name, content in files
+        ]
+        self.connect_files(connectors)
+        return connectors
+
     def connect_files(self, connectors: list[Connector]) -> int:
         """Upload one or more statements. A statement that shares lines with an account already here
         is another period of that account (its balance is the newest file's); any other file is a
@@ -224,6 +252,10 @@ class AppCore:
                 if newest is not None and (last is None or newest >= last):
                     self.repo.set_account_balance(account_id, payload.balance)
             added += self.repo.add_transactions(business.id, account_id, payload.transactions)
+            if getattr(payload, "holder", None) and not self.repo.get_profile(business.id).get(
+                "statement_holder"
+            ):
+                self.repo.save_profile(business.id, {"statement_holder": payload.holder})  # owner's pay hint
             if payload.scheduled_items:
                 self.repo.add_scheduled_items(business.id, payload.scheduled_items)
         self._mark_internal_transfers(business.id)
@@ -414,13 +446,17 @@ class AppCore:
             self.set_payee_rule(payee, "owner_pay")
         self._question_done(f"owner_pay:{categorizer.match_key(payee)}")
 
-    def answer_mystery(self, payee: str, category: str | None = None, words: str = "") -> str:
+    def answer_mystery(
+        self, payee: str, category: str | None = None, words: str = "", guess: str | None = None
+    ) -> str:
         """What a payee is: a category picked from the list, or the owner's own words (or both).
         The words win when they name a kind of payment (roadmap R.1: on the live site the list,
         still on the AI's guess "Other income", beat "loan repayment"); the list decides otherwise.
         Returns the category used."""
         said = categorizer.category_from_answer(words) if words.strip() else "other"
-        if said != "other" or (words.strip() and not category):
+        # the list still on the AI's guess is not an answer: the owner's own words are ("my
+        # accountant's fee" with the guess "Payroll" left in the list is other, practice run)
+        if said != "other" or (words.strip() and category in (None, guess)):
             category = said
         if category:
             self.set_payee_rule(payee, category, words or payee)
@@ -579,10 +615,14 @@ class AppCore:
             for p in self.repo.uncategorized_payees(business.id, since)
             if abs(p["total"]) >= floor or categorizer.match_key(p["description"]) in how_often
         ]
-        names = [p["description"] for p in payees[: onboarding.MAX_MYSTERIES + 2]]
-        return onboarding.build(
-            self.repo.get_profile(business.id), payees, self._category_suggestions(names), how_often
+        # every payee that may be asked about, in one call: answering one brings the next into the
+        # list, and a call per answer made each answer slow on the free tier (practice run 2)
+        names = [p["description"] for p in payees[:20]]
+        profile = self.repo.get_profile(business.id)
+        owner_words = onboarding.owner_name_words(
+            profile.get("statement_holder", ""), business.owner_name or "", business.name or ""
         )
+        return onboarding.build(profile, payees, self._category_suggestions(names), how_often, owner_words)
 
     def _category_suggestions(self, payees: list[str]) -> dict[str, tuple[str, str]]:
         """The connected model's guess for each payee (names only, one call, kept so reruns don't
@@ -731,6 +771,9 @@ class AppCore:
         before = self.get_dashboard().forecast
         self.repo.update_scheduled_item(item_id, **fields)
         self.run_daily_check(force=True)
+        return self._effect(before)
+
+    def _effect(self, before) -> dict:
         after = self.get_dashboard().forecast
         line = self._business().low_cash_line
         return {
@@ -763,6 +806,8 @@ class AppCore:
             "due": item.due_date,
             "badge": badge,
             "varies": bool(detected and detected.amount_varies),
+            # a weekly payee the owner took out of the normal week: it can go back (#64)
+            "weekly_payee": bool(detected and detected.in_normal_week and item.user_edited),
             "maybe": item.certainty == "maybe",
             "paused": item.paused,
             "end_date": item.end_date,
@@ -876,7 +921,7 @@ class AppCore:
         `kind`: what the owner says it is, when the app guessed wrong or couldn't tell; `columns`:
         which of the file's columns holds what (role → title), when the titles didn't say."""
         read = owner_files.read_owner_file(content, filename, self.today, kind, columns)
-        if read.kind is None and kind is None and read.headers:
+        if read.kind is None and kind is None and read.headers and not read.details.get("looks_like"):
             guess = self.translator.classify_owner_file(read.headers)
             if guess:
                 kind_guess, columns = guess
@@ -884,6 +929,13 @@ class AppCore:
                 read.details["kind_from"] = "ai"
         if read.kind == "employees" and not read.problem:
             read.details["payroll_found_per_month"] = self._payroll_per_month()
+        if read.items and any(a["kind"] == "card" for a in self.repo.list_accounts(self._business().id)):
+            # the card's statement is here: its purchases already count as spending, so paying the
+            # card from the bank must not count again (DECISIONS #62)
+            card = [i for i in read.items if i.amount < 0 and CARD_PAYMENT.search(categorizer.plain(i.label))]
+            read.items = [i for i in read.items if i not in card]
+            if card:
+                read.details["card_payments_left_out"] = len(card)
         if read.items:
             planned = [
                 i for i in self.repo.list_scheduled_items(self._business().id) if not _from_statement(i)
@@ -913,8 +965,13 @@ class AppCore:
         per_month = {"weekly": 52 / 12, "every two weeks": 26 / 12, "twice a month": 2.0, "monthly": 1.0}
         total = 0.0
         for r in self.detected_recurring():
-            wages = any(w in r.match_key for w in ("nomina", "payroll", "salari", "sueldo", "wages"))
-            extra = any(w in r.match_key for w in ("prima", "pila", "aportes", "temporada", "bonus"))
+            wages = any(
+                w in r.match_key for w in ("nomina", "payroll", "salari", "sueldo", "wages", "planilla")
+            )
+            extra = any(
+                w in r.match_key
+                for w in ("prima", "pila", "aportes", "temporada", "bonus", "css", "xiii", "decimo")
+            )
             if r.category == "payroll" and wages and not extra and not r.seasonal and r.cadence in per_month:
                 total += -r.amount * per_month[r.cadence]
         return round(total, 2)
@@ -980,10 +1037,12 @@ class AppCore:
         edited = self.repo.edited_items_by_key(business_id)
         items, keep_links = [], {}
         for found_item in found:
-            if not found_item.scheduled or _kind(found_item.category, found_item.amount) in covered:
+            if _kind(found_item.category, found_item.amount) in covered:
                 continue
-            if found_item.match_key in edited:
+            if found_item.match_key in edited:  # also a weekly payee the owner planned on its own (#64)
                 keep_links[edited[found_item.match_key]] = found_item.transaction_ids
+                continue
+            if not found_item.scheduled:
                 continue
             for i, (rule, nominal) in enumerate(zip(found_item.rules, found_item.next_dates)):
                 item = ScheduledItem(
@@ -1001,6 +1060,106 @@ class AppCore:
                 # every line of the payee is linked to its first item (that's what leaves the history)
                 items.append((item, found_item.transaction_ids if i == 0 else []))
         self.repo.replace_detected_items(business_id, items, keep_links)
+
+    # ------------------------------------------- weekly payees in the normal week (DECISIONS #64)
+    def weekly_payees(self) -> list[dict]:
+        """Payees paid every week whose amount changes each time: they sit in the normal
+        week the forecast learns from, so the owner couldn't change or pause them. Each with what it
+        came to a week in the last 8 weeks of the statement, so the owner can plan it on its own."""
+        business = self._business()
+        planned = self.repo.edited_items_by_key(business.id)
+        end = self.statement_end() or self.today
+        out = []
+        for found in self.detected_recurring():
+            # payments only (money in every week is the normal week itself), and not taxes or fees
+            if not found.in_normal_week or found.match_key in planned or found.direction != "out":
+                continue
+            if found.category in ("taxes", "bank_fees"):
+                continue
+            per_week = self._per_week(found, end)
+            if abs(per_week) < 1:
+                continue
+            out.append(
+                {
+                    "match_key": found.match_key,
+                    "label": found.label,
+                    "direction": found.direction,
+                    "how_often": found.cadence,
+                    "per_week": per_week,
+                    "times": found.occurrences,
+                }
+            )
+        return sorted(out, key=lambda p: -abs(p["per_week"]))
+
+    def _per_week(self, found: recurring.Recurring, end: date) -> float:
+        """What a payee came to a week over the statement's last 8 weeks (weeks without it count)."""
+        first = self.repo.statement_summary(self._business().id)["first"]
+        since = max(end - timedelta(weeks=8), date.fromisoformat(first) - timedelta(days=1) if first else end)
+        weeks = max(1.0, (end - since).days / 7)
+        ids = set(found.transaction_ids)
+        lines = [r for r in self.repo.recurring_lines(self._business().id) if r[0] in ids]
+        total = sum(r[2] for r in lines if since < date.fromisoformat(r[1]) <= end)
+        return round(total / weeks, 2)
+
+    def plan_weekly_payee(self, match_key: str) -> dict:
+        """The owner plans a weekly payee on its own: a regular payment at what it came to a week
+        (spread over its days of the week), taken out of the normal week. From then on it can be
+        changed, paused, given an end date or a later next date like any regular payment. Returns
+        the effect on the lowest balance."""
+        business = self._business()
+        found = next((f for f in self.weekly_payees() if f["match_key"] == match_key), None)
+        detected = next((r for r in self.detected_recurring() if r.match_key == match_key), None)
+        if found is None or detected is None:
+            raise ValueError("That payment isn't a weekly one in your normal week any more.")
+        before = self.get_dashboard().forecast
+        share = round(found["per_week"] / len(detected.rules), 2)
+        self.repo.add_scheduled_items(
+            business.id,
+            [
+                ScheduledItem(
+                    label=detected.label,
+                    amount=share,
+                    due_date=nominal,
+                    kind=_kind(detected.category, detected.amount),
+                    recurrence="weekly",
+                    source="statement",
+                    status="detected",
+                    category=detected.category,
+                    match_key=match_key,
+                    user_edited=True,
+                )
+                for nominal in detected.next_dates
+            ],
+        )
+        self._detect_recurring(business.id)  # links its past lines: they leave the normal week
+        self.run_daily_check(force=True)
+        return self._effect(before)
+
+    def _in_normal_week(self, adjustments) -> str | None:
+        """A what-if about a weekly payee still in the normal week can't change it: say how to (#64)."""
+        names = [str(a.params.get("label", "")).lower().strip() for a in adjustments]
+        for payee in self.weekly_payees():
+            words = recurring._words(payee["label"])
+            if any(n and (n in payee["match_key"] or words & recurring._words(n)) for n in names):
+                return (
+                    f"'{payee['label']}' is a weekly payment with a different amount each time, so it is part "
+                    f"of the normal week (about {abs(payee['per_week']):,.0f} a week), not a payment I can "
+                    "change in a what-if. Tell the owner: on How we built your forecast, under Your normal "
+                    "week, 'Plan it on its own' makes it a regular payment they can change, pause or start "
+                    "again later; then I can test it."
+                )
+        return None
+
+    def back_to_normal_week(self, item_id: int) -> dict:
+        """Undo `plan_weekly_payee`: the payee goes back into the normal week."""
+        item = self._own_item(item_id)
+        if not item.match_key:
+            raise ValueError("Only a payment found in your statement can go back to your normal week.")
+        before = self.get_dashboard().forecast
+        self.repo.forget_items(self._business().id, item.match_key)
+        self._detect_recurring(self._business().id)
+        self.run_daily_check(force=True)
+        return self._effect(before)
 
     def _categorize(self, business_id: int) -> int:
         rules = [categorizer.PayeeRule(*r) for r in self.repo.payee_rules(business_id)]
@@ -1224,9 +1383,12 @@ class AppCore:
         if not parsed:
             raise ValueError("A scenario needs at least one adjustment")
         items = self.repo.list_scheduled_items(business.id)
-        adjusted = apply_adjustments(
-            items, parsed, self.today, self.settings.horizon_days, self.weekly_sales()
-        )
+        try:
+            adjusted = apply_adjustments(
+                items, parsed, self.today, self.settings.horizon_days, self.weekly_sales()
+            )
+        except ValueError as exc:
+            raise ValueError(self._in_normal_week(parsed) or str(exc)) from exc
         baseline = baseline or self._baseline_forecast()
         scenario = self._forecast_for(adjusted)
         return ScenarioResult(name, parsed, baseline, scenario, business.low_cash_line)

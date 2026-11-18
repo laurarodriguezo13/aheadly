@@ -55,9 +55,14 @@ UPLOAD_BUTTON = "Upload and analyse"
 UPLOAD_SPINNER = "Reading your statement and building your forecast…"
 UPLOAD_FAILED = "We couldn't read that file: {error}"
 MULTI_NO_BALANCE = (
-    "One of your statements has no Balance column. When you upload several files, each needs one. "
-    "Upload that statement on its own and type its current balance."
+    "We couldn't find today's balance in one of your statements. Type it in the box that appears for it."
 )
+BALANCES_NEEDED = (
+    "We couldn't find today's balance in these statements (no Balance column, and nothing like "
+    '"Saldo actual" above the table). Type it from your bank\'s app or website.'
+)
+BALANCE_FOR_FILE = "Balance today in {name} ($)"
+BALANCE_FOR_CARD = "What you owe today on the card in {name} ($)"
 EXAMPLE_TITLE = "No files at hand? Try an example business"
 EXAMPLE_HELP = (
     "Pick one of six made-up businesses, each with a year of bank statements and the payments its owner "
@@ -82,6 +87,12 @@ EXAMPLE_NOTICE = (
     "To use your own files, go to Settings and click Start over."
 )
 OWNER_FILES_TITLE = "Files you keep"
+OWNER_FILE_CARD_LEFT_OUT = (
+    "{n} credit card payment(s) left out: your card's statement is here, so its purchases already count as "
+    "spending."
+)
+OWNER_FILE_DONE = "{n} row(s) marked as paid or done left out."
+OWNER_FILE_PAID_OFF = "{n} invoice(s) already paid left out."
 OWNER_FILES_HELP = (
     "Upcoming payments, money customers owe you, your employee list, a ledger or your inventory. Any layout: "
     "we read the column titles and show you what we found before using anything."
@@ -291,6 +302,19 @@ BASIS_RHYTHM_BODY = (
     "{busiest} is your busiest day for money in, {slowest} the slowest. The forecast repeats this rhythm, "
     "with the ups and downs your past weeks had."
 )
+# DECISIONS #64: a weekly payee whose amount changes sits in the normal week; the owner can take it out
+BASIS_WEEKLY_PAYEES = (
+    "Your normal week includes these weekly payments, a different amount each time. To change one, pause "
+    "it or set when it starts again (a supplier you'll barely buy from for a while), plan it on its own:"
+)
+BASIS_WEEKLY_PAYEE = "**{label}** · about {amount} a week"
+BASIS_PLAN_ON_ITS_OWN = "Plan it on its own"
+BASIS_PLANNED_ON_ITS_OWN = (
+    "{label} is now a regular payment of about {amount} a week. Change it, pause it or set a later next "
+    "date under Regular payments"
+)
+BASIS_BACK_TO_NORMAL = "Back to my normal week"
+BASIS_BACK_DONE = "{label} is back in your normal week"
 BASIS_REGULAR = "Regular payments"
 BASIS_REGULAR_HELP = (
     "Each one goes on its own dates. ≈ means the amount varies; we use a typical recent amount."
@@ -509,6 +533,7 @@ SUGGESTION_ASK_QUESTION = (
 )
 CHANGE_FIELDS = {
     "move_item": "Move it to",
+    "split_item": "Pay the second half on",
     "collect_early": "Ask for it by",
     "recurring_change": "Pay yourself less by (%)",
     "revenue_change": "Raise prices by (%)",

@@ -290,6 +290,12 @@ def owner_file_card(core, entry: dict, key: str) -> str | None:
                 )  # fmt: skip
             if read.details.get("already_planned"):
                 st.caption(copy.OWNER_FILE_ALREADY.format(n=read.details["already_planned"]))
+            if read.details.get("card_payments_left_out"):
+                st.caption(copy.OWNER_FILE_CARD_LEFT_OUT.format(n=read.details["card_payments_left_out"]))
+            if read.details.get("done"):
+                st.caption(copy.OWNER_FILE_DONE.format(n=read.details["done"]))
+            if read.details.get("paid_off"):
+                st.caption(copy.OWNER_FILE_PAID_OFF.format(n=read.details["paid_off"]))
         use_col, skip_col = st.columns([1, 4])
         if use_col.button(copy.OWNER_FILE_USE, key=f"{key}-use", type="primary", disabled=bool(read.problem)):
             added = core.use_owner_file(read)
@@ -451,7 +457,7 @@ def action_rows(core, actions: list[dict], key_prefix: str, title: str = copy.AC
                 st.caption(copy.ACTION_GENERAL)
             with st.expander(copy.ACTION_HOW):
                 st.markdown("\n".join(f"{n}. {step}" for n, step in enumerate(action.get("how_to", []), 1)))
-                if action.get("kind") in ("move_payment", "collect_early"):
+                if action.get("kind") in ("move_payment", "split_payment", "collect_early"):
                     if st.button(copy.ACTION_DRAFT, key=f"{key}-draft"):
                         st.session_state[f"{key}-message"] = core.draft_message(action)
                     if st.session_state.get(f"{key}-message"):

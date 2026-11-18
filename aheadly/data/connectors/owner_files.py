@@ -19,6 +19,7 @@ so it never counts twice).
 from __future__ import annotations
 
 import csv
+import re
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 from io import BytesIO, StringIO
@@ -36,8 +37,34 @@ ROLES = {
     "due": ("vence", "vencimiento", "due", "due date", "fecha pago esperada", "fecha esperada", "expected",
             "fecha limite", "fecha de vencimiento"),  # fmt: skip
     "issued": ("fecha factura", "issued", "fecha radicacion", "fecha de emision", "invoice date", "emitida"),
-    "label": ("concepto", "item", "description", "descripcion", "detalle", "what", "concept", "motivo"),
-    "payee": ("proveedor", "supplier", "vendor", "beneficiario", "acreedor"),
+    "label": (
+        "concepto",
+        "item",
+        "description",
+        "descripcion",
+        "detalle",
+        "what",
+        "concept",
+        "motivo",
+        "que",
+    ),
+    "payee": ("proveedor", "supplier", "vendor", "beneficiario", "acreedor", "a quien", "para quien", "pagar a",
+              "pay to", "to whom", "recipient"),  # fmt: skip
+    # receivables: what's still owed, what was paid, when it was paid; any file: a status column
+    # ("PAGADO") that marks rows already done (DECISIONS #62)
+    "remaining": ("saldo", "saldo pendiente", "pendiente", "por cobrar", "balance due", "amount due",
+                  "outstanding", "remaining", "falta", "debe"),  # fmt: skip
+    "paid": ("abonado", "abono", "abonos", "amount paid", "cobrado", "pagado"),
+    "paid_on": (
+        "pago el",
+        "pagado el",
+        "fecha pago real",
+        "paid on",
+        "date paid",
+        "cobrado el",
+        "fecha de cobro",
+    ),
+    "status": ("estado", "status", "situacion"),
     "customer": ("cliente", "client", "customer", "deudor", "aseguradora", "insurer"),
     "invoice": (
         "factura",
@@ -72,8 +99,45 @@ ROLE_NAMES = {
     "date": "date", "due": "due date", "issued": "issue date", "label": "description", "payee": "supplier",
     "customer": "customer", "invoice": "invoice number", "amount": "amount", "type": "in/out type",
     "name": "name", "pay": "pay", "position": "position", "account": "account code", "item": "item",
-    "quantity": "quantity", "unit_cost": "unit cost", "reorder": "reorder level",
+    "quantity": "quantity", "unit_cost": "unit cost", "reorder": "reorder level", "remaining": "amount still owed",
+    "paid": "amount paid", "paid_on": "date paid", "status": "status",
 }  # fmt: skip
+# A budget or cash-flow sheet laid out by month (the months as columns) isn't one of the five kinds;
+# it's named, not mapped column by column (DECISIONS #62; reading it is a Nice to have)
+MONTH_WORDS = {
+    "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "setiembre",
+    "octubre", "noviembre", "diciembre", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep",
+    "sept", "set", "oct", "nov", "dic", "january", "february", "march", "april", "june", "july", "august",
+    "september", "october", "november", "december", "jan", "apr", "aug", "dec",
+}  # fmt: skip
+BUDGET_PROBLEM = (
+    "This looks like a budget or cash-flow plan laid out by month (the months are the columns). Aheadly "
+    "doesn't use this kind of file yet: your statement already shows the months gone by. Skip it, and put "
+    "the payments still to come in an upcoming-payments file or under Just say it."
+)
+PAID_WORDS = (
+    "pagado",
+    "pagada",
+    "paid",
+    "cancelado",
+    "cancelada",
+    "cobrado",
+    "cobrada",
+    "listo",
+    "hecho",
+    "done",
+)
+MONTH_NUMBERS = {
+    "ene": 1, "enero": 1, "jan": 1, "january": 1, "feb": 2, "febrero": 2, "february": 2, "mar": 3, "marzo": 3,
+    "march": 3, "abr": 4, "abril": 4, "apr": 4, "april": 4, "may": 5, "mayo": 5, "jun": 6, "junio": 6,
+    "june": 6, "jul": 7, "julio": 7, "july": 7, "ago": 8, "agosto": 8, "aug": 8, "august": 8, "sep": 9,
+    "sept": 9, "set": 9, "septiembre": 9, "setiembre": 9, "september": 9, "oct": 10, "octubre": 10,
+    "october": 10, "nov": 11, "noviembre": 11, "november": 11, "dic": 12, "diciembre": 12, "dec": 12,
+    "december": 12,
+}  # fmt: skip
+ROUGHLY = re.compile(
+    r"^(~|aprox\.?|approx\.?|aproximadamente|around|about|como el|como|alrededor del?|c\.)\s*"
+)
 IN_TYPES = ("ingreso", "income", "in", "cobro", "entrada", "credito", "abono", "recibo")
 DOUBTFUL_DAYS = 60  # an invoice this late is listed but not counted on
 LATE_PAYMENT_DAYS = 14  # an overdue invoice is expected this long from today, as a maybe
@@ -125,14 +189,17 @@ def _has(header: str, words: tuple[str, ...]) -> bool:
 
 def match_roles(headers: list[str]) -> dict[str, str]:
     """Each role → the first header that names it (a header serves one role; specific roles first)."""
-    order = ["due", "issued", "pay", "unit_cost", "reorder", "invoice", "customer", "payee", "name", "item",
-             "quantity", "account", "type", "position", "date", "label", "amount"]  # fmt: skip
+    order = ["due", "issued", "paid_on", "pay", "unit_cost", "reorder", "invoice", "customer", "payee", "name",
+             "item", "quantity", "account", "type", "position", "status", "date", "label", "paid", "amount",
+             "remaining"]  # fmt: skip
     found: dict[str, str] = {}
     for role in order:
         for header in headers:
             if header not in found.values() and _has(header, ROLES[role]):
                 found[role] = header
                 break
+    if "amount" not in found and "remaining" in found:  # a file whose only amount is what's owed
+        found["amount"] = found.pop("remaining")
     return found
 
 
@@ -220,6 +287,10 @@ def read_owner_file(
     else:
         headers = [str(c).strip() if pd.notna(c) else f"Column {j + 1}" for j, c in enumerate(first)]
         table = grid.iloc[start + 1 :].copy()
+    if kind is None and months_as_columns(headers):
+        return OwnerFile(
+            filename, None, headers=headers, problem=BUDGET_PROBLEM, details={"looks_like": "budget_by_month"}
+        )
     table.columns = headers
     table = table.dropna(how="all")
     totals = _total_rows(table)
@@ -253,6 +324,16 @@ def read_owner_file(
     return result
 
 
+def months_as_columns(headers: list[str]) -> bool:
+    """Three or more column titles that are months ("Enero", "Feb 2026", "2026-03")."""
+    months = 0
+    for header in headers:
+        words = plain(header).replace("-", " ").replace("/", " ").split()
+        if words and (words[0] in MONTH_WORDS or (len(words) == 2 and words[1] in MONTH_WORDS)):
+            months += 1
+    return months >= 3
+
+
 def _sample(values: pd.Series) -> str:
     """A value from the column, to help the owner tell columns apart in the picker."""
     filled = [str(v) for v in values if pd.notna(v) and str(v).strip()]
@@ -267,6 +348,57 @@ def _dates(table: pd.DataFrame, header: str) -> pd.Series:
     return parse_dates(table[header]).dt.date
 
 
+def loose_date(text: str, today: date) -> tuple[date | None, bool]:
+    """A date written by hand: "~10 dic", "aprox. 22 de diciembre", "Dec 3", or a month alone ("ene":
+    the 15th, and only roughly). The year is the one that puts it ahead (or at most two months back).
+    Returns (date, month_only); (None, False) when it can't be read."""
+    words = plain(text)
+    words = re.sub(r"[,./-]", " ", ROUGHLY.sub("", words)).strip()
+    found = re.fullmatch(r"(\d{1,2})\s*(?:de\s+)?([a-z]+)(?:\s+(\d{4}))?", words) or re.fullmatch(
+        r"([a-z]+)\s+(\d{1,2})(?:\s+(\d{4}))?", words
+    )
+    month_only = False
+    if found:
+        first, second, year = found.groups()
+        day_, month = (int(first), MONTH_NUMBERS.get(second)) if first.isdigit() else (
+            int(second), MONTH_NUMBERS.get(first))  # fmt: skip
+    elif words in MONTH_NUMBERS:
+        day_, month, year, month_only = 15, MONTH_NUMBERS[words], None, True
+    else:
+        return None, False
+    if month is None:
+        return None, False
+    try:
+        when = date(int(year) if year else today.year, month, day_)
+    except ValueError:
+        return None, False
+    if not year and when < today - timedelta(days=62):
+        when = when.replace(year=when.year + 1)
+    return when, month_only
+
+
+def _hand_dates(table: pd.DataFrame, header: str, today: date) -> tuple[pd.Series, pd.Series]:
+    """Dates, with the ones written by hand read too; and which of them were only a month."""
+    dates = _dates(table, header)
+    month_only = pd.Series(False, index=table.index)
+    for i in table.index:
+        raw = table.at[i, header]
+        # text with a month's name ("~10 dic", "ene"): read by hand, never as Jan 1 of this year
+        if isinstance(raw, str) and re.search(r"[a-zA-Z]", raw) and not re.search(r"\d{4}", raw):
+            when, rough = loose_date(raw, today)
+            if when:
+                dates.at[i] = when
+                month_only.at[i] = rough
+    sensible = dates.map(lambda d: d is not None and not pd.isna(d) and d.year >= 1990)
+    return dates.where(sensible), month_only  # "30-nov" once came out as a date 2,000 years ago
+
+
+def _done(table: pd.DataFrame, columns: dict) -> pd.Series:
+    """Rows a status column marks as paid or done."""
+    status = _text(table, columns.get("status")).map(plain)
+    return status.map(lambda s: any(s.startswith(w) for w in PAID_WORDS))
+
+
 def _text(table: pd.DataFrame, header: str | None) -> pd.Series:
     if header is None:
         return pd.Series([""] * len(table), index=table.index)
@@ -275,8 +407,9 @@ def _text(table: pd.DataFrame, header: str | None) -> pd.Series:
 
 def _read_upcoming(table, columns, today, result: OwnerFile) -> None:
     amounts = _amounts(table, columns["amount"])
-    dates = _dates(table, columns["date"])
-    ok = amounts.notna() & dates.notna()
+    dates, month_only = _hand_dates(table, columns["date"], today)
+    done = _done(table, columns)
+    ok = amounts.notna() & dates.notna() & ~done
     types = _text(table, columns.get("type")).map(plain)
     labels = _text(table, columns.get("label") or columns.get("item"))
     payees = _text(table, columns.get("payee"))
@@ -289,18 +422,27 @@ def _read_upcoming(table, columns, today, result: OwnerFile) -> None:
         elif not mixed_signs:
             amount = -abs(amount)  # a list of what's due: every row is a payment
         label = " – ".join(x for x in (payees[i], labels[i]) if x) or "Upcoming payment"
-        result.items.append(_item(label, amount, dates[i], today, result.name))
+        certainty = "maybe" if month_only[i] else "confirmed"
+        result.items.append(_item(label, amount, dates[i], today, result.name, certainty=certainty))
     result.rows = int(ok.sum())
     result.total = round(sum(i.amount for i in result.items), 2)
-    result.details["skipped"] = int((~ok).sum())
+    result.details["skipped"] = int((~ok & ~done).sum())
+    result.details["done"] = int(done.sum())
     result.items = [i for i in result.items if i.due_date >= today]
     result.details["already_past"] = result.rows - len(result.items)
 
 
 def _read_receivables(table, columns, today, result: OwnerFile) -> None:
-    amounts = _amounts(table, columns["amount"])
-    dues = _dates(table, columns["due"])
-    ok = amounts.notna() & dues.notna() & (amounts != 0)
+    amounts = _amounts(table, columns["amount"]).abs()
+    if columns.get("remaining"):  # what's still owed, when the file says
+        amounts = _amounts(table, columns["remaining"]).fillna(0).abs()
+    elif columns.get("paid"):
+        amounts = amounts - _amounts(table, columns["paid"]).fillna(0).abs()
+    paid_off = _done(table, columns) | (amounts.round(2) <= 0)
+    if columns.get("paid_on") and not columns.get("remaining") and not columns.get("paid"):
+        paid_off |= _text(table, columns["paid_on"]) != ""  # a paid date and nothing else to go by
+    dues, _ = _hand_dates(table, columns["due"], today)
+    ok = amounts.notna() & dues.notna() & ~paid_off
     who = _text(table, columns.get("customer"))
     numbers = _text(table, columns.get("invoice"))
     doubtful = []
@@ -323,7 +465,8 @@ def _read_receivables(table, columns, today, result: OwnerFile) -> None:
     result.rows = int(ok.sum())
     result.total = round(float(amounts[ok].abs().sum()), 2)
     result.details["doubtful"] = doubtful
-    result.details["skipped"] = int((~ok & (amounts != 0)).sum())
+    result.details["skipped"] = int((~ok & ~paid_off).sum())
+    result.details["paid_off"] = int(paid_off.sum())
 
 
 def _read_employees(table, columns, today, result: OwnerFile) -> None:
@@ -366,6 +509,8 @@ def _read_inventory(table, columns, today, result: OwnerFile) -> None:
 
 
 def _item(label, amount, due, today, filename, certainty="confirmed") -> ScheduledItem:
+    from aheadly.ai.categorizer import by_keywords  # (here: categorizer reads this package)
+
     return ScheduledItem(
         label=label[:80],
         amount=round(float(amount), 2),
@@ -374,6 +519,8 @@ def _item(label, amount, due, today, filename, certainty="confirmed") -> Schedul
         source=f"file:{filename}"[:60],
         status="user",
         certainty=certainty,
+        # what the name says (DECISIONS #63): a tax or payroll line from a file is never offered to move
+        category=by_keywords(label, amount),
     )
 
 

@@ -41,13 +41,21 @@ CATEGORIES = (
 # (category, direction, words). Direction: "in" (money in), "out" (money out) or "any".
 # Words are matched on whole words of the plain text (lower case, no accents). Order matters.
 KEYWORD_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
-    ("bank_fees", "out", ("gmf", "4x1000", "4 x 1000", "cuota manejo", "cuota de manejo", "comision")),
+    (
+        "bank_fees",
+        "out",
+        ("gmf", "4x1000", "4 x 1000", "cuota manejo", "cuota de manejo", "comision", "manejo de cuenta"),
+    ),
     ("bank_fees", "out", ("bank fee", "service charge", "maintenance fee", "overdraft", "wire fee")),
     ("card_payment", "out", ("pago tarjeta", "tarjeta credito", "pago tc", "credit card payment")),
     ("taxes", "out", ("dian", "impuesto", "impuestos", "iva", "retencion", "reteica", "predial", "ica")),
     ("taxes", "out", ("irs", "tax", "taxes", "sales tax", "eftps")),
+    # Panama and the rest of Central America (DECISIONS #62): the tax office, VAT, income tax, the town
+    ("taxes", "out", ("dgi", "itbms", "isr", "municipio", "hacienda")),
     ("payroll", "out", ("nomina", "pila", "aportes", "seguridad social", "salario", "salarios", "cesantias")),
     ("payroll", "out", ("prima de servicios", "liquidacion", "payroll", "salary", "wages", "adp", "gusto")),
+    # "planilla" is payroll in Panama and Central America; CSS / CCSS are its social security
+    ("payroll", "out", ("planilla", "css", "ccss", "decimo tercer mes")),
     ("owner_pay", "out", ("owner draw", "owner's draw", "owners draw", "owner distribution")),
     ("rent", "out", ("arriendo", "arrendamiento", "alquiler", "canon", "administracion", "rent", "lease")),
     ("rent", "out", ("administration fee", "building fee", "hoa", "landlord")),
@@ -76,6 +84,15 @@ KEYWORD_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
             "claro",
             "movistar",
             "tigo",
+            "ensa",
+            "naturgy",
+            "edemet",
+            "edechi",
+            "idaan",
+            "cable onda",
+            "+movil",
+            "cfe",
+            "telmex",
             "etb",
             "internet",
             "electricity",

@@ -17,6 +17,42 @@ MAX_QUESTIONS = 10
 MAX_MYSTERIES = 5
 # money sent to a savings or personal account in someone's name: often the owner paying themselves
 OWN_ACCOUNT = re.compile(r"\b(cta|cuenta)\b.*\bahorros?\b|\bsavings\b|\bpersonal\b|\bowner\b")
+# words in a company's name that aren't a person's (DECISIONS #62: a transfer to someone who shares
+# the account holder's surname is asked about as the owner's pay)
+COMPANY_WORDS = {
+    "serv", "servicios", "sociedad", "anonima", "comercial", "comercializadora", "inversiones", "grupo",
+    "distribuidora", "distrib", "empresa", "compania", "corporacion", "corp", "ltda", "limitada", "industrias",
+    "internacional", "panama", "colombia", "mexico", "centro", "taller", "tienda", "almacen", "store", "group",
+    "company", "services", "holdings", "trading", "the", "and", "del", "los", "las",
+}  # fmt: skip
+
+
+TRANSFER_WORDS = re.compile(
+    r"\b(ach|transf|transferencia|transfer|enviado|envio|wire|zelle|yappy a|pago a)\b"
+)
+
+
+def owner_name_words(*names: str) -> set[str]:
+    """The words of the account holder's, owner's and business's names that may be a person's name
+    (a family business is often named after the owner)."""
+    words = set()
+    for name in names:
+        words |= {
+            w for w in re.split(r"[^a-z]+", plain(name or "")) if len(w) >= 4 and w not in COMPANY_WORDS
+        }
+    return words
+
+
+def may_be_owner_pay(description: str, owner_words: set[str]) -> bool:
+    """Money sent to a savings account in a person's name, or to someone whose last name is the
+    holder's or the owner's ("ACH ENVIADO BANISTMO EDWIN SAMANIEGO" for "SERV DE … SAMANIEGO S A")."""
+    text = plain(description)
+    if OWN_ACCOUNT.search(text):
+        return True
+    words = [w for w in re.split(r"[^a-z]+", text) if w]
+    sent = TRANSFER_WORDS.search(text) is not None  # money sent to someone, not a card purchase
+    return sent and bool(words) and words[-1] in owner_words
+
 
 WHY = {
     "business": "So we know what's normal for your kind of business before we point anything out.",
@@ -67,6 +103,7 @@ def build(
     payees: list[dict],
     suggestions: dict[str, tuple[str, str]],
     how_often: dict[str, str],
+    owner_words: set[str] | frozenset = frozenset(),
 ) -> list[Question]:
     """All questions for this business, in the order they're asked (answered ones included; the
     caller leaves out what's done). `payees`: lines still in "other" over the last three months
@@ -81,7 +118,7 @@ def build(
         ),
         Question("seasons", "seasons", "Which months are usually busy or slow?", WHY["seasons"]),
     ]
-    owner_pay = [p for p in payees if p["total"] < 0 and OWN_ACCOUNT.search(plain(p["description"]))]
+    owner_pay = [p for p in payees if p["total"] < 0 and may_be_owner_pay(p["description"], owner_words)]
     for p in owner_pay[:2]:
         often = how_often.get(plain(p["description"]))
         questions.append(

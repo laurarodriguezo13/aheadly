@@ -4,7 +4,6 @@ import html
 
 import streamlit as st
 
-from aheadly.data.connectors.csv_connector import CsvConnector
 from aheadly.ui import copy, my_data
 from aheadly.ui.bootstrap import go_to, start_page
 from aheadly.ui.components import (
@@ -35,6 +34,8 @@ if not status.connected:
         statements = st.file_uploader(copy.STATEMENT_FILE, type=["csv", "xlsx"], accept_multiple_files=True)
         kept = st.file_uploader(copy.UPCOMING_FILE, type=["csv", "xlsx"], accept_multiple_files=True)
         st.caption(copy.UPCOMING_HELP)
+        files = [(f.name, f.getvalue()) for f in statements or []]
+        several = len(files) > 1
         line_col, balance_col = st.columns(2)
         line = line_col.number_input(
             copy.LOW_CASH_LINE_INPUT,
@@ -44,30 +45,39 @@ if not status.connected:
             format="%.0f",
             help=copy.LOW_CASH_HELP,
         )
-        balance = balance_col.number_input(
-            copy.BALANCE_INPUT,
-            min_value=0.0,
-            value=None,
-            step=100.0,
-            format="%.0f",
-            placeholder=copy.BALANCE_PLACEHOLDER,
-        )
-        ready = bool(statements) and bool(name.strip())
+        typed: dict = {}
+        needed = core.balances_needed(files) if several else []
+        if not several:  # one file: the usual box, used only if the file has no balance in it
+            balance = balance_col.number_input(
+                copy.BALANCE_INPUT,
+                min_value=0.0,
+                value=None,
+                step=100.0,
+                format="%.0f",
+                placeholder=copy.BALANCE_PLACEHOLDER,
+            )
+            if files and balance is not None:
+                typed[files[0][0]] = balance
+        elif needed:  # several files: a box for each one whose balance today isn't in it (DECISIONS #61)
+            st.caption(copy.BALANCES_NEEDED)
+            for item in needed:
+                typed[item["name"]] = st.number_input(
+                    (copy.BALANCE_FOR_CARD if item["card"] else copy.BALANCE_FOR_FILE).format(
+                        name=item["name"]
+                    ),
+                    min_value=0.0,
+                    value=None,
+                    step=100.0,
+                    format="%.2f",
+                    key=f"balance-{item['name']}",
+                )
+        ready = bool(files) and bool(name.strip()) and all(typed.get(i["name"]) is not None for i in needed)
         if st.button(copy.UPLOAD_BUTTON, type="primary", disabled=not ready):
             profile = {"name": name.strip(), "owner_name": owner.strip(), "city": "", "low_cash_line": line}
-            several = len(statements) > 1
-            connectors = [
-                CsvConnector(
-                    file.getvalue(),
-                    None if several else balance,  # a typed balance only makes sense for one file
-                    file.name,
-                    business_profile=profile,
-                )
-                for file in statements
-            ]
+            connectors: list = []
             try:
                 with st.spinner(copy.UPLOAD_SPINNER):
-                    core.connect_files(connectors)
+                    connectors = core.connect_statements(files, typed, profile)
             except Exception as exc:  # a bad file must never crash onboarding
                 core.reset()
                 if several and "Balance column" in str(exc):

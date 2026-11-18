@@ -67,6 +67,39 @@ ALIASES = {
 # A credit card statement: its balance is what is owed (we store it negative), and purchases are
 # its "charges". Recognised by an owed-type balance header, or English "Charges".
 OWED_HEADERS = {"balance owed", "amount owed", "saldo adeudado", "saldo a pagar"}
+# The lines above a statement's table often say what the account is and what's in it today
+# (DECISIONS #61). Labels for today's balance, in the order they're trusted; "available" is only a
+# bank account's balance (on a card it's the credit left, not what's owed).
+BALANCE_LABELS = (
+    "saldo actual",
+    "saldo final",
+    "saldo al corte",
+    "saldo a la fecha",
+    "nuevo saldo",
+    "saldo a pagar",
+    "saldo adeudado",
+    "saldo total",
+    "current balance",
+    "closing balance",
+    "ending balance",
+    "new balance",
+    "statement balance",
+    "balance owed",
+    "amount owed",
+    "balance",
+    "saldo",
+)
+BANK_ONLY_LABELS = ("saldo disponible", "available balance")
+HOLDER_LABELS = (
+    "titular",
+    "account holder",
+    "holder",
+    "nombre del titular",
+    "razon social",
+    "cliente",
+    "nombre",
+)
+CARD_WORDS = ("tarjeta de credito", "credit card", "limite de credito", "credit limit", "cupo total")
 SPANISH_MONTHS = {
     "ene": "jan",
     "abr": "apr",
@@ -117,7 +150,11 @@ class CsvConnector:
 
     def sync(self) -> SyncPayload:
         raw = read_table(self._content, self._filename)
+        above = preamble(self._content, self._filename)
+        card = is_card_statement(raw.columns) or mentions_card(above)
         every_line = chronological(normalise_columns(raw, keep_unreadable=True))
+        if card and charges_are_positive(raw, every_line):  # one Monto column: a purchase is +
+            every_line["amount"] = -every_line["amount"]
         self.balance_breaks, self.first_break = balance_breaks(every_line)
         frame = every_line.dropna(subset=["date", "amount"]).reset_index(drop=True)
         self.skipped_rows = len(raw) - len(frame)
@@ -134,7 +171,11 @@ class CsvConnector:
             )
             for line_id, r in zip(transaction_ids(frame), frame.itertuples())
         ]
-        balance = self._balance if self._balance is not None else closing_balance(frame)
+        balance = self._balance
+        if balance is None:
+            balance = closing_balance(frame, preamble_balance(above, card))
+        if card and (self._balance is not None or "balance" not in match_columns(raw.columns)):
+            balance = -abs(balance)  # typed or from the title lines: what's owed on the card
         scheduled, self.skipped_upcoming = (
             read_upcoming(self._upcoming, self._upcoming_filename) if self._upcoming else ([], 0)
         )
@@ -143,7 +184,8 @@ class CsvConnector:
             balance=balance,
             transactions=transactions,
             scheduled_items=scheduled,
-            account_kind="card" if is_card_statement(raw.columns) else "bank",
+            account_kind="card" if card else "bank",
+            holder=statement_holder(above),
         )
 
 
@@ -197,6 +239,73 @@ def _decode(content: bytes) -> str:
         return content.decode("utf-8-sig")
     except UnicodeDecodeError:
         return content.decode("cp1252")
+
+
+def preamble(content: bytes, filename: str) -> list[list[str]]:
+    """The lines above a statement's table (bank, account, holder, period, balance…), as cells."""
+    if filename.lower().endswith((".xlsx", ".xls")):
+        sheet = pd.read_excel(BytesIO(content), header=None)
+        start = next((i for i in range(min(len(sheet), 30)) if _looks_like_header(sheet.iloc[i])), 0)
+        return [
+            [str(c) for c in row if not pd.isna(c) and str(c).strip()] for row in sheet.iloc[:start].values
+        ]
+    lines = _decode(content).splitlines()
+    rows = []
+    for line in lines[:30]:
+        cells = [c.strip().strip('"') for c in re.split(r"[;,\t]", line)]
+        if _looks_like_header(cells):
+            return rows
+        rows.append([c for c in cells if c])
+    return []
+
+
+def mentions_card(rows: list[list[str]]) -> bool:
+    text = " ".join(plain(c) for row in rows for c in row)
+    return any(word in text for word in CARD_WORDS)
+
+
+def preamble_balance(rows: list[list[str]], card: bool = False) -> float | None:
+    """Today's balance as the lines above the table give it ("Saldo actual:", 20982.14)."""
+    labels = BALANCE_LABELS if card else BALANCE_LABELS + BANK_ONLY_LABELS
+    found: dict[str, float] = {}
+    for row in rows:
+        for i, cell in enumerate(row):
+            label = plain(cell).rstrip(":").strip()
+            if label in labels and label not in found and i + 1 < len(row):
+                value = _parse_amount(row[i + 1])
+                if not pd.isna(value):
+                    found[label] = value
+    return next((found[label] for label in labels if label in found), None)
+
+
+def statement_holder(rows: list[list[str]]) -> str | None:
+    """Whose account it is, as the lines above the table say ("Titular:", "SERV DE … S A")."""
+    for row in rows:
+        for i, cell in enumerate(row):
+            if plain(cell).rstrip(":").strip() in HOLDER_LABELS and i + 1 < len(row):
+                return str(row[i + 1]).strip()
+    return None
+
+
+def charges_are_positive(raw: pd.DataFrame, frame: pd.DataFrame) -> bool:
+    """A card statement with one amount column usually lists purchases as positive amounts (most of
+    its lines are purchases). Charges / Payments columns are already read the right way."""
+    if "amount" not in match_columns(raw.columns):
+        return False
+    amounts = frame["amount"].dropna()
+    return int((amounts > 0).sum()) > int((amounts < 0).sum())
+
+
+def describe_statement(content: bytes, filename: str) -> dict:
+    """Before an upload: is this a card, and can its balance today be read from the file?"""
+    raw = read_table(content, filename)
+    above = preamble(content, filename)
+    card = is_card_statement(raw.columns) or mentions_card(above)
+    try:
+        closing_balance(normalise_columns(raw, keep_unreadable=True), preamble_balance(above, card))
+    except ValueError:
+        return {"card": card, "balance_found": False}
+    return {"card": card, "balance_found": True}
 
 
 def read_table(content: bytes, filename: str) -> pd.DataFrame:
@@ -321,10 +430,13 @@ def chronological(frame: pd.DataFrame) -> pd.DataFrame:
     return frame.reset_index(drop=True)
 
 
-def closing_balance(frame: pd.DataFrame) -> float:
-    """The running balance on the newest line of the statement (needs a Balance column)."""
+def closing_balance(frame: pd.DataFrame, above: float | None = None) -> float:
+    """The running balance on the newest line of the statement, else the one in the lines above
+    its table (`above`)."""
     rows = chronological(frame).dropna(subset=["balance", "date"])
     if rows.empty:
+        if above is not None:
+            return above
         raise ValueError("The file has no Balance column, so please type your current balance.")
     return float(rows["balance"].iloc[-1])
 

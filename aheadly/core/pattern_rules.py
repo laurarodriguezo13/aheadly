@@ -325,10 +325,12 @@ def unusual_charge(df: pd.DataFrame, today: date) -> list[Insight]:
     out = df[df["amount"] < 0]
     if out.empty:
         return []
-    seen = out["key"].value_counts()
+    # a reference number doesn't make a payee new ("PAGO DE PLANILLA LOTE 26111" / "… LOTE 26102")
+    masked = out["key"].map(lambda k: re.sub(r"\S*\d\S*", "#", k))
+    seen = masked.value_counts()
     monthly_out = -out[out["date"] > pd.Timestamp(today - timedelta(days=90))]["amount"].sum() / 3
     floor = max(UNUSUAL_TIMES_MEDIAN * out["amount"].abs().median(), UNUSUAL_SHARE * monthly_out)
-    recent = out[(out["date"] > pd.Timestamp(today - timedelta(days=60))) & (out["key"].map(seen) == 1)]
+    recent = out[(out["date"] > pd.Timestamp(today - timedelta(days=60))) & (masked.map(seen) == 1)]
     return [
         Insight(
             "unusual_charge",
@@ -337,7 +339,7 @@ def unusual_charge(df: pd.DataFrame, today: date) -> list[Insight]:
             ["check_the_charge"],
         )
         for row in recent.itertuples()
-        if -row.amount >= floor and row.category != "taxes"
+        if -row.amount >= floor and row.category not in ("taxes", "payroll")
     ]
 
 

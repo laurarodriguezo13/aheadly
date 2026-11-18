@@ -627,6 +627,20 @@ class Repository:
             )
         ]
 
+    def forget_items(self, business_id: int, match_key: str) -> None:
+        """Delete the plan items of one payee found in the statement, and unlink its lines."""
+        ids = [
+            r["id"]
+            for r in self._conn.execute(
+                "SELECT id FROM scheduled_items WHERE business_id=? AND match_key=?", (business_id, match_key)
+            )
+        ]
+        self._conn.executemany(
+            "UPDATE transactions SET scheduled_item_id=NULL WHERE scheduled_item_id=?", [(i,) for i in ids]
+        )
+        self._conn.executemany("DELETE FROM scheduled_items WHERE id=?", [(i,) for i in ids])
+        self._conn.commit()
+
     def edited_items_by_key(self, business_id: int) -> dict[str, int]:
         """match_key → id of an item the owner changed (moved, removed in a plan, edited): detection
         leaves those alone."""

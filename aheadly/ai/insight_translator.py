@@ -74,6 +74,15 @@ class InsightTranslator:
 
     # ------------------------------------------------------------- job A: alert
     def write_alert(self, facts: dict) -> AlertText:
+        """Written once per facts, like the insights: every answer and change reruns the daily check,
+        and calling the provider each time hit the free tier's per-minute limit (practice run 2)."""
+        body = self._cached("alert", facts, lambda: self._alert_body(facts))
+        if body is not None:
+            return AlertText(templates.alert_title(facts), body, [])  # actions come from code (roadmap 3.2)
+        fallback = templates.alert_text(facts)
+        return AlertText(fallback["title"], fallback["body"], fallback["actions"])
+
+    def _alert_body(self, facts: dict) -> str | None:
         messages = [
             {"role": "system", "content": prompts.ALERT_INSTRUCTIONS},
             {"role": "user", "content": prompts.ALERT_PROMPT.format(facts_json=json.dumps(facts))},
@@ -83,15 +92,13 @@ class InsightTranslator:
             parsed = json.loads(_strip_code_fence(reply.content or ""))
             # the title says how serious it is, so it follows the numbers (live check, 2026-11-12)
             body = tidy_money(parsed["body"])
-            text = AlertText(templates.alert_title(facts), body, [])  # actions come from code (roadmap 3.2)
-            if not check_numbers(f"{text.title} {text.body}", [facts]).passed:
+            if not check_numbers(f"{templates.alert_title(facts)} {body}", [facts]).passed:
                 raise ValueError("alert used a number that is not in the facts")
-            return text
+            return body
         except (LLMError, ValueError, KeyError, json.JSONDecodeError) as exc:
             logger.warning("write_alert fell back to template: %s", exc)
             self.guardrail_failures += 1
-            fallback = templates.alert_text(facts)
-            return AlertText(fallback["title"], fallback["body"], fallback["actions"])
+            return None
 
     # ------------------------------------------------- job A3: things we noticed (roadmap 4.2)
     def write_insight(self, insight: dict) -> InsightText:

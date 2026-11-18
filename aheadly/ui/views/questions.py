@@ -113,15 +113,21 @@ with area.container(border=True):
             choices,
             index=choices.index(question.suggestion) if question.suggestion in choices else 0,
             format_func=lambda c: copy.MYSTERY_NOT_SURE if c is None else copy.CATEGORY_NAMES.get(c, c),
+            key=f"pick-{question.id}",  # its own box: the last payee's answer must not carry over
         )
-        said = st.text_input(copy.MYSTERY_WORDS, value=words, placeholder=copy.MYSTERY_WORDS_PLACEHOLDER)
+        said = st.text_input(
+            copy.MYSTERY_WORDS,
+            value=words,
+            placeholder=copy.MYSTERY_WORDS_PLACEHOLDER,
+            key=f"words-{question.id}",
+        )
         save, skip = st.columns(2)
         if save.button(copy.SAVE_ANSWER, type="primary"):
             if not (picked or said.strip()):
                 st.warning(copy.ANSWER_FIRST)  # no st.stop(): the Skip button below must still show
             else:
                 _save(
-                    lambda: core.answer_mystery(question.payee, picked, said),
+                    lambda: core.answer_mystery(question.payee, picked, said, question.suggestion),
                     lambda category: copy.MYSTERY_SAVED.format(
                         payee=question.payee, category=copy.CATEGORY_NAMES.get(category, category)
                     ),

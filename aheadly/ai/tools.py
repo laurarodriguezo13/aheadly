@@ -33,6 +33,7 @@ ADJUSTMENT_SCHEMA = {
                 "recurring_change",
                 "revenue_change",
                 "collect_early",
+                "split_item",
                 "financing",
             ],
         },
@@ -48,11 +49,15 @@ ADJUSTMENT_SCHEMA = {
         "new_date": {
             "type": "string",
             "description": (
-                "move_item / collect_early: new ISO date. For a move 'to next month' with no day, use "
+                "move_item / collect_early / split_item: new ISO date. For a move 'to next month' with no day, use "
                 "'next_month': Aheadly tries every weekday of next month and picks the best one."
             ),
         },
         "amount_delta": {"type": "number", "description": "recurring_change: signed change per occurrence"},
+        "share": {
+            "type": "number",
+            "description": "split_item: the part paid on new_date (0.5 = half; the rest stays on its date)",
+        },
         "percent": {"type": "number", "description": "revenue_change: +10 means sales up 10%"},
         "weeks": {
             "type": "integer",
