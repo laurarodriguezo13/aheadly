@@ -311,7 +311,7 @@ BASIS_WEEKLY_PAYEE = "**{label}** · about {amount} a week"
 BASIS_PLAN_ON_ITS_OWN = "Plan it on its own"
 BASIS_PLANNED_ON_ITS_OWN = (
     "{label} is now a regular payment of about {amount} a week. Change it, pause it or set a later next "
-    "date under Regular payments."
+    "date under Regular payments"
 )
 BASIS_BACK_TO_NORMAL = "Back to my normal week"
 BASIS_BACK_DONE = "{label} is back in your normal week"

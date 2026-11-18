@@ -181,9 +181,25 @@ def detect(lines: list[TxLine], today: date) -> list[Recurring]:
     found = []
     for (key, direction), members in group_lines(lines).items():
         result = _detect_group(key, direction, members, today)
+        if result is None:
+            result = _detect_group(key, direction, _without_extras(members), today)
         if result is not None:
             found.append(result)
     return sorted(found, key=lambda r: (r.next_dates[0] if r.next_dates else today, r.match_key))
+
+
+def _without_extras(members: list[TxLine]) -> list[TxLine]:
+    """A few one-off extras that break the rhythm left out (the owner's pay on the 1st and 16th, plus
+    $2,000 once in January and $4,000 in April: practice run 2). Only a few: at most one in eight.
+    The extras stay in the history the model learns from."""
+    per_day = _daily_amounts(members)
+    if len(per_day) < 6:
+        return members
+    typical = statistics.median(abs(a) for a in per_day.values())
+    extras = {d for d, a in per_day.items() if not 0.5 * typical <= abs(a) <= 1.5 * typical}
+    if not extras or len(extras) > len(per_day) // 8:
+        return members
+    return [m for m in members if m.date not in extras]
 
 
 def _daily_amounts(members: list[TxLine]) -> dict[date, float]:

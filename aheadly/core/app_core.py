@@ -446,13 +446,17 @@ class AppCore:
             self.set_payee_rule(payee, "owner_pay")
         self._question_done(f"owner_pay:{categorizer.match_key(payee)}")
 
-    def answer_mystery(self, payee: str, category: str | None = None, words: str = "") -> str:
+    def answer_mystery(
+        self, payee: str, category: str | None = None, words: str = "", guess: str | None = None
+    ) -> str:
         """What a payee is: a category picked from the list, or the owner's own words (or both).
         The words win when they name a kind of payment (roadmap R.1: on the live site the list,
         still on the AI's guess "Other income", beat "loan repayment"); the list decides otherwise.
         Returns the category used."""
         said = categorizer.category_from_answer(words) if words.strip() else "other"
-        if said != "other" or (words.strip() and not category):
+        # the list still on the AI's guess is not an answer: the owner's own words are ("my
+        # accountant's fee" with the guess "Payroll" left in the list is other, practice run)
+        if said != "other" or (words.strip() and category in (None, guess)):
             category = said
         if category:
             self.set_payee_rule(payee, category, words or payee)
@@ -611,7 +615,9 @@ class AppCore:
             for p in self.repo.uncategorized_payees(business.id, since)
             if abs(p["total"]) >= floor or categorizer.match_key(p["description"]) in how_often
         ]
-        names = [p["description"] for p in payees[: onboarding.MAX_MYSTERIES + 2]]
+        # every payee that may be asked about, in one call: answering one brings the next into the
+        # list, and a call per answer made each answer slow on the free tier (practice run 2)
+        names = [p["description"] for p in payees[:20]]
         profile = self.repo.get_profile(business.id)
         owner_words = onboarding.owner_name_words(
             profile.get("statement_holder", ""), business.owner_name or "", business.name or ""

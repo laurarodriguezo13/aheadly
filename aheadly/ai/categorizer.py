@@ -41,7 +41,11 @@ CATEGORIES = (
 # (category, direction, words). Direction: "in" (money in), "out" (money out) or "any".
 # Words are matched on whole words of the plain text (lower case, no accents). Order matters.
 KEYWORD_RULES: tuple[tuple[str, str, tuple[str, ...]], ...] = (
-    ("bank_fees", "out", ("gmf", "4x1000", "4 x 1000", "cuota manejo", "cuota de manejo", "comision")),
+    (
+        "bank_fees",
+        "out",
+        ("gmf", "4x1000", "4 x 1000", "cuota manejo", "cuota de manejo", "comision", "manejo de cuenta"),
+    ),
     ("bank_fees", "out", ("bank fee", "service charge", "maintenance fee", "overdraft", "wire fee")),
     ("card_payment", "out", ("pago tarjeta", "tarjeta credito", "pago tc", "credit card payment")),
     ("taxes", "out", ("dian", "impuesto", "impuestos", "iva", "retencion", "reteica", "predial", "ica")),

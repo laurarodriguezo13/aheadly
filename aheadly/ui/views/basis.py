@@ -101,11 +101,13 @@ if rhythm:
                     copy.BASIS_WEEKLY_PAYEE.format(label=payee["label"], amount=money(abs(payee["per_week"])))
                 )
                 if button.button(copy.BASIS_PLAN_ON_ITS_OWN, key=f"own-{payee['match_key']}"):
+                    with st.spinner(copy.CHECKING_MONEY):  # the forecast learns again: a few seconds
+                        effect = core.plan_weekly_payee(payee["match_key"])
                     _done(
                         copy.BASIS_PLANNED_ON_ITS_OWN.format(
                             label=payee["label"], amount=money(abs(payee["per_week"]))
                         ),
-                        core.plan_weekly_payee(payee["match_key"]),
+                        effect,
                     )
 
 # ---------------------------------------------------------------- busy and slow months (2.7)
@@ -277,7 +279,9 @@ def _change_box(rows: list[dict], repeating: bool) -> None:
         if buttons[1].button(copy.BASIS_REMOVE, key=f"remove-{key}-{chosen}"):
             _done(copy.BASIS_REMOVED_DONE.format(label=row["label"]), core.delete_plan_item(chosen))
         if repeating and row["weekly_payee"] and st.button(copy.BASIS_BACK_TO_NORMAL, key=f"back-{chosen}"):
-            _done(copy.BASIS_BACK_DONE.format(label=row["label"]), core.back_to_normal_week(chosen))
+            with st.spinner(copy.CHECKING_MONEY):
+                effect = core.back_to_normal_week(chosen)
+            _done(copy.BASIS_BACK_DONE.format(label=row["label"]), effect)
 
 
 # ---------------------------------------------------------------- regular payments
