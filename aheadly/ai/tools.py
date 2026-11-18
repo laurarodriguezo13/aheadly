@@ -95,10 +95,17 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     },
     {
         "name": "get_transactions",
-        "description": "Recent transactions, optionally filtered by category or start date.",
+        "description": (
+            "Transactions from the statement, newest first, optionally filtered by words in the "
+            "description (search: finds a payment by name anywhere in the statement), category or start date."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
+                "search": {
+                    "type": "string",
+                    "description": "Words from the payment's description as the bank writes it, e.g. 'ZX81'.",
+                },
                 "category": {"type": "string", "enum": list(CATEGORIES)},
                 "since": {"type": "string", "description": "ISO date"},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50},
@@ -201,7 +208,7 @@ class ToolDispatcher:
         if name == "get_transactions":
             return {
                 "transactions": core.recent_transactions(
-                    args.get("category"), args.get("since"), int(args.get("limit", 10))
+                    args.get("category"), args.get("since"), int(args.get("limit", 10)), args.get("search")
                 )
             }
         if name == "run_scenario":

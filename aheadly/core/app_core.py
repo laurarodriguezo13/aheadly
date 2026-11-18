@@ -2014,7 +2014,38 @@ class AppCore:
             "money_out_30d": round(totals["money_out"]),
             "low_cash_line": round(business.low_cash_line),
             "currency": business.currency,
+            **self._month_totals(),
         }
+
+    def _month_totals(self) -> dict:
+        """Money in and out per complete month (the Insights chart's numbers: loans and moves between
+        the owner's own accounts left out) and this month so far, for "Will November be as good as
+        October?" (found by the Gemini run: the chat only had the last 30 days)."""
+        df = pattern_rules.lines_frame(self.repo.recurring_lines(self._business().id))
+        rows = insight_charts.money_in_out(df, insight_charts.complete_months(df, self.today))
+        current = pd.Period(self.today, "M")
+        so_far = insight_charts.money_in_out(df, [current])[0] if not df.empty else None
+        last_day = df[df["month"] == current]["date"].max() if not df.empty else None
+        out = {
+            "months": [
+                {
+                    "month": f"{r['month']:%b %Y}",
+                    "money_in": r["money_in"],
+                    "money_out": r["money_out"],
+                    "left": r["net"],
+                }
+                for r in rows
+            ],
+            "months_note": "complete months; loans and moves between the owner's own accounts left out",
+        }
+        if so_far and pd.notna(last_day):
+            out["this_month_so_far"] = {
+                "month": current.strftime("%b %Y"),
+                "through": f"{last_day:%b} {last_day.day}",
+                "money_in": so_far["money_in"],
+                "money_out": so_far["money_out"],
+            }
+        return out
 
     def forecast_summary(self, weeks: int = 8, until: str | None = None) -> dict:
         """`until` (ISO date) limits the answer to a window, e.g. the end of next month."""
@@ -2085,10 +2116,18 @@ class AppCore:
         ]
 
     def recent_transactions(
-        self, category: str | None = None, since: str | None = None, limit: int = 10
+        self,
+        category: str | None = None,
+        since: str | None = None,
+        limit: int = 10,
+        search: str | None = None,
     ) -> list[dict]:
+        """`search`: words from the payment's description, anywhere in the statement (the chat's "What is
+        X?", found by the Gemini run: the newest 50 lines didn't reach it)."""
         since_date = date.fromisoformat(since) if since else None
-        df = self.repo.list_transactions(self._business().id, since_date, category, max(1, min(50, limit)))
+        df = self.repo.list_transactions(
+            self._business().id, since_date, category, max(1, min(50, limit)), (search or "").strip() or None
+        )
         return [
             {"date": r.date, "description": r.description, "category": r.category, "amount": round(r.amount)}
             for r in df.itertuples()

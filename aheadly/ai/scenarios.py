@@ -24,16 +24,34 @@ ADJUSTMENT_TYPES = (
 )
 
 
+REQUIRED = {
+    "one_time_expense": ("amount",),
+    "move_item": ("label", "new_date"),
+    "collect_early": ("label", "new_date"),
+    "remove_item": ("label",),
+    "recurring_change": ("label", "amount_delta"),
+    "revenue_change": ("percent",),
+}
+REQUIRED_HELP = {
+    "amount": "the amount in dollars.",
+    "label": "the name of the payment, as in the business's scheduled items.",
+    "new_date": "the new day as YYYY-MM-DD (or 'next_month' for a move to next month with no day).",
+    "amount_delta": "the change per payment in dollars (negative: less money).",
+    "percent": "the change in percent (+10: sales up 10%).",
+}
+
+
 def parse_adjustment(raw: dict) -> Adjustment:
     """LBYL validation of an adjustment coming from the LLM or the form."""
     kind = raw.get("type")
     if kind not in ADJUSTMENT_TYPES:
         raise ValueError(f"Unknown adjustment type '{kind}'. Use one of {ADJUSTMENT_TYPES}.")
     params = {k: v for k, v in raw.items() if k != "type"}
+    missing = [field for field in REQUIRED.get(kind, ()) if params.get(field) in (None, "")]
+    if missing:  # said in words the model can act on (the Gemini run got "'new_date'")
+        raise ValueError(f"{kind} needs {' and '.join(missing)}: {REQUIRED_HELP[missing[0]]}")
     if kind == "one_time_expense" and float(params.get("amount", 0)) <= 0:
         raise ValueError("one_time_expense needs a positive amount")
-    if kind in ("move_item", "collect_early", "remove_item", "recurring_change") and not params.get("label"):
-        raise ValueError(f"{kind} needs a label")
     if kind == "financing":
         if float(params.get("amount", 0)) <= 0:
             raise ValueError("financing needs a positive amount")
@@ -155,7 +173,10 @@ def _find(items: list[ScheduledItem], label: str) -> ScheduledItem:
     for item in items:
         if needle in item.label.lower() or item.label.lower() in needle:
             return item
-    raise ValueError(f"No scheduled item matches '{label}'")
+    names = sorted({item.label for item in items})
+    raise ValueError(
+        f"No scheduled item matches '{label}'. Use one of these names as the label: " + "; ".join(names)
+    )
 
 
 def _revenue_change_items(
