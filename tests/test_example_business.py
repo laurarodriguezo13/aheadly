@@ -1,7 +1,9 @@
-"""Roadmap 1.5: "Try an example business" loads the bakery without any files of your own."""
+"""Roadmap 1.5 and 5.6: "Try an example business" loads one of the six test businesses (the bakery
+first) without any files of your own."""
 
 from __future__ import annotations
 
+import json
 from datetime import date
 from pathlib import Path
 
@@ -12,9 +14,10 @@ from aheadly.ai.llm_client import StubClient
 from aheadly.ai.models import SeasonalNaiveModel
 from aheadly.config import Settings
 from aheadly.core.app_core import AppCore
-from aheadly.core.examples import DEFAULT_EXAMPLE, EXAMPLES, load_example
+from aheadly.core.examples import DEFAULT_EXAMPLE, EXAMPLES, list_examples, load_example
 from aheadly.data.connectors.csv_connector import CsvConnector
 from aheadly.data.repository import Repository
+from aheadly.ui import copy
 
 TEST_BUSINESS = Path(__file__).parent / "businesses" / DEFAULT_EXAMPLE
 DAY_AFTER_STATEMENT = date(2026, 11, 11)
@@ -119,3 +122,61 @@ def test_own_upload_is_not_an_example():
 def test_unknown_example_is_refused():
     with pytest.raises(ValueError):
         load_example("no-such-business")
+
+
+# ------------------------------------------------- roadmap 5.6: any of the six test businesses
+BUSINESSES = Path(__file__).parent / "businesses"
+SLUGS = sorted(p.name for p in BUSINESSES.iterdir() if (p / "answer_key.json").is_file())
+
+
+def _key(slug: str) -> dict:
+    return json.loads((BUSINESSES / slug / "answer_key.json").read_text(encoding="utf-8"))
+
+
+def test_every_test_business_is_an_example_bakery_first():
+    assert sorted(list_examples()) == SLUGS
+    assert list_examples()[0] == DEFAULT_EXAMPLE
+
+
+@pytest.mark.parametrize("slug", SLUGS)
+def test_each_example_is_its_checked_test_business(slug):
+    """Statements identical to the test business's; what the owner knows is coming and their
+    answers taken from its answer key (the builder never edits tests/businesses)."""
+    shipped = sorted((EXAMPLES / slug / "statements").iterdir())
+    tested = sorted((BUSINESSES / slug / "statements").iterdir())
+    assert [p.name for p in shipped] == [p.name for p in tested]
+    assert all(_text(a) == _text(b) for a, b in zip(shipped, tested))
+    key, example = _key(slug), load_example(slug)
+    assert example.profile["name"] == key["business"]["name"]
+    assert example.profile["low_cash_line"] == key["business"]["low_cash_line"]
+    assert sorted((u.label, u.amount, u.due_date.isoformat()) for u in example.upcoming) == sorted(
+        (o["label"], o["amount"], o["date"]) for o in key["one_offs_known"]
+    )
+    answers = key["onboarding_answers"]
+    assert example.answers["business_type"].lower() == answers["business_type"].lower()
+    assert example.answers["mystery"] == answers["mystery_answers"]
+    assert example.answers["owner_pay"] == [answers["owner_pay"]["match_hint"]]
+    assert example.answers["busy_months"] == [int(m[5:7]) for m in answers["busy_months"]]
+
+
+@pytest.mark.parametrize("slug", SLUGS)
+def test_each_example_loads_like_an_upload(slug):
+    key = _key(slug)
+    core = _core()
+    core.load_example(slug)
+    assert core.example() == slug
+    assert core.status().business.name == key["business"]["name"]
+    assert core.cash_summary()["current_balance"] == round(key["import"]["total_cash"])
+    assert core.statement_end() == date(2026, 11, 10)
+    assert core.example_answers()["business_type"]
+
+
+def test_each_example_has_its_line_in_the_picker():
+    assert set(copy.EXAMPLE_SITUATIONS) == set(list_examples())
+    assert all(10 < len(line) < 120 for line in copy.EXAMPLE_SITUATIONS.values())
+
+
+def test_the_picker_lists_every_example_by_name():
+    names = _core().examples()
+    assert list(names) == list_examples()
+    assert names[DEFAULT_EXAMPLE] == "Panadería La Esquina" and len(names) == 6

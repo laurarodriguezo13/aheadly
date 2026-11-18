@@ -1,0 +1,29 @@
+{
+  "_about": "Roadmap 1.5 / 5.6 example business, made by scripts/make_examples.py from tests/businesses/cafe-la-tertulia: the statements are copies (a test checks they stay identical); upcoming items are the one-offs its owner knows about and answers are the owner's onboarding answers, both from that business's answer key, used to pre-fill the questions.",
+  "profile": {
+    "name": "Café La Tertulia",
+    "owner_name": "Julián",
+    "city": "Cali",
+    "low_cash_line": 1500.0
+  },
+  "balances": {
+    "movimientos_ahorros_2208.csv": 3568.29
+  },
+  "upcoming": [],
+  "answers": {
+    "business_type": "Café",
+    "customers_pay": "Walk-in customers by card and cash, plus a weekly Rappi payout",
+    "busy_months": [
+      12
+    ],
+    "slow_months": [
+      1
+    ],
+    "owner_pay": [
+      "TRANSF A CTA AHORROS J MUESTRA"
+    ],
+    "mystery": {
+      "TRANSF 0211 REF 30774": "the building's monthly administration fee"
+    }
+  }
+}

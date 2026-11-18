@@ -35,7 +35,7 @@ from aheadly.core import actions as alert_actions
 from aheadly import version
 from aheadly.core import alert_rules, data_file, financing, insight_charts, onboarding, pattern_rules
 from aheadly.core import safe, stress
-from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
+from aheadly.core.examples import DEFAULT_EXAMPLE, example_names, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
 from aheadly.data.connectors import owner_files
@@ -236,8 +236,8 @@ class AppCore:
         return added
 
     def load_example(self, slug: str = DEFAULT_EXAMPLE) -> int:
-        """Roadmap 1.5: replace whatever is here with an example business, read exactly like an
-        owner's upload (its statements) plus the upcoming payments its owner knows about."""
+        """Roadmap 1.5 / 5.6: replace whatever is here with one of the example businesses, read exactly
+        like an owner's upload (its statements) plus the upcoming payments its owner knows about."""
         example = load_example(slug)
         self.reset()
         business = self.repo.create_business(**example.profile)
@@ -245,7 +245,7 @@ class AppCore:
         self.repo.add_scheduled_items(business.id, example.upcoming)
         return self.connect_files(
             [
-                CsvConnector(content, None, name, business_profile=example.profile)
+                CsvConnector(content, example.balances.get(name), name, business_profile=example.profile)
                 for name, content in example.statements
             ]
         )
@@ -273,6 +273,11 @@ class AppCore:
             "transactions": len(loaded.tables["transactions"]),
             "saved_on": loaded.exported_at[:10],
         }
+
+    @staticmethod
+    def examples() -> dict[str, str]:
+        """The example businesses anyone can try (roadmap 5.6): slug → name, in the picker's order."""
+        return example_names()
 
     def example(self) -> str | None:
         """The example business being shown, or None for the owner's own data."""
