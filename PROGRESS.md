@@ -64,6 +64,7 @@ Short state file so a fresh session (or teammate) can continue.
 - Split a big payment in two, roadmap 3.7 (2026-11-18): a suggestion and a what-if to pay a big once-only payment half now and half weeks later, with a drafted message; payments from the owner's files get a category from their name so taxes and payroll are never offered to move (DECISIONS #63).
 - Plan a weekly payment that varies on its own, roadmap 3.8 (2026-11-18): a supplier paid every week, a different amount each time, can be taken out of the normal week on How we built your forecast and then changed, paused or started again later; ClimaSam's forecast for late December–January now follows the owner's plan (DECISIONS #64).
 - Second practice run (2026-11-18): ClimaSam on the local app with Prophet and Gemini; the forecast's low now lands within a day and about $2,900 of the real one, and the first suggestion is the story's real fix (pay the container in two parts). Fixed: a question box keeping the last answer, the owner's words losing to the AI's guess, the owner's pay not found, slow answers (DECISIONS #65).
+- App Core split by area, issue 14 (2026-11-18): `aheadly/core/app_core.py` from 2,540 lines to about 590, the rest in `aheadly/core/areas/` (one mixin per area); nothing changes for users; with issues 26 and 33, and the dashboard's next payment by its plain name (DECISIONS #66).
 
 ## Next (for the final demonstration)
 Follow `docs/ROADMAP.md` (one builder, about four weeks; Must / Should / Nice, sizes, dependencies, cut order). In short:

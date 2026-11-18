@@ -361,7 +361,7 @@ def test_categories(slug):
     if answers["owner_pay"]["is_owner_pay"]:
         core.set_payee_rule(answers["owner_pay"]["match_hint"], "owner_pay")
     for payee, answer in answers["mystery_answers"].items():
-        core.answer_payee(payee, answer)
+        core.answer_mystery(payee, words=answer)
     totals = core.monthly_category_totals()
     month = sorted(key["monthly_totals"])[-1]
     for category, amount in key["monthly_totals"][month].items():

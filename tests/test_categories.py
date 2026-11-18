@@ -153,7 +153,7 @@ def test_upload_puts_lines_in_categories(uploaded):
 
 
 def test_an_answer_changes_every_matching_line(uploaded):
-    assert uploaded.answer_payee("TRANSF 0045 REF 88213", "loan for the oven") == "loan"
+    assert uploaded.answer_mystery("TRANSF 0045 REF 88213", words="loan for the oven") == "loan"
     assert _categories(uploaded)["TRANSF 0045 REF 88213"] == "loan"
     assert uploaded.monthly_category_totals()["2026-10"]["loan"] == -620.0
 
@@ -170,9 +170,9 @@ def test_an_answer_applies_to_later_uploads(uploaded):
 
 def test_money_from_the_owners_own_account_is_not_income(uploaded):
     before = uploaded.repo.flow_totals(uploaded.status().business.id, TODAY.replace(month=1, day=1))
-    assert uploaded.answer_payee("TRANSF INTERBANCARIA RECIBIDA 1180", "money from my old account") == (
-        "transfer_internal"
-    )
+    assert uploaded.answer_mystery(
+        "TRANSF INTERBANCARIA RECIBIDA 1180", words="money from my old account"
+    ) == ("transfer_internal")
     after = uploaded.repo.flow_totals(uploaded.status().business.id, TODAY.replace(month=1, day=1))
     assert after["money_in"] == before["money_in"] - 250
 

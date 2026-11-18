@@ -4,7 +4,6 @@ from datetime import date
 
 import streamlit as st
 
-from aheadly.core import alert_rules
 from aheadly.ui import copy
 from aheadly.ui.bootstrap import go_to, require_data, start_page
 from aheadly.ui.charts import forecast_chart
@@ -49,14 +48,10 @@ with col1:
 with col2:
     if forecast:
         value, low_date = forecast.lowest_with_today()
-        when = (
-            copy.LOWEST_IS_TODAY
-            if low_date is None
-            else f"In {weeks(alert_rules.weeks_until(core.today, low_date))}"
-        )
+        when = copy.LOWEST_IS_TODAY if low_date is None else f"In {weeks(dash.lowest_weeks)}"
         if value < 0 and low_date is not None:  # roadmap R.1: below zero says what it means
             when = copy.SHORT_BY.format(short=money(-value), date=f"{low_date:%b} {low_date.day}")
-        chance = copy.chance_words(alert_rules.chance_pct(forecast.chance_below(business.low_cash_line)))
+        chance = copy.chance_words(dash.chance_pct)
         if chance:  # roadmap 3.1
             when = f"{when} · {chance}"
         below = value < business.low_cash_line

@@ -126,7 +126,7 @@ def test_pausing_ending_and_removing():
     assert core.forecast_basis()["not_counted"]["paused"] == ["Pago nomina"]
     resumed = core.pause_plan_item(payroll["id"], paused=False)
     assert resumed["after"] == paused["before"]
-    ended = core.end_plan_item(payroll["id"], DAY_AFTER_STATEMENT + timedelta(days=13))
+    ended = core.update_plan_item(payroll["id"], end_date=DAY_AFTER_STATEMENT + timedelta(days=13))
     assert ended["before"] < ended["after"] < paused["after"]  # two more paydays still counted
     removed = core.delete_plan_item(payroll["id"])
     assert removed["after"] == paused["after"]

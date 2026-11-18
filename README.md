@@ -46,7 +46,7 @@ To show the app on a business that isn't a bakery, upload the statements of anot
 ```
 Streamlit UI (app.py, aheadly/ui/views, aheadly/ui)   Application layer
    │  Get Insights
-App Core (aheadly/core/app_core.py)             orchestrates: sync → forecast → alert rules → alerts
+App Core (aheadly/core/app_core.py + areas/)   orchestrates: sync → forecast → alert rules → alerts
    │  Run Forecast                 │  Explain Results
 Forecast Engine (aheadly/ai)      Insight Translator (aheadly/ai)     AI layer
    │  Read/Write Data               │  Generate Text
@@ -62,7 +62,7 @@ Rules we keep: the UI only calls `AppCore`; only the Insight Translator talks to
 | `app.py` | Streamlit entry: page config, sidebar logo, `st.navigation`; four sidebar entries, each with a row of sub-tabs (`GROUPS` in `aheadly/ui/bootstrap.py`) |
 | `aheadly/ui/views/` | the thirteen page scripts, one per sub-tab: Dashboard (Overview, Early-warning alerts, Insights), Ask Aheadly (Ask about my numbers, Test a what-if, Suggestions, Bad surprises, Financing), Your business (Connect accounts, Questions, Behind the forecast, What you told us), Settings |
 | `aheadly/ui/` | brand CSS on top of `.streamlit/config.toml`, all copy strings, cards, charts (weekly lows), cached bootstrap |
-| `aheadly/core/` | `AppCore`, and the rules it uses: `alert_rules`, `pattern_rules` (things we noticed), `insight_charts`, `actions` (tested fixes), `safe` (safe to spend / pay), `stress` (bad surprises), `financing`, `onboarding` (questions), `transfers`, `examples`, `session` |
+| `aheadly/core/` | `AppCore` (`app_core.py`: shared state, the daily check, the dashboard, the chat, what-ifs; `areas/`: the rest by area, one mixin each: files, understanding the statement, questions, Behind the forecast, things we noticed, suggestions, what the chat's tools read), and the rules it uses: `alert_rules`, `pattern_rules` (things we noticed), `insight_charts`, `actions` (tested fixes), `safe` (safe to spend / pay), `stress` (bad surprises), `financing`, `onboarding` (questions), `transfers`, `examples`, `session` |
 | `aheadly/ai/` | `ForecastEngine` + models, `scenarios`, `categorizer`, `recurring`, `seasons`, `confidence`, `plan_text`, `owner_notes`, `InsightTranslator`, `llm_client`, `tools`, `guardrails`, `prompts`, `templates` |
 | `aheadly/data/` | `schema.sql` + numbered migrations, `Repository`, `seed_demo`, `connectors/` (bank statements, the owner's own files) |
 | `aheadly/jobs/` | `daily_run` (cron-able) |
