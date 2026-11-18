@@ -1,0 +1,48 @@
+{
+  "_about": "Roadmap 1.5 / 5.6 example business, made by scripts/make_examples.py from tests/businesses/taller-los-pistones: the statements are copies (a test checks they stay identical); upcoming items are the one-offs its owner knows about and answers are the owner's onboarding answers, both from that business's answer key, used to pre-fill the questions.",
+  "profile": {
+    "name": "Taller Los Pistones",
+    "owner_name": "Óscar",
+    "city": "Pereira",
+    "low_cash_line": 1800.0
+  },
+  "upcoming": [
+    {
+      "label": "Insurance claims (Aseguradora Ejemplo)",
+      "amount": 1341.03,
+      "date": "2026-11-11",
+      "certainty": "maybe"
+    },
+    {
+      "label": "Insurance claims (Aseguradora Ejemplo)",
+      "amount": 1165.6,
+      "date": "2026-11-26",
+      "certainty": "maybe"
+    },
+    {
+      "label": "Insurance claims (Aseguradora Ejemplo)",
+      "amount": 1217.03,
+      "date": "2026-12-14",
+      "certainty": "maybe"
+    },
+    {
+      "label": "Insurance claims (Aseguradora Ejemplo)",
+      "amount": 1495.93,
+      "date": "2026-12-22",
+      "certainty": "maybe"
+    }
+  ],
+  "answers": {
+    "business_type": "Auto repair shop",
+    "customers_pay": "Drivers pay by card or Nequi; an insurance company pays repair claims by transfer about twice a month",
+    "busy_months": [],
+    "slow_months": [],
+    "owner_pay": [
+      "TRANSF A CTA AHORROS O SIMULADO"
+    ],
+    "mystery": {
+      "TRANSF 0078 REF 55120": "loan for the car lift",
+      "TRANSF INTERBANCARIA RECIBIDA 1180": "money from my old account at the other bank (closed in August)"
+    }
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "_about": "Roadmap 1.5 / 5.6 example business, made by scripts/make_examples.py from tests/businesses/estudio-lapiz-rojo: the statements are copies (a test checks they stay identical); upcoming items are the one-offs its owner knows about and answers are the owner's onboarding answers, both from that business's answer key, used to pre-fill the questions.",
+  "profile": {
+    "name": "Estudio Lápiz Rojo",
+    "owner_name": "Valentina",
+    "city": "Medellín",
+    "low_cash_line": 5000.0
+  },
+  "upcoming": [
+    {
+      "label": "New laptop",
+      "amount": -1650.0,
+      "date": "2026-12-02",
+      "certainty": "confirmed"
+    },
+    {
+      "label": "Domain & hosting renewal",
+      "amount": -214.5,
+      "date": "2026-12-09",
+      "certainty": "maybe"
+    }
+  ],
+  "answers": {
+    "business_type": "Design studio",
+    "customers_pay": "12 clients on monthly retainers by bank transfer (invoice due on the 15th); project work paid by card through a payment link",
+    "busy_months": [],
+    "slow_months": [
+      12,
+      1
+    ],
+    "owner_pay": [
+      "TRANSF A CTA AHORROS V EJEMPLO"
+    ],
+    "mystery": {
+      "TRANSF 0117 REF 40562": "my accountant's monthly fee"
+    }
+  }
+}

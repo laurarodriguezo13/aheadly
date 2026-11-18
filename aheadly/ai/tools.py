@@ -48,8 +48,8 @@ ADJUSTMENT_SCHEMA = {
         "new_date": {
             "type": "string",
             "description": (
-                "move_item / collect_early: new ISO date. 'Next month' means the same day next month "
-                "(Nov 14 -> Dec 14), not the end of next month."
+                "move_item / collect_early: new ISO date. For a move 'to next month' with no day, use "
+                "'next_month': Aheadly tries every weekday of next month and picks the best one."
             ),
         },
         "amount_delta": {"type": "number", "description": "recurring_change: signed change per occurrence"},
@@ -95,10 +95,17 @@ TOOL_SCHEMAS: list[dict[str, Any]] = [
     },
     {
         "name": "get_transactions",
-        "description": "Recent transactions, optionally filtered by category or start date.",
+        "description": (
+            "Transactions from the statement, newest first, optionally filtered by words in the "
+            "description (search: finds a payment by name anywhere in the statement), category or start date."
+        ),
         "parameters": {
             "type": "object",
             "properties": {
+                "search": {
+                    "type": "string",
+                    "description": "Words from the payment's description as the bank writes it, e.g. 'ZX81'.",
+                },
                 "category": {"type": "string", "enum": list(CATEGORIES)},
                 "since": {"type": "string", "description": "ISO date"},
                 "limit": {"type": "integer", "minimum": 1, "maximum": 50},
@@ -201,7 +208,7 @@ class ToolDispatcher:
         if name == "get_transactions":
             return {
                 "transactions": core.recent_transactions(
-                    args.get("category"), args.get("since"), int(args.get("limit", 10))
+                    args.get("category"), args.get("since"), int(args.get("limit", 10)), args.get("search")
                 )
             }
         if name == "run_scenario":

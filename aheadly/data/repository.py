@@ -357,7 +357,12 @@ class Repository:
         return date.fromisoformat(row["last"]) if row["last"] else None
 
     def list_transactions(
-        self, business_id: int, since: date | None = None, category: str | None = None, limit: int = 50
+        self,
+        business_id: int,
+        since: date | None = None,
+        category: str | None = None,
+        limit: int = 50,
+        search: str | None = None,
     ) -> pd.DataFrame:
         query = (
             "SELECT date, description, category, counterparty, amount FROM transactions WHERE business_id=?"
@@ -369,6 +374,9 @@ class Repository:
         if category:
             query += " AND category = ?"
             params.append(category)
+        if search:  # plain text, not a LIKE pattern: "MKTPLACE*ZX81" and "50%" mean what they say
+            query += " AND instr(lower(description), lower(?)) > 0"
+            params.append(search)
         query += " ORDER BY date DESC, id DESC LIMIT ?"
         params.append(limit)
         return pd.read_sql_query(query, self._conn, params=params)

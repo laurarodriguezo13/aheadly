@@ -60,12 +60,23 @@ MULTI_NO_BALANCE = (
 )
 EXAMPLE_TITLE = "No files at hand? Try an example business"
 EXAMPLE_HELP = (
-    "Load Panadería La Esquina, a bakery in Bogotá: a year of bank statements plus the payments its owner "
-    "knows are coming (a new oven, a big flour order, two Christmas orders). Nothing of yours is uploaded. "
-    "To use your own files afterwards, go to Settings and click Start over."
+    "Pick one of six made-up businesses, each with a year of bank statements and the payments its owner "
+    "knows are coming. Nothing of yours is uploaded. To use your own files afterwards, go to Settings and "
+    "click Start over."
 )
-EXAMPLE_BUTTON = "Try the example bakery"
-EXAMPLE_SPINNER = "Loading the example bakery and building its forecast…"
+EXAMPLE_PICK = "Which business?"
+EXAMPLE_CHOICE = "**{name}**: {situation}"
+EXAMPLE_SITUATIONS = {  # roadmap 5.6: one plain line on each example's situation
+    "panaderia-la-esquina": "a bakery in Bogotá. A new oven drains its cushion: cash dips below its line "
+    "before Christmas.",
+    "cafe-la-tertulia": "a café in Cali. Costs have outrun flat sales, so cash slides a little every month.",
+    "ferreteria-don-perno": "a hardware store in Bucaramanga. Its biggest customer has started paying later.",
+    "disfraces-la-fantasia": "a costume shop in Barranquilla, just past its Halloween peak: very seasonal.",
+    "taller-los-pistones": "an auto repair shop in Pereira. Ordinary finances, the messiest bank files.",
+    "estudio-lapiz-rojo": "a design studio in Medellín. Very healthy, with more cash than it needs.",
+}
+EXAMPLE_BUTTON = "Try this business"
+EXAMPLE_SPINNER = "Loading {name} and building its forecast…"
 EXAMPLE_NOTICE = (
     "This is an example business, {name}. Its statement ends {end}, so Aheadly shows it as of {start}. "
     "To use your own files, go to Settings and click Start over."

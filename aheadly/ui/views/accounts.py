@@ -95,10 +95,19 @@ if not status.connected:
     with st.container(border=True):
         section_title(copy.EXAMPLE_TITLE)
         st.caption(copy.EXAMPLE_HELP)
+        names = core.examples()  # roadmap 5.6: any of the six test businesses
+        picked = st.radio(
+            copy.EXAMPLE_PICK,
+            list(names),
+            format_func=lambda slug: copy.EXAMPLE_CHOICE.format(
+                name=names[slug], situation=copy.EXAMPLE_SITUATIONS.get(slug, "")
+            ),
+            key="example_pick",
+        )
         if st.button(copy.EXAMPLE_BUTTON):
             try:
-                with st.spinner(copy.EXAMPLE_SPINNER):
-                    core.load_example()
+                with st.spinner(copy.EXAMPLE_SPINNER.format(name=names[picked])):
+                    core.load_example(picked)
             except Exception as exc:  # never leave a half-loaded example behind
                 core.reset()
                 st.error(copy.UPLOAD_FAILED.format(error=exc))

@@ -14,7 +14,7 @@ uv sync                      # or: python3.11 -m venv .venv && pip install -r re
 cp .env.example .env         # defaults: LLM_PROVIDER=stub (offline, no keys)
 uv run streamlit run app.py
 # Your business → Connect accounts → upload your bank statements (+ any files you keep),
-#            or click "Try the example bakery" to see it with no files of your own
+#            or pick an example business and click "Try this business" (no files of your own)
 ```
 
 Optional, a real language model: set `LLM_PROVIDER=gemini` and `GEMINI_API_KEY=...` in `.env` (or `anthropic` + `ANTHROPIC_API_KEY`). Keys never go anywhere else.
@@ -25,14 +25,15 @@ Other commands:
 uv run pytest -q                      # all offline, about three minutes; ends with the test-business scorecard
 uv run black .                        # formatting
 uv run python -m aheadly.jobs.daily_run   # the daily check from the command line (cron-able)
+uv run python -m scripts.eval_live      # the chat test set on the connected model (uses quota; see tests/eval_questions.json)
 ```
 
 ## Demo script (storyboard frames 1 to 6)
 
 With the example bakery (Panadería La Esquina, statement up to Nov 10, 2026; the numbers below are the example's):
 
-1. **Guessing.** Fresh start: every visitor gets an empty app; Your business → Connect accounts shows the upload card and *Try the example bakery*.
-2. **Connect once.** *Try the example bakery*: a year of statements comes in and the app opens **Questions** (what the business does, busy months, whether the weekly transfer to M Gómez is the owner's pay…), pre-filled with the owner's answers; the last one, "Is there anything else we should know?", is read by the AI into limits for the suggestions and notes for the chat (all listed under *What you told us*).
+1. **Guessing.** Fresh start: every visitor gets an empty app; Your business → Connect accounts shows the upload card and the six example businesses to try.
+2. **Connect once.** Pick Panadería La Esquina and click *Try this business*: a year of statements comes in and the app opens **Questions** (what the business does, busy months, whether the weekly transfer to M Gómez is the owner's pay…), pre-filled with the owner's answers; the last one, "Is there anything else we should know?", is read by the AI into limits for the suggestions and notes for the chat (all listed under *What you told us*).
 3. **Always watching.** Dashboard: $8,200 today, the forecast dips below the $2,000 line in mid-December (the $7,500 oven on Nov 14, then the Christmas ingredients, the quarterly flour order and rent), the chance of dipping below the line, safe to spend today, how much to trust the forecast. *Behind the forecast* shows every payment the forecast counts on.
 4. **Early warning.** Early-warning alerts: why it happens, and fixes the app has already tested on the forecast ("Move New oven to Dec 16": lowest balance from below zero to above the line). *Open* one (Ask Aheadly → Suggestions): how to do it, a message to copy, change it and test it again, or *Not for me*. *How could you cover it?* opens Financing: it's a timing gap, the owner's own options compared by cost, and *Test a loan*.
 5. **Ask in plain words.** Ask Aheadly: "What if I move the new oven payment to next month?" → the answer plus the best / base / worst card; "How can I fix my alert?", "How much can I safely spend?" and "How can I cover this?" work too. Bad surprises: four built from the business's own numbers (sales down 20%, the biggest payment a month late, the main supplier 10% dearer, a surprise bill), each with what would help.
@@ -104,6 +105,6 @@ A list of upcoming **one-off** payments and expected income (`Date, Description,
 
 **Coming back?** Nothing is kept after a visit ends, so *Download my data* (Connect accounts or Settings) saves everything in one `.aheadly` file, and *Load my data* brings it back as you left it; a newer statement uploaded afterwards adds only its new lines (DECISIONS #53).
 
-No files at hand? On Connect accounts, **Try the example bakery** loads Panadería La Esquina (`aheadly/examples/`): a year of statements from the test businesses plus the one-off payments its owner knows about. It is always shown as of the day after its statement ends (Nov 11, 2026). Settings → Start over goes back to your own upload.
+No files at hand? On Connect accounts, pick one of the six example businesses (the bakery, a café losing money, a hardware store with a late customer, a seasonal costume shop, an auto shop with messy files, a very healthy design studio) and click **Try this business** (`aheadly/examples/`, made from the six test businesses by `scripts/make_examples.py`): a year of statements plus the one-off payments its owner knows about, with the owner's answers pre-filled in the questions. Each is always shown as of the day after its statement ends (Nov 11, 2026). Settings → Start over goes back to your own upload.
 
-Two demo upload files for the demo bakery are in `data/samples/` (CSV and Excel of each): a bank export and an upcoming-payments file with one-off items only. Their dates are relative to the day they were generated, so regenerate them on demo day with `uv run python -m scripts.make_sample_export`, upload both on Your business → Connect accounts and leave the balance field empty. They are the original demo bakery (`aheadly/data/seed_demo.py`), not the same numbers as *Try the example bakery*. For realistic files, use the statements in `tests/businesses/<business>/statements/`: six test businesses made separately from the code, each with an answer key (DECISIONS #25).
+For realistic files, use the statements in `tests/businesses/<business>/statements/`: six test businesses made separately from the code, each with an answer key (DECISIONS #25).

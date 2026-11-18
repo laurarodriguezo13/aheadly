@@ -35,7 +35,7 @@ from aheadly.core import actions as alert_actions
 from aheadly import version
 from aheadly.core import alert_rules, data_file, financing, insight_charts, onboarding, pattern_rules
 from aheadly.core import safe, stress
-from aheadly.core.examples import DEFAULT_EXAMPLE, load_example
+from aheadly.core.examples import DEFAULT_EXAMPLE, example_names, load_example
 from aheadly.core.transfers import Line, find_transfers
 from aheadly.data.connectors.base import Connector
 from aheadly.data.connectors import owner_files
@@ -45,6 +45,7 @@ from aheadly.domain import (
     SCHEDULED_CATEGORIES,
     Alert,
     Business,
+    NEXT_MONTH,
     ChatAnswer,
     ForecastResult,
     ScenarioResult,
@@ -235,8 +236,8 @@ class AppCore:
         return added
 
     def load_example(self, slug: str = DEFAULT_EXAMPLE) -> int:
-        """Roadmap 1.5: replace whatever is here with an example business, read exactly like an
-        owner's upload (its statements) plus the upcoming payments its owner knows about."""
+        """Roadmap 1.5 / 5.6: replace whatever is here with one of the example businesses, read exactly
+        like an owner's upload (its statements) plus the upcoming payments its owner knows about."""
         example = load_example(slug)
         self.reset()
         business = self.repo.create_business(**example.profile)
@@ -244,7 +245,7 @@ class AppCore:
         self.repo.add_scheduled_items(business.id, example.upcoming)
         return self.connect_files(
             [
-                CsvConnector(content, None, name, business_profile=example.profile)
+                CsvConnector(content, example.balances.get(name), name, business_profile=example.profile)
                 for name, content in example.statements
             ]
         )
@@ -272,6 +273,11 @@ class AppCore:
             "transactions": len(loaded.tables["transactions"]),
             "saved_on": loaded.exported_at[:10],
         }
+
+    @staticmethod
+    def examples() -> dict[str, str]:
+        """The example businesses anyone can try (roadmap 5.6): slug → name, in the picker's order."""
+        return example_names()
 
     def example(self) -> str | None:
         """The example business being shown, or None for the owner's own data."""
@@ -1168,11 +1174,46 @@ class AppCore:
 
     # --------------------------------------------------------------- what-if
     def run_what_if(self, adjustments: list[dict], name: str = "Scenario") -> ScenarioResult:
+        adjustments, name, picked = self._next_month_day(adjustments, name)
         result = self._scenario(adjustments, name)
+        result.picked = picked
         result.scenario_id = self.repo.save_scenario(
             self._business().id, name, adjustments, result.summary(), False
         )
         return result
+
+    def _next_month_day(self, adjustments: list[dict], name: str) -> tuple[list[dict], str, dict | None]:
+        """Issue 20: a move "to next month" without a day (new_date = NEXT_MONTH) is tried on every
+        weekday of next month, and the best day kept (`alert_actions.pick_day`). Only the first such
+        move is searched; the chat sends one at a time."""
+        index = next(
+            (i for i, a in enumerate(adjustments) if a.get("new_date") == NEXT_MONTH),
+            None,
+        )
+        if index is None:
+            return adjustments, name, None
+        first = (self.today.replace(day=1) + timedelta(days=32)).replace(day=1)
+        days = [
+            first + timedelta(days=n)
+            for n in range((end_of_next_month(self.today) - first).days + 1)
+            if (first + timedelta(days=n)).weekday() < 5
+        ]
+        baseline = self._baseline_forecast()
+        line = self._business().low_cash_line
+        tried = []
+        for day in days:
+            trial = [dict(a) for a in adjustments]
+            trial[index]["new_date"] = day.isoformat()
+            forecast = self._scenario(trial, name, baseline=baseline).scenario
+            tried.append((day, forecast.risk_level(line), forecast.lowest.balance_p50))
+        day, why = alert_actions.pick_day(tried)
+        chosen = [dict(a) for a in adjustments]
+        chosen[index]["new_date"] = day.isoformat()
+        label = chosen[index].get("label", "")
+        picked = {"label": label, "day": day.isoformat(), "why": why, "days_tried": len(days)}
+        if adjustments[index].get("type") == "move_item":
+            name = f"Move {label} to {day:%b} {day.day}"
+        return chosen, name, picked
 
     def _scenario(
         self, adjustments: list[dict], name: str = "Scenario", baseline: ForecastResult | None = None
@@ -1978,7 +2019,38 @@ class AppCore:
             "money_out_30d": round(totals["money_out"]),
             "low_cash_line": round(business.low_cash_line),
             "currency": business.currency,
+            **self._month_totals(),
         }
+
+    def _month_totals(self) -> dict:
+        """Money in and out per complete month (the Insights chart's numbers: loans and moves between
+        the owner's own accounts left out) and this month so far, for "Will November be as good as
+        October?" (found by the Gemini run: the chat only had the last 30 days)."""
+        df = pattern_rules.lines_frame(self.repo.recurring_lines(self._business().id))
+        rows = insight_charts.money_in_out(df, insight_charts.complete_months(df, self.today))
+        current = pd.Period(self.today, "M")
+        so_far = insight_charts.money_in_out(df, [current])[0] if not df.empty else None
+        last_day = df[df["month"] == current]["date"].max() if not df.empty else None
+        out = {
+            "months": [
+                {
+                    "month": f"{r['month']:%b %Y}",
+                    "money_in": r["money_in"],
+                    "money_out": r["money_out"],
+                    "left": r["net"],
+                }
+                for r in rows
+            ],
+            "months_note": "complete months; loans and moves between the owner's own accounts left out",
+        }
+        if so_far and pd.notna(last_day):
+            out["this_month_so_far"] = {
+                "month": current.strftime("%b %Y"),
+                "through": f"{last_day:%b} {last_day.day}",
+                "money_in": so_far["money_in"],
+                "money_out": so_far["money_out"],
+            }
+        return out
 
     def forecast_summary(self, weeks: int = 8, until: str | None = None) -> dict:
         """`until` (ISO date) limits the answer to a window, e.g. the end of next month."""
@@ -2049,10 +2121,18 @@ class AppCore:
         ]
 
     def recent_transactions(
-        self, category: str | None = None, since: str | None = None, limit: int = 10
+        self,
+        category: str | None = None,
+        since: str | None = None,
+        limit: int = 10,
+        search: str | None = None,
     ) -> list[dict]:
+        """`search`: words from the payment's description, anywhere in the statement (the chat's "What is
+        X?", found by the Gemini run: the newest 50 lines didn't reach it)."""
         since_date = date.fromisoformat(since) if since else None
-        df = self.repo.list_transactions(self._business().id, since_date, category, max(1, min(50, limit)))
+        df = self.repo.list_transactions(
+            self._business().id, since_date, category, max(1, min(50, limit)), (search or "").strip() or None
+        )
         return [
             {"date": r.date, "description": r.description, "category": r.category, "amount": round(r.amount)}
             for r in df.itertuples()

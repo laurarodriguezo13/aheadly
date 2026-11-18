@@ -1,0 +1,26 @@
+{
+  "_about": "Roadmap 1.5 / 5.6 example business, made by scripts/make_examples.py from tests/businesses/ferreteria-don-perno: the statements are copies (a test checks they stay identical); upcoming items are the one-offs its owner knows about and answers are the owner's onboarding answers, both from that business's answer key, used to pre-fill the questions.",
+  "profile": {
+    "name": "Ferretería Don Perno",
+    "owner_name": "Hernán",
+    "city": "Bucaramanga",
+    "low_cash_line": 5000.0
+  },
+  "upcoming": [],
+  "answers": {
+    "business_type": "Hardware store",
+    "customers_pay": "Walk-in customers by card and cash; small contractors by transfer; one construction company on 30-day invoices",
+    "busy_months": [
+      12
+    ],
+    "slow_months": [
+      1
+    ],
+    "owner_pay": [
+      "TRANSF A CTA AHORROS H PRUEBA"
+    ],
+    "mystery": {
+      "TRANSF 0093 REF 61107": "leasing of the delivery truck"
+    }
+  }
+}
